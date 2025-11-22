@@ -1,58 +1,107 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './styles/index.css'
+// public/service-worker.js
+// Service Worker para Finanzas App v5.0
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+const CACHE_NAME = 'finanzas-v5-cache-v1';
+const STATIC_CACHE = 'finanzas-static-v1';
+const DYNAMIC_CACHE = 'finanzas-dynamic-v1';
+
+// Archivos estáticos para cachear
+const STATIC_FILES = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+];
 
 // ============================================
-// REGISTRAR SERVICE WORKER
+// INSTALAR SERVICE WORKER
 // ============================================
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/service-worker.js')
-      .then(registration => {
-        console.log('✅ SW registered:', registration.scope);
-        
-        // Verificar actualizaciones cada hora
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
-        
-        // Listener para actualizaciones
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Hay una nueva versión disponible
-              console.log('🔄 Nueva versión disponible');
-              
-              // Puedes mostrar un mensaje al usuario aquí
-              if (confirm('Hay una actualización disponible. ¿Recargar ahora?')) {
-                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                window.location.reload();
-              }
-            }
-          });
+self.addEventListener('install', (event) => {
+  console.log('[SW] Instalando Service Worker...');
+  
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then(cache => {
+        console.log('[SW] Precaching archivos estáticos');
+        return cache.addAll(STATIC_FILES).catch(err => {
+          console.warn('[SW] Error precaching:', err);
+          // No fallar si algunos archivos no están disponibles
         });
       })
-      .catch(error => {
-        console.error('❌ SW registration failed:', error);
-      });
+      .then(() => self.skipWaiting())
+  );
+});
 
-    // Recargar cuando el SW tome control
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    });
-  });
-}
+// ============================================
+// ACTIVAR SERVICE WORKER
+// ============================================
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activando Service Worker...');
+  
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames
+          .filter(cacheName => {
+            return cacheName !== STATIC_CACHE && 
+                   cacheName !== DYNAMIC_CACHE;
+          })
+          .map(cacheName => {
+            console.log('[SW] Eliminando caché antigua:', cacheName);
+            return caches.delete(cacheName);
+          })
+      );
+    })
+    .then(() => self.clients.claim())
+  );
+});
+
+// ============================================
+// INTERCEPTAR REQUESTS
+// ============================================
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Solo cachear requests del mismo origen
+  if (url.origin !== location.origin) {
+    return;
+  }
+
+  // Estrategia: Network First con fallback a caché
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        // Clonar respuesta para cachear
+        const responseClone = response.clone();
+        
+        // Cachear respuesta en caché dinámico
+        caches.open(DYNAMIC_CACHE).then(cache => {
+          cache.put(request, responseClone);
+        });
+        
+        return response;
+      })
+      .catch(() => {
+        // Si falla la red, buscar en caché
+        return caches.match(request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          
+          // Si no hay caché, devolver página offline básica
+          if (request.destination === 'document') {
+            return caches.match('/index.html');
+          }
+        });
+      })
+  );
+});
+
+// ============================================
+// SKIP WAITING (forzar actualización)
+// ============================================
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
