@@ -77,6 +77,14 @@ export default function Navigation({ currentView, setCurrentView }) {
             currentView={currentView} 
             setCurrentView={setCurrentView} 
           />
+          {/* ⭐ M13 - NUEVO */}
+          <NavButton 
+            icon="fa-cog" 
+            text="Ajustes" 
+            view="settings" 
+            currentView={currentView} 
+            setCurrentView={setCurrentView} 
+          />
         </div>
       </div>
     </nav>

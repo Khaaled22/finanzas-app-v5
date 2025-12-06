@@ -10,6 +10,7 @@ import SavingsView from './views/Savings/SavingsView';
 import InvestmentsView from './views/Investments/InvestmentsView';
 import CashflowView from './views/Cashflow/CashflowView';
 import AnalysisView from './views/Analysis/AnalysisView';
+import SettingsView from './views/Settings/SettingsView'; // ⭐ M13 - NUEVO
 
 // ⭐ Nueva importación (M10 - PWA)
 import InstallPWA from './components/common/InstallPWA';
@@ -35,6 +36,8 @@ function App() {
         return <CashflowView />;
       case 'analysis':
         return <AnalysisView />;
+      case 'settings': // ⭐ M13 - NUEVO
+        return <SettingsView />;
       default:
         return <Dashboard />;
     }
@@ -55,10 +58,10 @@ function App() {
           <div className="container mx-auto px-4 text-center text-gray-600">
             <p className="text-sm">
               <i className="fas fa-rocket mr-2"></i>
-              Finanzas PRO v5.0 - Proyecto Base
+              Finanzas PRO v5.1 - M13 Categorías ✅
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Listo para implementar mejoras M1-M9
+              Sistema de categorías editable implementado
             </p>
           </div>
         </footer>

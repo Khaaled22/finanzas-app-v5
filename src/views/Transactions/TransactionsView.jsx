@@ -117,9 +117,9 @@ export default function TransactionsView() {
                   <div className="flex items-start justify-between">
                     {/* Información principal */}
                     <div className="flex items-start space-x-4 flex-1">
-                      {/* Icono de categoría */}
-                      <div className="bg-blue-100 p-4 rounded-full flex-shrink-0">
-                        <i className="fas fa-shopping-bag text-blue-600 text-xl"></i>
+                      {/* ✅ CORREGIDO: Icono dinámico de categoría */}
+                      <div className="bg-blue-100 p-4 rounded-full flex-shrink-0 text-3xl flex items-center justify-center">
+                        {category?.icon || '📁'}
                       </div>
                       
                       {/* Detalles */}
@@ -138,8 +138,8 @@ export default function TransactionsView() {
                         
                         {/* Metadata */}
                         <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                          <span>
-                            <i className="fas fa-folder text-gray-400 mr-1"></i>
+                          <span className="flex items-center">
+                            <span className="mr-1">{category?.icon || '📁'}</span>
                             {category?.name || 'Sin categoría'}
                           </span>
                           <span>

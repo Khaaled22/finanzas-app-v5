@@ -287,6 +287,7 @@ export function AppProvider({ children }) {
   };
 
   // ===================== CATEGORÍAS =====================
+  
   const transferBetweenCategories = (fromId, toId, amount) => {
     setCategories(categories.map(cat => {
       if (cat.id === fromId) {
@@ -298,6 +299,172 @@ export function AppProvider({ children }) {
       return cat;
     }));
   };
+
+  // ========== M13.1: NUEVAS FUNCIONES CRUD CATEGORÍAS ==========
+
+  /**
+   * Actualizar una categoría existente
+   * @param {string} categoryId - ID de la categoría a actualizar
+   * @param {object} updates - Objeto con campos a actualizar
+   * @returns {boolean} true si se actualizó, false si no se encontró
+   */
+  const updateCategory = (categoryId, updates) => {
+    // Validar que la categoría existe
+    const categoryExists = categories.find(cat => cat.id === categoryId);
+    if (!categoryExists) {
+      console.error(`Categoría con ID ${categoryId} no encontrada`);
+      return false;
+    }
+
+    // Si se está cambiando el nombre, validar que no exista otra con ese nombre
+    if (updates.name) {
+      const duplicateName = categories.find(
+        cat => cat.id !== categoryId && cat.name.toLowerCase() === updates.name.toLowerCase()
+      );
+      if (duplicateName) {
+        console.error(`Ya existe una categoría con el nombre "${updates.name}"`);
+        return false;
+      }
+    }
+
+    // Actualizar la categoría
+    setCategories(categories.map(cat => 
+      cat.id === categoryId ? { ...cat, ...updates } : cat
+    ));
+
+    return true;
+  };
+
+  /**
+   * Eliminar una categoría
+   * IMPORTANTE: No permite eliminar si tiene transacciones asociadas
+   * @param {string} categoryId - ID de la categoría a eliminar
+   * @returns {object} { success: boolean, message: string, transactionCount: number }
+   */
+  const deleteCategory = (categoryId) => {
+    // Verificar que la categoría existe
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) {
+      return {
+        success: false,
+        message: 'Categoría no encontrada',
+        transactionCount: 0
+      };
+    }
+
+    // Verificar si hay transacciones asociadas
+    const relatedTransactions = transactions.filter(t => t.categoryId === categoryId);
+    
+    if (relatedTransactions.length > 0) {
+      return {
+        success: false,
+        message: `No se puede eliminar. Hay ${relatedTransactions.length} transacción(es) asociada(s) a esta categoría.`,
+        transactionCount: relatedTransactions.length
+      };
+    }
+
+    // Si no hay transacciones, eliminar la categoría
+    setCategories(categories.filter(cat => cat.id !== categoryId));
+
+    return {
+      success: true,
+      message: 'Categoría eliminada exitosamente',
+      transactionCount: 0
+    };
+  };
+
+  /**
+   * Importar categorías masivamente desde CSV
+   * Evita duplicados por nombre y valida estructura
+   * @param {array} categoriesArray - Array de objetos categoría a importar
+   * @returns {object} { success: boolean, imported: number, skipped: number, errors: array }
+   */
+  const importCategories = (categoriesArray) => {
+    if (!Array.isArray(categoriesArray) || categoriesArray.length === 0) {
+      return {
+        success: false,
+        imported: 0,
+        skipped: 0,
+        errors: ['El array de categorías está vacío o no es válido']
+      };
+    }
+
+    const results = {
+      success: true,
+      imported: 0,
+      skipped: 0,
+      errors: []
+    };
+
+    const newCategories = [];
+    const existingNames = categories.map(cat => cat.name.toLowerCase());
+
+    categoriesArray.forEach((cat, index) => {
+      // Validar campos requeridos
+      if (!cat.name || !cat.group) {
+        results.errors.push(`Fila ${index + 1}: Faltan campos requeridos (name, group)`);
+        results.skipped++;
+        return;
+      }
+
+      // Validar que el nombre no esté duplicado en existentes
+      if (existingNames.includes(cat.name.toLowerCase())) {
+        results.errors.push(`Fila ${index + 1}: Categoría "${cat.name}" ya existe (omitida)`);
+        results.skipped++;
+        return;
+      }
+
+      // Validar que el nombre no esté duplicado en el mismo import
+      if (newCategories.find(nc => nc.name.toLowerCase() === cat.name.toLowerCase())) {
+        results.errors.push(`Fila ${index + 1}: Categoría "${cat.name}" duplicada en el archivo (omitida)`);
+        results.skipped++;
+        return;
+      }
+
+      // Validar presupuesto
+      const budget = parseFloat(cat.budget) || 0;
+      if (budget < 0) {
+        results.errors.push(`Fila ${index + 1}: Presupuesto negativo en "${cat.name}" (ajustado a 0)`);
+      }
+
+      // Validar moneda
+      const validCurrencies = ['EUR', 'CLP', 'USD', 'UF'];
+      const currency = cat.currency && validCurrencies.includes(cat.currency.toUpperCase()) 
+        ? cat.currency.toUpperCase() 
+        : 'EUR';
+
+      // Validar tipo
+      const validTypes = ['income', 'expense', 'savings', 'investment'];
+      const type = cat.type && validTypes.includes(cat.type.toLowerCase()) 
+        ? cat.type.toLowerCase() 
+        : 'expense';
+
+      // Crear categoría válida
+      const newCategory = {
+        id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: cat.name.trim(),
+        group: cat.group.trim(),
+        budget: Math.max(0, budget),
+        spent: 0, // Siempre inicia en 0
+        currency: currency,
+        icon: cat.icon || '📁',
+        type: type
+      };
+
+      newCategories.push(newCategory);
+      existingNames.push(newCategory.name.toLowerCase());
+      results.imported++;
+    });
+
+    // Agregar las nuevas categorías
+    if (newCategories.length > 0) {
+      setCategories([...categories, ...newCategories]);
+    }
+
+    return results;
+  };
+
+  // ========== FIN FUNCIONES M13.1 ==========
 
   const value = {
     // Estados
@@ -320,7 +487,7 @@ export function AppProvider({ children }) {
     
     // Cálculos
     totals,
-    financialHealth, // NUEVO - IMPORTANTE PARA PDF
+    financialHealth,
     
     // Funciones - Transacciones
     addTransaction,
@@ -339,9 +506,14 @@ export function AppProvider({ children }) {
     deleteSavingsGoal,
     registerSavingsContribution,
 
-    // Funciones - Inversiones / Categorías
+    // Funciones - Inversiones
     addInvestment,
+
+    // Funciones - Categorías
     transferBetweenCategories,
+    updateCategory,        // M13.1 ✅
+    deleteCategory,        // M13.1 ✅
+    importCategories,      // M13.1 ✅
     
     // Utilidades
     convertCurrency

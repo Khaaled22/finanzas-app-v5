@@ -4,16 +4,19 @@ import YNABBanner from './YNABBanner';
 import ConfigureIncomeModal from '../../components/modals/ConfigureIncomeModal';
 
 export default function BudgetView() {
-  const { categories, setCategories, displayCurrency } = useApp();
+  const { categories, updateCategory, displayCurrency } = useApp(); // ✅ CAMBIO: updateCategory de M13
   const [showConfigureIncome, setShowConfigureIncome] = useState(false);
 
   // Agrupar categorías por grupo
   const groupedCategories = useMemo(() => {
     const groups = {};
-    categories.forEach(cat => {
-      if (!groups[cat.group]) groups[cat.group] = [];
-      groups[cat.group].push(cat);
-    });
+    // ✅ MEJORA: Solo mostrar categorías de tipo expense
+    categories
+      .filter(cat => cat.type === 'expense')
+      .forEach(cat => {
+        if (!groups[cat.group]) groups[cat.group] = [];
+        groups[cat.group].push(cat);
+      });
     return groups;
   }, [categories]);
 
@@ -29,10 +32,12 @@ export default function BudgetView() {
     return 'bg-green-500';
   };
 
+  // ✅ CORREGIDO: Usar updateCategory de M13
   const handleBudgetChange = (categoryId, newBudget) => {
-    setCategories(categories.map(cat => 
-      cat.id === categoryId ? { ...cat, budget: newBudget } : cat
-    ));
+    const success = updateCategory(categoryId, { budget: newBudget });
+    if (!success) {
+      alert('❌ Error al actualizar presupuesto. Verifica que no haya problemas con la categoría.');
+    }
   };
 
   return (
@@ -52,7 +57,10 @@ export default function BudgetView() {
       {Object.entries(groupedCategories).map(([group, cats]) => (
         <div key={group} className="bg-white rounded-xl shadow-md overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
-            <h3 className="text-xl font-bold text-white">{group}</h3>
+            <h3 className="text-xl font-bold text-white flex items-center">
+              <span className="mr-2">{cats[0]?.icon || '📁'}</span>
+              {group}
+            </h3>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -65,7 +73,10 @@ export default function BudgetView() {
                     className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
                   >
                     <div className="flex justify-between items-start mb-3">
-                      <h4 className="font-semibold text-gray-800">{cat.name}</h4>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">{cat.icon || '📁'}</span>
+                        <h4 className="font-semibold text-gray-800">{cat.name}</h4>
+                      </div>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         percentage >= 100 
                           ? 'bg-red-100 text-red-800' 
