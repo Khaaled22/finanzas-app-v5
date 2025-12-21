@@ -2,28 +2,32 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import TransactionForm from '../../components/forms/TransactionForm';
 import TransactionFilters from '../../components/forms/TransactionFilters';
+import ImportTransactionsModal from '../../components/modals/ImportTransactionsModal'; // ✅ M16
 
 export default function TransactionsView() {
-  const { transactions, categories, deleteTransaction } = useApp();
+  const { transactions, categories, deleteTransaction, clearAllTransactions, displayCurrency, convertCurrency } = useApp();
   
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [filters, setFilters] = useState({ search: '', month: '' });
+  const [showImportModal, setShowImportModal] = useState(false); // ✅ M16
 
   // M4.4 & M4.5: Filtrado de transacciones
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(trans => {
-      // Filtro de búsqueda (por descripción o comentario)
-      const matchesSearch = !filters.search || 
-        trans.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        trans.comment?.toLowerCase().includes(filters.search.toLowerCase());
-      
-      // Filtro por mes
-      const matchesMonth = !filters.month || 
-        new Date(trans.date).toISOString().slice(0, 7) === filters.month;
-      
-      return matchesSearch && matchesMonth;
-    });
+    return transactions
+      .filter(trans => {
+        // Filtro de búsqueda (por descripción o comentario)
+        const matchesSearch = !filters.search || 
+          trans.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          trans.comment?.toLowerCase().includes(filters.search.toLowerCase());
+        
+        // Filtro por mes
+        const matchesMonth = !filters.month || 
+          new Date(trans.date).toISOString().slice(0, 7) === filters.month;
+        
+        return matchesSearch && matchesMonth;
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date)); // ✅ Ordenar por fecha DESC (más reciente primero)
   }, [transactions, filters]);
 
   // Meses disponibles para el filtro
@@ -38,6 +42,32 @@ export default function TransactionsView() {
   const handleDelete = (transactionId) => {
     if (window.confirm('¿Estás seguro de eliminar esta transacción?')) {
       deleteTransaction(transactionId);
+    }
+  };
+
+  const handleClearAll = () => {
+    if (transactions.length === 0) {
+      alert('No hay transacciones para eliminar');
+      return;
+    }
+
+    const confirmClear = window.confirm(
+      `⚠️ ADVERTENCIA: Esto eliminará TODAS las transacciones (${transactions.length})\n\n` +
+      `Esta acción NO se puede deshacer.\n\n` +
+      `¿Estás seguro de continuar?`
+    );
+
+    if (confirmClear) {
+      const doubleConfirm = window.confirm(
+        `🚨 ÚLTIMA CONFIRMACIÓN\n\n` +
+        `Se eliminarán ${transactions.length} transacciones permanentemente.\n\n` +
+        `¿Proceder?`
+      );
+
+      if (doubleConfirm) {
+        clearAllTransactions();
+        alert('✅ Todas las transacciones han sido eliminadas');
+      }
     }
   };
 
@@ -67,13 +97,31 @@ export default function TransactionsView() {
             Mostrando {filteredTransactions.length} de {transactions.length} transacciones
           </p>
         </div>
-        <button
-          onClick={() => setShowAddTransaction(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 shadow-md"
-        >
-          <i className="fas fa-plus mr-2"></i>
-          Nueva Transacción
-        </button>
+        <div className="flex space-x-3">
+          {transactions.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 shadow-md"
+            >
+              <i className="fas fa-trash-alt mr-2"></i>
+              Limpiar Todo
+            </button>
+          )}
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 shadow-md"
+          >
+            <i className="fas fa-file-import mr-2"></i>
+            Importar
+          </button>
+          <button
+            onClick={() => setShowAddTransaction(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105 shadow-md"
+          >
+            <i className="fas fa-plus mr-2"></i>
+            Nueva Transacción
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -108,51 +156,43 @@ export default function TransactionsView() {
             {filteredTransactions.slice(0, 50).map(trans => {
               const category = getCategoryInfo(trans.categoryId);
               const transDate = new Date(trans.date);
+              const isIncome = category?.type === 'income';
               
               return (
                 <div 
                   key={trans.id} 
-                  className="p-6 hover:bg-gray-50 transition-colors group"
+                  className="p-5 hover:bg-gray-50 transition-colors group border-l-4"
+                  style={{ borderLeftColor: isIncome ? '#10b981' : '#3b82f6' }}
                 >
                   <div className="flex items-start justify-between">
                     {/* Información principal */}
                     <div className="flex items-start space-x-4 flex-1">
-                      {/* ✅ CORREGIDO: Icono dinámico de categoría */}
-                      <div className="bg-blue-100 p-4 rounded-full flex-shrink-0 text-3xl flex items-center justify-center">
+                      {/* Icono de categoría */}
+                      <div className={`${isIncome ? 'bg-green-100' : 'bg-blue-100'} w-12 h-12 rounded-full flex-shrink-0 text-2xl flex items-center justify-center`}>
                         {category?.icon || '📁'}
                       </div>
                       
                       {/* Detalles */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-800 text-lg mb-1">
-                          {trans.description}
-                        </h4>
+                        {/* Descripción principal */}
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className="font-semibold text-gray-900 text-base">
+                            {trans.description}
+                          </h4>
+                        </div>
                         
-                        {/* Comentario (si existe) */}
-                        {trans.comment && (
-                          <p className="text-sm text-gray-600 mb-2 italic">
-                            <i className="fas fa-comment text-gray-400 mr-1"></i>
-                            {trans.comment}
-                          </p>
-                        )}
-                        
-                        {/* Metadata */}
-                        <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                          <span className="flex items-center">
-                            <span className="mr-1">{category?.icon || '📁'}</span>
-                            {category?.name || 'Sin categoría'}
+                        {/* Categoría y metadata */}
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                          <span className="font-medium text-gray-700">
+                            {category?.group}
                           </span>
-                          <span>
+                          <span>•</span>
+                          <span className="flex items-center">
                             {getPaymentMethodIcon(trans.paymentMethod)} {trans.paymentMethod}
                           </span>
+                          <span>•</span>
                           <span>
-                            <i className="fas fa-user text-gray-400 mr-1"></i>
-                            {trans.user}
-                          </span>
-                          <span>
-                            <i className="fas fa-calendar text-gray-400 mr-1"></i>
                             {transDate.toLocaleDateString('es-ES', { 
-                              weekday: 'short',
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric'
@@ -163,29 +203,33 @@ export default function TransactionsView() {
                     </div>
 
                     {/* Monto y acciones */}
-                    <div className="flex items-start space-x-4 ml-4">
+                    <div className="flex items-center space-x-3 ml-4">
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-red-600">
-                          -{trans.amount.toFixed(2)}
+                        <p className={`text-xl font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                          {isIncome ? '+' : '-'}{trans.amount.toFixed(2)} {trans.currency}
                         </p>
-                        <p className="text-sm text-gray-500">{trans.currency}</p>
+                        {trans.currency !== displayCurrency && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            ≈ {isIncome ? '+' : '-'}{convertCurrency(trans.amount, trans.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Botones de acción (aparecen en hover) */}
-                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Botones de acción */}
+                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => setEditingTransaction(trans)}
-                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Editar"
                         >
-                          <i className="fas fa-edit"></i>
+                          <i className="fas fa-edit text-sm"></i>
                         </button>
                         <button
                           onClick={() => handleDelete(trans.id)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Eliminar"
                         >
-                          <i className="fas fa-trash"></i>
+                          <i className="fas fa-trash text-sm"></i>
                         </button>
                       </div>
                     </div>
@@ -220,6 +264,12 @@ export default function TransactionsView() {
           transaction={editingTransaction}
         />
       )}
+
+      {/* Modal: Importar transacciones */}
+      <ImportTransactionsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+      />
     </div>
   );
 }

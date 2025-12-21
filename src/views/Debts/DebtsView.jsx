@@ -184,17 +184,25 @@ export default function DebtsView() {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Saldo Actual</p>
                       <p className="text-xl font-bold text-red-600">
-                        {debt.currentBalance.toFixed(2)}
+                        {debt.currentBalance.toFixed(2)} {debt.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{debt.currency}</p>
+                      {debt.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(debt.currentBalance, debt.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Cuota Mensual</p>
                       <p className="text-xl font-bold text-gray-800">
-                        {debt.monthlyPayment.toFixed(2)}
+                        {debt.monthlyPayment.toFixed(2)} {debt.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{debt.currency}</p>
+                      {debt.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(debt.monthlyPayment, debt.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div>

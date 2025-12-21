@@ -206,25 +206,37 @@ export default function SavingsView() {
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Meta</p>
                       <p className="text-xl font-bold text-gray-800">
-                        {goal.targetAmount.toFixed(0)}
+                        {goal.targetAmount.toFixed(0)} {goal.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{goal.currency}</p>
+                      {goal.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(goal.targetAmount, goal.currency, displayCurrency).toFixed(0)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Ahorrado</p>
                       <p className="text-xl font-bold text-green-600">
-                        {goal.currentAmount.toFixed(0)}
+                        {goal.currentAmount.toFixed(0)} {goal.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{goal.currency}</p>
+                      {goal.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(goal.currentAmount, goal.currency, displayCurrency).toFixed(0)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Falta</p>
                       <p className="text-xl font-bold text-orange-600">
-                        {remaining.toFixed(0)}
+                        {remaining.toFixed(0)} {goal.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{goal.currency}</p>
+                      {goal.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(remaining, goal.currency, displayCurrency).toFixed(0)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">

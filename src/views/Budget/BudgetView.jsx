@@ -4,13 +4,12 @@ import YNABBanner from './YNABBanner';
 import ConfigureIncomeModal from '../../components/modals/ConfigureIncomeModal';
 
 export default function BudgetView() {
-  const { categories, updateCategory, displayCurrency } = useApp(); // ✅ CAMBIO: updateCategory de M13
+  const { categories, updateCategory, displayCurrency, convertCurrency } = useApp();
   const [showConfigureIncome, setShowConfigureIncome] = useState(false);
 
   // Agrupar categorías por grupo
   const groupedCategories = useMemo(() => {
     const groups = {};
-    // ✅ MEJORA: Solo mostrar categorías de tipo expense
     categories
       .filter(cat => cat.type === 'expense')
       .forEach(cat => {
@@ -32,12 +31,31 @@ export default function BudgetView() {
     return 'bg-green-500';
   };
 
-  // ✅ CORREGIDO: Usar updateCategory de M13
   const handleBudgetChange = (categoryId, newBudget) => {
     const success = updateCategory(categoryId, { budget: newBudget });
     if (!success) {
       alert('❌ Error al actualizar presupuesto. Verifica que no haya problemas con la categoría.');
     }
+  };
+
+  // ✅ M14: Función helper para formatear montos
+  const formatAmount = (amount, currency) => {
+    return `${amount.toFixed(2)} ${currency}`;
+  };
+
+  // ✅ M14: Función para mostrar equivalente si es diferente moneda
+  const formatWithEquivalent = (amount, currency) => {
+    if (currency === displayCurrency) {
+      return formatAmount(amount, currency);
+    }
+    
+    const converted = convertCurrency(amount, currency, displayCurrency);
+    return (
+      <div className="flex flex-col items-end">
+        <span className="font-medium">{formatAmount(amount, currency)}</span>
+        <span className="text-xs text-gray-500">≈ {formatAmount(converted, displayCurrency)}</span>
+      </div>
+    );
   };
 
   return (
@@ -104,18 +122,20 @@ export default function BudgetView() {
                         </div>
                       </div>
 
+                      {/* ✅ M14: Gastado con conversión */}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Gastado:</span>
-                        <span className="font-medium text-red-600">
-                          {cat.spent.toFixed(2)} {cat.currency}
-                        </span>
+                        <div className="text-right text-red-600">
+                          {formatWithEquivalent(cat.spent, cat.currency)}
+                        </div>
                       </div>
 
+                      {/* ✅ M14: Disponible con conversión */}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Disponible:</span>
-                        <span className={`font-medium ${available >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {available.toFixed(2)} {cat.currency}
-                        </span>
+                        <div className={`text-right ${available >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatWithEquivalent(available, cat.currency)}
+                        </div>
                       </div>
                     </div>
 

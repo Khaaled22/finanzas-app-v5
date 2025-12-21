@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import Modal from '../common/Modal';
 
@@ -6,9 +6,8 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
   const { addTransaction, updateTransaction, categories } = useApp();
   
   const [formData, setFormData] = useState({
-    date: transaction?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10), // M4.1
-    description: transaction?.description || '',                                      // M4.2
-    comment: transaction?.comment || '',                                              // M4.3
+    date: transaction?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    description: transaction?.description || '',
     amount: transaction?.amount || '',
     currency: transaction?.currency || 'EUR',
     categoryId: transaction?.categoryId || categories[0]?.id || '',
@@ -16,6 +15,43 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
   });
 
   const [errors, setErrors] = useState({});
+
+  // Actualizar formData cuando cambia transaction
+  useEffect(() => {
+    if (transaction) {
+      setFormData({
+        date: transaction.date.slice(0, 10),
+        description: transaction.description,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        categoryId: transaction.categoryId,
+        paymentMethod: transaction.paymentMethod
+      });
+    } else {
+      setFormData({
+        date: new Date().toISOString().slice(0, 10),
+        description: '',
+        amount: '',
+        currency: 'EUR',
+        categoryId: categories[0]?.id || '',
+        paymentMethod: 'Tarjeta'
+      });
+    }
+    setErrors({});
+  }, [transaction, categories, isOpen]);
+
+  // ✅ Agrupar categorías por grupo
+  const groupedCategories = categories.reduce((acc, cat) => {
+    if (!acc[cat.group]) {
+      acc[cat.group] = [];
+    }
+    acc[cat.group].push(cat);
+    return acc;
+  }, {});
+
+  // ✅ Detectar si la categoría seleccionada es income
+  const selectedCategory = categories.find(cat => cat.id === formData.categoryId);
+  const isIncome = selectedCategory?.type === 'income';
 
   const validate = () => {
     const newErrors = {};
@@ -55,7 +91,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     const transactionData = {
       ...formData,
       amount: parseFloat(formData.amount),
-      date: new Date(formData.date).toISOString() // Convertir a ISO string
+      date: new Date(formData.date).toISOString()
     };
 
     if (transaction) {
@@ -69,7 +105,6 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
-    // Limpiar error del campo cuando el usuario escribe
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
@@ -83,7 +118,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* M4.1: Fecha editable */}
+        {/* Fecha */}
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
             <i className="fas fa-calendar mr-2 text-blue-600"></i>
@@ -110,7 +145,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           )}
         </div>
 
-        {/* M4.2: Descripción mejorada */}
+        {/* Descripción */}
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
             <i className="fas fa-tag mr-2 text-blue-600"></i>
@@ -121,7 +156,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
             type="text"
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
-            placeholder="Ej: Compra supermercado Día"
+            placeholder="Ej: Compra supermercado, Netflix, Salario, etc."
             className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
               errors.description 
                 ? 'border-red-300 focus:ring-red-500' 
@@ -138,26 +173,6 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           )}
           <p className="mt-1 text-xs text-gray-500">
             {formData.description.length}/100 caracteres
-          </p>
-        </div>
-
-        {/* M4.3: Comentario opcional */}
-        <div>
-          <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
-            <i className="fas fa-comment mr-2 text-blue-600"></i>
-            Comentario (opcional)
-          </label>
-          <textarea
-            id="comment"
-            value={formData.comment}
-            onChange={(e) => handleChange('comment', e.target.value)}
-            placeholder="Notas adicionales sobre este gasto..."
-            rows={3}
-            maxLength={200}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            {formData.comment.length}/200 caracteres
           </p>
         </div>
 
@@ -209,7 +224,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </div>
         </div>
 
-        {/* Categoría */}
+        {/* ✅ Categoría AGRUPADA */}
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
             <i className="fas fa-folder mr-2 text-blue-600"></i>
@@ -227,10 +242,14 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
             required
           >
             <option value="">Selecciona una categoría</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.group} - {cat.name}
-              </option>
+            {Object.entries(groupedCategories).map(([group, cats]) => (
+              <optgroup key={group} label={group}>
+                {cats.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
           {errors.categoryId && (
@@ -259,17 +278,23 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </select>
         </div>
 
-        {/* Vista previa */}
-        {formData.description && formData.amount && !isNaN(parseFloat(formData.amount)) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800 font-medium mb-1">Vista previa:</p>
-            <p className="text-lg font-bold text-blue-900">
-              {formData.description}
+        {/* ✅ Vista previa con COLORES CORRECTOS */}
+        {formData.description && formData.amount && !isNaN(parseFloat(formData.amount)) && selectedCategory && (
+          <div className={`${isIncome ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-4`}>
+            <p className={`text-sm ${isIncome ? 'text-green-800' : 'text-blue-800'} font-medium mb-1`}>
+              Vista previa:
             </p>
-            <p className="text-2xl font-bold text-blue-700 mt-1">
-              -{parseFloat(formData.amount).toFixed(2)} {formData.currency}
+            <div className="flex items-center space-x-3 mb-2">
+              <span className="text-3xl">{selectedCategory.icon}</span>
+              <div>
+                <p className="text-sm text-gray-600">{selectedCategory.group}</p>
+                <p className="text-lg font-bold text-gray-900">{formData.description}</p>
+              </div>
+            </div>
+            <p className={`text-2xl font-bold ${isIncome ? 'text-green-700' : 'text-red-700'} mt-1`}>
+              {isIncome ? '+' : '-'}{parseFloat(formData.amount).toFixed(2)} {formData.currency}
             </p>
-            <p className="text-xs text-blue-600 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {new Date(formData.date).toLocaleDateString('es-ES', { 
                 weekday: 'long', 
                 year: 'numeric', 

@@ -225,17 +225,25 @@ export default function InvestmentsView() {
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Precio Actual</p>
                       <p className="text-xl font-bold text-purple-600">
-                        {inv.currentPrice.toFixed(2)}
+                        {inv.currentPrice.toFixed(2)} {inv.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{inv.currency}</p>
+                      {inv.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(inv.currentPrice, inv.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Valor Total</p>
                       <p className="text-xl font-bold text-gray-800">
-                        {currentValue.toFixed(2)}
+                        {currentValue.toFixed(2)} {inv.currency}
                       </p>
-                      <p className="text-xs text-gray-500">{inv.currency}</p>
+                      {inv.currency !== displayCurrency && (
+                        <p className="text-xs text-gray-500">
+                          ≈ {convertCurrency(currentValue, inv.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -246,6 +254,11 @@ export default function InvestmentsView() {
                       <p className={`text-xs ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {roi >= 0 ? '+' : ''}{gainLoss.toFixed(2)} {inv.currency}
                       </p>
+                      {inv.currency !== displayCurrency && (
+                        <p className={`text-xs ${roi >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          ≈ {roi >= 0 ? '+' : ''}{convertCurrency(gainLoss, inv.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                        </p>
+                      )}
                     </div>
                   </div>
 

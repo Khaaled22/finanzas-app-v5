@@ -1,13 +1,14 @@
 // src/views/Settings/SettingsView.jsx
 import React, { useState } from 'react';
 import CategoriesPanel from './components/CategoriesPanel';
+import ExchangeRatesPanel from './components/ExchangeRatesPanel';
 
 export default function SettingsView() {
   const [activeTab, setActiveTab] = useState('categories');
 
   const tabs = [
     { id: 'categories', label: 'Categorías', icon: 'fa-folder-open' },
-    { id: 'rates', label: 'Tasas de Cambio', icon: 'fa-exchange-alt', disabled: true },
+    { id: 'rates', label: 'Tasas de Cambio', icon: 'fa-exchange-alt' }, // YA NO disabled
     { id: 'preferences', label: 'Preferencias', icon: 'fa-cog', disabled: true }
   ];
 
@@ -54,13 +55,7 @@ export default function SettingsView() {
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'categories' && <CategoriesPanel />}
-          {activeTab === 'rates' && (
-            <div className="text-center py-12 text-gray-500">
-              <i className="fas fa-exchange-alt text-6xl mb-4 text-gray-300"></i>
-              <p className="text-lg font-medium">Tasas de Cambio</p>
-              <p className="text-sm">Disponible en M14</p>
-            </div>
-          )}
+          {activeTab === 'rates' && <ExchangeRatesPanel />}
           {activeTab === 'preferences' && (
             <div className="text-center py-12 text-gray-500">
               <i className="fas fa-cog text-6xl mb-4 text-gray-300"></i>

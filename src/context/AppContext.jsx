@@ -14,6 +14,13 @@ export const useApp = () => {
   return context;
 };
 
+// DEFAULT_RATES para M14 (si constants.js no existe aún)
+const DEFAULT_RATES = {
+  EUR_CLP: 1050,
+  EUR_USD: 1.09,
+  CLP_UF: 36000
+};
+
 export function AppProvider({ children }) {
   // Estados principales
   const [categories, setCategories] = useState(() => 
@@ -38,6 +45,17 @@ export function AppProvider({ children }) {
 
   const [ynabConfig, setYnabConfig] = useState(() => 
     StorageManager.load('ynabConfig_v5', { monthlyIncome: 3500 })
+  );
+
+  // NUEVO M14: Estado de tasas de cambio
+  const [exchangeRates, setExchangeRates] = useState(() => 
+    StorageManager.load('exchangeRates_v5', {
+      EUR_CLP: DEFAULT_RATES.EUR_CLP,
+      EUR_USD: DEFAULT_RATES.EUR_USD,
+      CLP_UF: DEFAULT_RATES.CLP_UF,
+      lastUpdated: null,
+      updateHistory: []
+    })
   );
   
   // Configuraciones
@@ -69,18 +87,53 @@ export function AppProvider({ children }) {
     StorageManager.save('ynabConfig_v5', ynabConfig); 
   }, [ynabConfig]);
 
+  // NUEVO M14: Auto-save tasas de cambio
+  useEffect(() => { 
+    StorageManager.save('exchangeRates_v5', exchangeRates); 
+  }, [exchangeRates]);
+
+  // ===================== UTILIDADES =====================
+  // ACTUALIZADO M14: Usa exchangeRates dinámicas
+  // ⚠️ IMPORTANTE: Debe estar ANTES de totals para evitar error de inicialización
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    
+    // Construir objeto de tasas desde el estado
+    const RATES = { 
+      EUR: 1, 
+      CLP: exchangeRates.EUR_CLP, 
+      USD: exchangeRates.EUR_USD, 
+      UF: exchangeRates.CLP_UF 
+    };
+    
+    const amountInEUR = amount / RATES[fromCurrency];
+    return amountInEUR * RATES[toCurrency];
+  };
+
   // ===================== CÁLCULOS =====================
   const totals = useMemo(() => {
-    const budgeted = categories.reduce((sum, cat) => sum + cat.budget, 0);
-    const spent = categories.reduce((sum, cat) => sum + cat.spent, 0);
+    // ✅ M14: Convertir todo a displayCurrency
+    const budgeted = categories.reduce((sum, cat) => 
+      sum + convertCurrency(cat.budget, cat.currency, displayCurrency), 0);
+    
+    const spent = categories.reduce((sum, cat) => 
+      sum + convertCurrency(cat.spent, cat.currency, displayCurrency), 0);
+    
     const available = budgeted - spent;
     
-    const totalDebt = debts.reduce((sum, debt) => sum + debt.currentBalance, 0);
-    const totalSavings = savingsGoals.reduce((sum, goal) => sum + goal.currentAmount, 0);
-    const totalInvestments = investments.reduce((sum, inv) => sum + (inv.quantity * inv.currentPrice), 0);
+    const totalDebt = debts.reduce((sum, debt) => 
+      sum + convertCurrency(debt.currentBalance, debt.currency, displayCurrency), 0);
+    
+    const totalSavings = savingsGoals.reduce((sum, goal) => 
+      sum + convertCurrency(goal.currentAmount, goal.currency, displayCurrency), 0);
+    
+    const totalInvestments = investments.reduce((sum, inv) => {
+      const value = inv.quantity * inv.currentPrice;
+      return sum + convertCurrency(value, inv.currency, displayCurrency);
+    }, 0);
     
     return { budgeted, spent, available, totalDebt, totalSavings, totalInvestments };
-  }, [categories, debts, savingsGoals, investments]);
+  }, [categories, debts, savingsGoals, investments, displayCurrency, exchangeRates]);
 
   // NUEVO: Calcular salud financiera
   const financialHealth = useMemo(() => {
@@ -93,19 +146,87 @@ export function AppProvider({ children }) {
     });
   }, [totals, debts, savingsGoals, investments, categories]);
 
-  // ===================== UTILIDADES =====================
-  const convertCurrency = (amount, fromCurrency, toCurrency) => {
-    if (fromCurrency === toCurrency) return amount;
-    
-    const EXCHANGE_RATES = { 
-      EUR: 1, 
-      CLP: 1050, 
-      USD: 1.09, 
-      UF: 36000 
+  // ===================== TASAS DE CAMBIO (M14) =====================
+  
+  // Actualizar tasas manualmente
+  const updateExchangeRates = (newRates, source = 'manual') => {
+    const update = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      source: source,
+      rates: newRates,
+      user: currentUser
     };
-    
-    const amountInEUR = amount / EXCHANGE_RATES[fromCurrency];
-    return amountInEUR * EXCHANGE_RATES[toCurrency];
+
+    setExchangeRates(prev => ({
+      ...prev,
+      EUR_CLP: newRates.EUR_CLP ?? prev.EUR_CLP,
+      EUR_USD: newRates.EUR_USD ?? prev.EUR_USD,
+      CLP_UF: newRates.CLP_UF ?? prev.CLP_UF,
+      lastUpdated: new Date().toISOString(),
+      updateHistory: [update, ...(prev.updateHistory || [])].slice(0, 20) // Guardar últimas 20
+    }));
+  };
+
+  // Fetch tasas desde APIs (M14)
+  const fetchExchangeRates = async () => {
+    const results = {
+      EUR_CLP: null,
+      EUR_USD: null,
+      CLP_UF: null,
+      errors: []
+    };
+
+    try {
+      // 1. EUR/USD desde Frankfurter (gratis, sin key)
+      try {
+        const response = await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD');
+        if (response.ok) {
+          const data = await response.json();
+          results.EUR_USD = data.rates.USD;
+        }
+      } catch (error) {
+        results.errors.push('EUR/USD: Error al consultar Frankfurter API');
+      }
+
+      // 2. EUR/CLP desde Exchange Rate API (requiere key - opcional)
+      // Descomentar si tienes API key
+      /*
+      try {
+        const response = await fetch('https://v6.exchangerate-api.com/v6/YOUR_KEY/latest/EUR');
+        if (response.ok) {
+          const data = await response.json();
+          results.EUR_CLP = data.conversion_rates.CLP;
+        }
+      } catch (error) {
+        results.errors.push('EUR/CLP: Error al consultar Exchange Rate API');
+      }
+      */
+
+      // 3. CLP/UF desde CMF Chile (requiere key - opcional)
+      // Descomentar si tienes API key
+      /*
+      try {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const response = await fetch(`https://api.cmfchile.cl/api-sbifv3/recursos_api/uf/${year}/${month}?apikey=YOUR_KEY&formato=json`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.UFs && data.UFs.length > 0) {
+            results.CLP_UF = parseFloat(data.UFs[0].Valor.replace(',', ''));
+          }
+        }
+      } catch (error) {
+        results.errors.push('CLP/UF: Error al consultar CMF Chile API');
+      }
+      */
+
+      return results;
+    } catch (error) {
+      results.errors.push('Error general al consultar APIs');
+      return results;
+    }
   };
 
   // ===================== TRANSACCIONES =====================
@@ -129,6 +250,36 @@ export function AppProvider({ children }) {
       }
       return cat;
     }));
+  };
+
+  // ✅ M16: Importación batch de transacciones
+  const addTransactionsBatch = async (transactionsArray) => {
+    return new Promise((resolve) => {
+      // Agregar todas las transacciones
+      setTransactions(prev => [...transactionsArray, ...prev]);
+      
+      // Calcular spent por categoría
+      const spentByCategory = {};
+      transactionsArray.forEach(trans => {
+        if (!spentByCategory[trans.categoryId]) {
+          spentByCategory[trans.categoryId] = 0;
+        }
+        spentByCategory[trans.categoryId] += parseFloat(trans.amount);
+      });
+      
+      // Actualizar spent de categorías
+      setCategories(prev => prev.map(cat => {
+        if (spentByCategory[cat.id]) {
+          return {
+            ...cat,
+            spent: cat.spent + spentByCategory[cat.id]
+          };
+        }
+        return cat;
+      }));
+      
+      resolve();
+    });
   };
 
   const updateTransaction = (transactionId, updates) => {
@@ -176,6 +327,17 @@ export function AppProvider({ children }) {
       }
       return cat;
     }));
+  };
+
+  // ✅ M16: Limpiar todas las transacciones
+  const clearAllTransactions = () => {
+    setTransactions([]);
+    
+    // Resetear spent de todas las categorías a 0
+    setCategories(categories.map(cat => ({
+      ...cat,
+      spent: 0
+    })));
   };
 
   // ===================== DEUDAS =====================
@@ -286,7 +448,7 @@ export function AppProvider({ children }) {
     setInvestments([...investments, newInvestment]);
   };
 
-  // ===================== CATEGORÍAS =====================
+  // ===================== CATEGORÍAS (M13) =====================
   
   const transferBetweenCategories = (fromId, toId, amount) => {
     setCategories(categories.map(cat => {
@@ -299,8 +461,6 @@ export function AppProvider({ children }) {
       return cat;
     }));
   };
-
-  // ========== M13.1: NUEVAS FUNCIONES CRUD CATEGORÍAS ==========
 
   /**
    * Actualizar una categoría existente
@@ -464,8 +624,6 @@ export function AppProvider({ children }) {
     return results;
   };
 
-  // ========== FIN FUNCIONES M13.1 ==========
-
   const value = {
     // Estados
     categories,
@@ -480,6 +638,8 @@ export function AppProvider({ children }) {
     setInvestments,
     ynabConfig,
     setYnabConfig,
+    exchangeRates, // NUEVO M14
+    setExchangeRates, // NUEVO M14
     currentUser,
     setCurrentUser,
     displayCurrency,
@@ -491,8 +651,10 @@ export function AppProvider({ children }) {
     
     // Funciones - Transacciones
     addTransaction,
+    addTransactionsBatch, // ✅ M16
     updateTransaction,
     deleteTransaction,
+    clearAllTransactions, // ✅ M16
 
     // Funciones - Deudas
     addDebt,
@@ -509,11 +671,15 @@ export function AppProvider({ children }) {
     // Funciones - Inversiones
     addInvestment,
 
-    // Funciones - Categorías
+    // Funciones - Categorías (M13 + M14)
     transferBetweenCategories,
     updateCategory,        // M13.1 ✅
     deleteCategory,        // M13.1 ✅
     importCategories,      // M13.1 ✅
+
+    // Funciones - Tasas de Cambio (M14) ✅
+    updateExchangeRates,
+    fetchExchangeRates,
     
     // Utilidades
     convertCurrency
