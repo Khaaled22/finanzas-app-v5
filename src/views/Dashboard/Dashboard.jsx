@@ -1,36 +1,76 @@
+// src/views/Dashboard/Dashboard.jsx
+// ✅ M24: Agregado selector de mes sincronizado con BudgetView
 import { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import BarChart from '../../components/charts/BarChart';
 import LineChart from '../../components/charts/LineChart';
 import DoughnutChart from '../../components/charts/DoughnutChart';
+import InvestmentSummaryCard from '../../components/dashboard/InvestmentSummaryCard';
+import NetWorthCard from '../../components/dashboard/NetWorthCard';
+import AchievementsPanel from '../../components/investments/AchievementsPanel';
 
 export default function Dashboard() {
-  const { categories, displayCurrency, debts, savingsGoals, investments } = useApp();
+  const { 
+    categories, 
+    displayCurrency, 
+    debts, 
+    savingsGoals, 
+    investments, 
+    totals,
+    // ✅ M24: Selector de mes
+    selectedBudgetMonth,
+    setSelectedBudgetMonth,
+    categoriesWithMonthlyBudget
+  } = useApp();
   
-  // M8: Integrar analytics con Índice Nauta
   const { nautaIndex, netWorth, savingsRate, emergencyFundMonths } = useAnalytics();
-  
-  const totals = useMemo(() => {
-    const budgeted = categories.reduce((sum, cat) => sum + cat.budget, 0);
-    const spent = categories.reduce((sum, cat) => sum + cat.spent, 0);
-    const available = budgeted - spent;
-    return { budgeted, spent, available };
-  }, [categories]);
 
+  // ✅ M24: Generar lista de meses disponibles
+  const availableMonths = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    
+    for (let i = -12; i <= 3; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
+      months.push({ value: monthStr, label: monthName });
+    }
+    
+    return months;
+  }, []);
+
+  // ✅ M24: Usar categoriesWithMonthlyBudget que ya está filtrado por mes
   const monthProjection = useMemo(() => {
     const now = new Date();
-    const currentDay = now.getDate();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const projectedSpent = (totals.spent / currentDay) * daysInMonth;
+    const [selectedYear, selectedMonth] = selectedBudgetMonth.split('-').map(Number);
+    const isCurrentMonth = now.getFullYear() === selectedYear && (now.getMonth() + 1) === selectedMonth;
     
+    if (isCurrentMonth) {
+      const currentDay = now.getDate();
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+      const projectedSpent = (totals.spent / currentDay) * daysInMonth;
+      
+      return {
+        currentDay,
+        daysInMonth,
+        projectedSpent,
+        remainingDays: daysInMonth - currentDay,
+        isCurrentMonth: true
+      };
+    }
+    
+    // Para meses pasados o futuros
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
     return {
-      currentDay,
+      currentDay: daysInMonth,
       daysInMonth,
-      projectedSpent,
-      remainingDays: daysInMonth - currentDay
+      projectedSpent: totals.spent,
+      remainingDays: 0,
+      isCurrentMonth: false
     };
-  }, [totals.spent]);
+  }, [totals.spent, selectedBudgetMonth]);
 
   const budgetChartData = useMemo(() => ({
     labels: ['Presupuestado', 'Gastado', 'Disponible'],
@@ -75,50 +115,47 @@ export default function Dashboard() {
     ]
   }), [totals.spent, monthProjection.projectedSpent]);
 
-  const categoryChartData = useMemo(() => ({
-    labels: categories.map(c => c.name),
-    datasets: [{
-      label: 'Gastado',
-      data: categories.map(c => c.spent),
-      backgroundColor: categories.map((_, i) => 
-        `hsla(${i * 360 / categories.length}, 70%, 60%, 0.8)`
-      ),
-      borderColor: categories.map((_, i) => 
-        `hsla(${i * 360 / categories.length}, 70%, 50%, 1)`
-      ),
-      borderWidth: 2
-    }]
-  }), [categories]);
-
-  // Configuración de colores según nivel del índice Nauta
-  const nautaColorConfig = {
-    green: {
-      bg: 'from-green-500 to-green-600',
-      light: 'bg-green-50',
-      border: 'border-green-500',
-      text: 'text-green-600'
-    },
-    blue: {
-      bg: 'from-blue-500 to-blue-600',
-      light: 'bg-blue-50',
-      border: 'border-blue-500',
-      text: 'text-blue-600'
-    },
-    yellow: {
-      bg: 'from-yellow-500 to-yellow-600',
-      light: 'bg-yellow-50',
-      border: 'border-yellow-500',
-      text: 'text-yellow-600'
-    },
-    red: {
-      bg: 'from-red-500 to-red-600',
-      light: 'bg-red-50',
-      border: 'border-red-500',
-      text: 'text-red-600'
+  // ✅ M24: Usar categoriesWithMonthlyBudget para datos del mes seleccionado
+  const categoryChartData = useMemo(() => {
+    const categoriesWithSpent = categoriesWithMonthlyBudget.filter(c => c.spentInDisplayCurrency > 0);
+    
+    if (categoriesWithSpent.length === 0) {
+      return {
+        labels: ['Sin gastos registrados'],
+        datasets: [{
+          label: 'Gastado',
+          data: [1],
+          backgroundColor: ['rgba(200, 200, 200, 0.5)'],
+          borderColor: ['rgba(200, 200, 200, 1)'],
+          borderWidth: 1
+        }]
+      };
     }
-  };
+    
+    return {
+      labels: categoriesWithSpent.map(c => c.name),
+      datasets: [{
+        label: 'Gastado',
+        data: categoriesWithSpent.map(c => c.spentInDisplayCurrency),
+        backgroundColor: categoriesWithSpent.map((_, i) => 
+          `hsla(${i * 360 / categoriesWithSpent.length}, 70%, 60%, 0.8)`
+        ),
+        borderColor: categoriesWithSpent.map((_, i) => 
+          `hsla(${i * 360 / categoriesWithSpent.length}, 70%, 50%, 1)`
+        ),
+        borderWidth: 2
+      }]
+    };
+  }, [categoriesWithMonthlyBudget]);
 
-  const nautaColors = nautaColorConfig[nautaIndex.interpretation.color] || nautaColorConfig.blue;
+  // ✅ M24: Formatear nombre del mes seleccionado
+  const selectedMonthName = useMemo(() => {
+    const [year, month] = selectedBudgetMonth.split('-').map(Number);
+    return new Date(year, month - 1).toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: 'long' 
+    });
+  }, [selectedBudgetMonth]);
 
   return (
     <div className="space-y-6 animate-in">
@@ -130,15 +167,19 @@ export default function Dashboard() {
             <p className="text-purple-100 text-lg">Visión completa de tus finanzas en tiempo real</p>
           </div>
           
-          {/* M8: Índice Nauta destacado */}
+          {/* Índice Nauta */}
           <div className="bg-white bg-opacity-20 backdrop-blur-lg rounded-xl p-6 min-w-[280px]">
             <p className="text-sm text-purple-100 mb-2">Índice de Tranquilidad</p>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-5xl font-bold">{nautaIndex.score}</p>
+                <p className="text-5xl font-bold">{nautaIndex.score.toFixed(1)}</p>
                 <p className="text-sm opacity-90">de 100 puntos</p>
               </div>
-              <span className="text-5xl">{nautaIndex.interpretation.icon}</span>
+              <span className="text-5xl">
+                {nautaIndex.score >= 80 ? '🎉' : 
+                 nautaIndex.score >= 60 ? '👍' : 
+                 nautaIndex.score >= 40 ? '⚠️' : '⚠️'}
+              </span>
             </div>
             <div className="w-full bg-white bg-opacity-20 rounded-full h-2.5 mb-2">
               <div 
@@ -146,43 +187,75 @@ export default function Dashboard() {
                 style={{ width: `${nautaIndex.score}%` }}
               ></div>
             </div>
-            <p className="text-sm font-semibold">{nautaIndex.interpretation.level}</p>
+            <p className="text-sm font-semibold">{nautaIndex.status}</p>
           </div>
+        </div>
+      </div>
+
+      {/* ✅ M24: Selector de Mes */}
+      <div className="bg-white rounded-xl shadow-md p-4">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <label className="text-gray-700 font-medium">
+              <i className="fas fa-calendar-alt mr-2 text-blue-600"></i>
+              Período:
+            </label>
+            <select
+              value={selectedBudgetMonth}
+              onChange={(e) => setSelectedBudgetMonth(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            >
+              {availableMonths.map(month => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-sm text-gray-500">
+            {monthProjection.isCurrentMonth 
+              ? `Día ${monthProjection.currentDay} de ${monthProjection.daysInMonth} • ${monthProjection.remainingDays} días restantes`
+              : `Mes completo (${monthProjection.daysInMonth} días)`
+            }
+          </p>
         </div>
       </div>
 
       {/* Métricas Principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Presupuestado */}
         <MetricCard
           title="Presupuestado"
           value={totals.budgeted.toFixed(0)}
           currency={displayCurrency}
           icon="fa-wallet"
           color="blue"
+          subtitle={selectedMonthName}
         />
 
-        {/* Gastado */}
         <MetricCard
           title="Gastado"
           value={totals.spent.toFixed(0)}
           currency={displayCurrency}
           icon="fa-credit-card"
           color="red"
-          subtitle={`${((totals.spent / totals.budgeted) * 100).toFixed(1)}% usado`}
+          subtitle={totals.budgeted > 0 
+            ? `${Math.min((totals.spent / totals.budgeted) * 100, 999).toFixed(1)}% usado`
+            : 'Sin presupuesto'
+          }
         />
 
-        {/* Disponible */}
         <MetricCard
           title="Disponible"
           value={totals.available.toFixed(0)}
           currency={displayCurrency}
           icon="fa-piggy-bank"
-          color="green"
-          subtitle={`${((totals.available / totals.budgeted) * 100).toFixed(1)}% libre`}
+          color={totals.available >= 0 ? 'green' : 'red'}
+          subtitle={totals.budgeted > 0 
+            ? `${Math.min((totals.available / totals.budgeted) * 100, 999).toFixed(1)}% libre`
+            : 'Sin presupuesto'
+          }
         />
 
-        {/* Patrimonio Neto */}
         <MetricCard
           title="Patrimonio Neto"
           value={netWorth.toFixed(0)}
@@ -193,100 +266,87 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* KPIs Rápidos (Mini Cards) */}
+      {/* KPIs Rápidos */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MiniKPI
-          label="Tasa Ahorro"
+          label="Tasa de Ahorro"
           value={`${savingsRate.toFixed(1)}%`}
-          icon="fa-percentage"
+          icon="fa-piggy-bank"
           status={savingsRate >= 20 ? 'good' : savingsRate >= 10 ? 'warning' : 'danger'}
         />
         <MiniKPI
           label="Fondo Emergencia"
-          value={`${emergencyFundMonths.toFixed(1)}m`}
-          icon="fa-life-ring"
+          value={`${emergencyFundMonths.toFixed(1)} meses`}
+          icon="fa-shield-alt"
           status={emergencyFundMonths >= 6 ? 'good' : emergencyFundMonths >= 3 ? 'warning' : 'danger'}
         />
         <MiniKPI
-          label="Deudas Activas"
-          value={debts.length}
+          label="Deuda Total"
+          value={`${(totals.totalDebt / 1000).toFixed(0)}k`}
           icon="fa-credit-card"
-          status={debts.length === 0 ? 'good' : debts.length <= 2 ? 'warning' : 'danger'}
+          status={totals.totalDebt === 0 ? 'good' : totals.totalDebt < 50000 ? 'warning' : 'danger'}
         />
         <MiniKPI
-          label="Objetivos Ahorro"
-          value={savingsGoals.length}
-          icon="fa-bullseye"
-          status={savingsGoals.length > 0 ? 'good' : 'warning'}
+          label="Inversiones"
+          value={`${(totals.totalInvestments / 1000).toFixed(0)}k`}
+          icon="fa-chart-pie"
+          status={totals.totalInvestments > 10000 ? 'good' : totals.totalInvestments > 0 ? 'warning' : 'danger'}
         />
       </div>
 
-      {/* Gráficos Fila 1: Presupuesto y Proyección */}
+      {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Gráfico Presupuesto vs Gastado */}
         <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <i className="fas fa-chart-bar mr-2 text-indigo-600"></i>
-            Presupuesto vs Gastado
+            <i className="fas fa-chart-bar mr-2 text-blue-600"></i>
+            Resumen del Mes
+            <span className="ml-2 text-sm font-normal text-gray-500">({selectedMonthName})</span>
           </h3>
-
-          {/* Chart Container - M11 */}
           <div className="chart-container">
             <BarChart data={budgetChartData} height={300} />
           </div>
         </div>
 
-        {/* Gráfico Proyección Fin de Mes */}
         <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <i className="fas fa-chart-line mr-2 text-red-600"></i>
-            Proyección Fin de Mes
+            {monthProjection.isCurrentMonth ? 'Proyección de Gasto' : 'Gasto del Mes'}
           </h3>
-
-          <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">
-              <i className="fas fa-calendar-day mr-1"></i>
-              Día {monthProjection.currentDay} de {monthProjection.daysInMonth} 
-              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
-                {monthProjection.remainingDays} días restantes
+          <div className="chart-container">
+            <LineChart data={projectionChartData} height={300} />
+          </div>
+          {monthProjection.isCurrentMonth && (
+            <p className="text-sm text-gray-500 mt-3 text-center">
+              Proyección fin de mes: <span className="font-bold text-red-600">
+                {monthProjection.projectedSpent.toFixed(0)} {displayCurrency}
               </span>
             </p>
-            <p className="text-sm font-semibold text-red-600 mt-2">
-              <i className="fas fa-arrow-trend-up mr-1"></i>
-              Proyección: {monthProjection.projectedSpent.toFixed(2)} {displayCurrency}
-              {monthProjection.projectedSpent > totals.budgeted && (
-                <span className="ml-2 text-xs bg-red-100 px-2 py-1 rounded">
-                  ⚠️ Sobre presupuesto
-                </span>
-              )}
-            </p>
-          </div>
-
-          {/* Chart Container - M11 */}
-          <div className="chart-container">
-            <LineChart data={projectionChartData} height={260} />
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Gráfico Fila 2: Gastos por Categoría */}
+      {/* Gráfico Doughnut */}
       <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
         <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
           <i className="fas fa-chart-pie mr-2 text-purple-600"></i>
-          Distribución de Gastos por Categoría
+          Distribución de Gastos por Grupo
+          <span className="ml-2 text-sm font-normal text-gray-500">({selectedMonthName})</span>
         </h3>
-
-        {/* Chart Container - M11 */}
         <div className="chart-container">
-          <DoughnutChart data={categoryChartData} height={350} />
+          <DoughnutChart 
+            data={categoryChartData} 
+            height={350} 
+            groupByCategory={true}
+            topN={10}
+          />
         </div>
       </div>
 
+      {/* Panel de Logros */}
+      <AchievementsPanel />
+
       {/* Resumen Financiero Rápido */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Deudas */}
         <SummaryCard
           title="Deudas"
           icon="fa-credit-card"
@@ -304,7 +364,6 @@ export default function Dashboard() {
           )}
         />
 
-        {/* Objetivos de Ahorro */}
         <SummaryCard
           title="Objetivos de Ahorro"
           icon="fa-bullseye"
@@ -333,7 +392,6 @@ export default function Dashboard() {
           }}
         />
 
-        {/* Inversiones */}
         <SummaryCard
           title="Inversiones"
           icon="fa-chart-line"
@@ -342,15 +400,42 @@ export default function Dashboard() {
           items={investments.slice(0, 3)}
           emptyMessage="Sin inversiones registradas"
           renderItem={(inv) => {
-            const roi = ((inv.currentPrice - inv.purchasePrice) / inv.purchasePrice) * 100;
-            return (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-700">{inv.symbol}</span>
-                <span className={`text-sm font-semibold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
-                </span>
-              </div>
-            );
+            if (inv.type === 'platform' || (inv.platform && !inv.quantity)) {
+              const history = inv.balanceHistory || [];
+              let changePercent = 0;
+              
+              if (history.length >= 2) {
+                const oldest = history[0].balance;
+                const current = inv.currentBalance;
+                changePercent = oldest > 0 ? ((current - oldest) / oldest * 100) : 0;
+              }
+              
+              return (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-700">{inv.name || inv.platform}</span>
+                  <span className={`text-sm font-semibold ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            } else if (inv.quantity && inv.currentPrice && inv.purchasePrice) {
+              const roi = ((inv.currentPrice - inv.purchasePrice) / inv.purchasePrice) * 100;
+              return (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-700">{inv.symbol || inv.name}</span>
+                  <span className={`text-sm font-semibold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            } else {
+              return (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-700">{inv.name || inv.platform || 'N/A'}</span>
+                  <span className="text-sm text-gray-500">—</span>
+                </div>
+              );
+            }
           }}
         />
       </div>
@@ -358,7 +443,6 @@ export default function Dashboard() {
   );
 }
 
-// Componente MetricCard
 function MetricCard({ title, value, currency, icon, color, subtitle }) {
   const colorClasses = {
     blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-500' },
@@ -387,7 +471,6 @@ function MetricCard({ title, value, currency, icon, color, subtitle }) {
   );
 }
 
-// Componente MiniKPI
 function MiniKPI({ label, value, icon, status }) {
   const statusConfig = {
     good: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: 'text-green-600' },
@@ -406,7 +489,6 @@ function MiniKPI({ label, value, icon, status }) {
   );
 }
 
-// Componente SummaryCard
 function SummaryCard({ title, icon, iconColor, iconBg, items, emptyMessage, renderItem }) {
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">

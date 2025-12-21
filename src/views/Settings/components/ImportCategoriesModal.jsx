@@ -1,10 +1,12 @@
 // src/views/Settings/components/ImportCategoriesModal.jsx
+// ✅ M20: CORREGIDO - Mejor manejo de onImport y resultados
 import React, { useState } from 'react';
 
 export default function ImportCategoriesModal({ isOpen, onClose, onImport, existingCategories = [] }) {
   const [csvText, setCsvText] = useState('');
   const [parsedData, setParsedData] = useState([]);
   const [validationResults, setValidationResults] = useState(null);
+  const [importResult, setImportResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState(1); // 1: input, 2: preview, 3: result
 
@@ -15,10 +17,8 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
       return { success: false, error: 'El CSV debe tener al menos 2 líneas (encabezado + datos)' };
     }
 
-    // Parsear encabezado
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
     
-    // Verificar columnas requeridas
     const requiredColumns = ['nombre', 'grupo', 'presupuesto', 'moneda', 'icon', 'tipo'];
     const missingColumns = requiredColumns.filter(col => !headers.includes(col));
     
@@ -29,13 +29,11 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
       };
     }
 
-    // Parsear filas de datos
     const data = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (!line) continue; // Saltar líneas vacías
+      if (!line) continue;
 
-      // Parsear valores (maneja comillas)
       const values = [];
       let currentValue = '';
       let insideQuotes = false;
@@ -50,84 +48,67 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
           currentValue += char;
         }
       }
-      values.push(currentValue.trim()); // Último valor
+      values.push(currentValue.trim());
 
-      // Crear objeto categoría
-      const category = {};
+      if (values.length !== headers.length) {
+        return {
+          success: false,
+          error: `Línea ${i + 1}: número de columnas incorrecto (esperadas: ${headers.length}, encontradas: ${values.length})`
+        };
+      }
+
+      const row = {};
       headers.forEach((header, index) => {
-        category[header] = values[index] ? values[index].replace(/"/g, '') : '';
+        row[header] = values[index].replace(/^"|"$/g, '');
       });
-
-      data.push({
-        rowNumber: i + 1,
-        nombre: category.nombre || '',
-        grupo: category.grupo || '',
-        presupuesto: category.presupuesto || '0',
-        moneda: category.moneda || 'EUR',
-        icon: category.icon || '📁',
-        tipo: category.tipo || 'expense'
-      });
+      data.push(row);
     }
 
     return { success: true, data };
   };
 
-  // Validar datos parseados
+  // Validar datos
   const validateData = (data) => {
-    const validCurrencies = ['EUR', 'CLP', 'USD', 'UF'];
-    const validTypes = ['income', 'expense', 'savings', 'investment'];
-    const existingNames = existingCategories.map(cat => cat.name.toLowerCase());
-
-    const results = data.map(item => {
+    const results = data.map((item, index) => {
       const errors = [];
-      const warnings = [];
 
-      // Validar nombre
-      if (!item.nombre.trim()) {
+      if (!item.nombre || item.nombre.trim() === '') {
         errors.push('Nombre vacío');
-      } else if (existingNames.includes(item.nombre.toLowerCase())) {
-        warnings.push('Ya existe (será omitida)');
       }
 
-      // Validar grupo
-      if (!item.grupo.trim()) {
+      if (!item.grupo || item.grupo.trim() === '') {
         errors.push('Grupo vacío');
       }
 
-      // Validar presupuesto
-      const budget = parseFloat(item.presupuesto);
-      if (isNaN(budget)) {
+      const presupuesto = parseFloat(item.presupuesto);
+      if (isNaN(presupuesto) || presupuesto < 0) {
         errors.push('Presupuesto inválido');
-      } else if (budget < 0) {
-        warnings.push('Presupuesto negativo (se ajustará a 0)');
       }
 
-      // Validar moneda
-      if (!validCurrencies.includes(item.moneda.toUpperCase())) {
-        warnings.push(`Moneda inválida (se usará EUR)`);
+      if (!['EUR', 'CLP', 'USD', 'UF'].includes(item.moneda.toUpperCase())) {
+        errors.push('Moneda inválida (EUR, CLP, USD, UF)');
       }
 
-      // Validar tipo
-      if (!validTypes.includes(item.tipo.toLowerCase())) {
-        warnings.push(`Tipo inválido (se usará expense)`);
+      if (!['income', 'expense', 'savings', 'investment'].includes(item.tipo.toLowerCase())) {
+        errors.push('Tipo inválido (income, expense, savings, investment)');
       }
 
-      // Validar icon
-      if (!item.icon.trim()) {
-        warnings.push('Sin ícono (se usará 📁)');
-      }
+      const isDuplicate = existingCategories.some(
+        cat => cat.name.toLowerCase() === item.nombre.trim().toLowerCase()
+      );
 
       return {
         ...item,
+        line: index + 2,
+        status: errors.length > 0 ? 'error' : (isDuplicate ? 'warning' : 'success'),
         errors,
-        warnings,
-        status: errors.length > 0 ? 'error' : warnings.length > 0 ? 'warning' : 'ok'
+        isDuplicate
       };
     });
 
     const summary = {
       total: results.length,
-      valid: results.filter(r => r.status === 'ok').length,
+      success: results.filter(r => r.status === 'success').length,
       warnings: results.filter(r => r.status === 'warning').length,
       errors: results.filter(r => r.status === 'error').length
     };
@@ -135,10 +116,22 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
     return { results, summary };
   };
 
-  // Manejar input de CSV
-  const handleCSVInput = () => {
+  // Manejar archivo
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setCsvText(e.target.result);
+    };
+    reader.readAsText(file);
+  };
+
+  // Validar y previsualizar
+  const handleValidate = async () => {
     if (!csvText.trim()) {
-      alert('Por favor, pega el contenido CSV');
+      alert('Por favor ingresa o sube un archivo CSV');
       return;
     }
 
@@ -149,27 +142,23 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
       
       if (!parseResult.success) {
         alert(parseResult.error);
-        setIsProcessing(false);
         return;
       }
 
       setParsedData(parseResult.data);
-      
       const validation = validateData(parseResult.data);
       setValidationResults(validation);
-      
-      setStep(2); // Ir a preview
+      setStep(2);
     } catch (error) {
-      console.error('Error al parsear CSV:', error);
-      alert('Error al procesar el CSV. Verifica el formato.');
+      alert('Error al procesar el CSV: ' + error.message);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Manejar importación
+  // ✅ M20: CORREGIDO - Manejar importación con resultado
   const handleImport = () => {
-    if (!validationResults) return;
+    if (!validationResults || !onImport) return;
 
     const categoriesToImport = validationResults.results
       .filter(item => item.status !== 'error')
@@ -186,8 +175,10 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
           : 'expense'
       }));
 
-    onImport(categoriesToImport);
-    setStep(3); // Mostrar resultado
+    // ✅ Llamar a onImport y guardar resultado
+    const result = onImport(categoriesToImport);
+    setImportResult(result);
+    setStep(3);
   };
 
   // Reset y cerrar
@@ -195,6 +186,7 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
     setCsvText('');
     setParsedData([]);
     setValidationResults(null);
+    setImportResult(null);
     setStep(1);
     onClose();
   };
@@ -203,12 +195,12 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-teal-600 p-6">
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-t-xl">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white flex items-center">
-              <i className="fas fa-file-csv mr-3"></i>
+              <i className="fas fa-file-import mr-3"></i>
               Importar Categorías desde CSV
             </h2>
             <button
@@ -218,53 +210,49 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
               <i className="fas fa-times text-2xl"></i>
             </button>
           </div>
-          
-          {/* Steps indicator */}
-          <div className="flex items-center justify-center mt-4 space-x-4">
-            <div className={`flex items-center ${step >= 1 ? 'text-white' : 'text-green-300'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 1 ? 'bg-white text-green-600' : 'bg-green-500'
-              } font-bold mr-2`}>
+        </div>
+
+        {/* Steps Indicator */}
+        <div className="flex justify-center items-center p-6 border-b">
+          <div className="flex items-center space-x-4">
+            <div className={`flex items-center ${step >= 1 ? 'text-purple-600' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
                 1
               </div>
-              <span className="text-sm font-medium">Pegar CSV</span>
+              <span className="ml-2 font-medium">Pegar CSV</span>
             </div>
-            <i className="fas fa-arrow-right text-white"></i>
-            <div className={`flex items-center ${step >= 2 ? 'text-white' : 'text-green-300'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 2 ? 'bg-white text-green-600' : 'bg-green-500'
-              } font-bold mr-2`}>
+            <i className="fas fa-arrow-right text-gray-400"></i>
+            <div className={`flex items-center ${step >= 2 ? 'text-purple-600' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 2 ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
                 2
               </div>
-              <span className="text-sm font-medium">Preview</span>
+              <span className="ml-2 font-medium">Preview</span>
             </div>
-            <i className="fas fa-arrow-right text-white"></i>
-            <div className={`flex items-center ${step >= 3 ? 'text-white' : 'text-green-300'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 3 ? 'bg-white text-green-600' : 'bg-green-500'
-              } font-bold mr-2`}>
+            <i className="fas fa-arrow-right text-gray-400"></i>
+            <div className={`flex items-center ${step >= 3 ? 'text-purple-600' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${step >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
                 3
               </div>
-              <span className="text-sm font-medium">Resultado</span>
+              <span className="ml-2 font-medium">Resultado</span>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* STEP 1: Input CSV */}
+        <div className="p-6">
+          {/* Step 1: Input */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">
+                <p className="text-sm text-blue-800 mb-2">
                   <i className="fas fa-info-circle mr-2"></i>
-                  Formato CSV esperado:
-                </h3>
-                <pre className="text-xs text-blue-800 bg-white p-3 rounded overflow-x-auto">
+                  <strong>Formato CSV esperado:</strong>
+                </p>
+                <pre className="text-xs bg-white p-3 rounded border border-blue-200 overflow-x-auto">
 {`nombre,grupo,presupuesto,moneda,icon,tipo
-"💼 Khaled Salary","💼 Income",0,EUR,💼,income
-"🏠 Rent","🏠 Housing & Utilities",800,EUR,🏠,expense
-"📊 Fintual","💰 Savings & Investments",200,CLP,📊,investment`}
+💼 Khaled Salary,💼 Income,0,EUR,💼,income
+🏠 Rent,🏠 Housing & Utilities,1200,EUR,🏠,expense
+💶 EUR Savings Account,💰 Savings & Investments,500,EUR,💶,savings`}
                 </pre>
                 <p className="text-xs text-blue-700 mt-2">
                   <strong>Columnas requeridas:</strong> nombre, grupo, presupuesto, moneda, icon, tipo
@@ -273,119 +261,123 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Pega tu CSV aquí:
+                  Subir archivo CSV:
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  O pegar contenido CSV:
                 </label>
                 <textarea
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
-                  placeholder="Pega el contenido de tu CSV aquí..."
+                  placeholder="Pega tu CSV aquí..."
                   rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {csvText.trim().split('\n').length - 1} filas (excluyendo encabezado)
-                </p>
               </div>
 
-              <button
-                onClick={handleCSVInput}
-                disabled={!csvText.trim() || isProcessing}
-                className="w-full py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin mr-2"></i>
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-arrow-right mr-2"></i>
-                    Validar y Previsualizar
-                  </>
-                )}
-              </button>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={handleClose}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleValidate}
+                  disabled={!csvText.trim() || isProcessing}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin mr-2"></i>
+                      Validando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-arrow-right mr-2"></i>
+                      Validar y Previsualizar
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
-          {/* STEP 2: Preview */}
+          {/* Step 2: Preview */}
           {step === 2 && validationResults && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Summary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                  <div className="text-3xl font-bold text-blue-600">{validationResults.summary.total}</div>
-                  <div className="text-sm text-blue-800">Total</div>
+                  <p className="text-2xl font-bold text-blue-700">{validationResults.summary.total}</p>
+                  <p className="text-sm text-blue-600">Total</p>
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                  <div className="text-3xl font-bold text-green-600">{validationResults.summary.valid}</div>
-                  <div className="text-sm text-green-800">Válidas</div>
+                  <p className="text-2xl font-bold text-green-700">{validationResults.summary.success}</p>
+                  <p className="text-sm text-green-600">Válidas</p>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                  <div className="text-3xl font-bold text-yellow-600">{validationResults.summary.warnings}</div>
-                  <div className="text-sm text-yellow-800">Advertencias</div>
+                  <p className="text-2xl font-bold text-yellow-700">{validationResults.summary.warnings}</p>
+                  <p className="text-sm text-yellow-600">Duplicadas</p>
                 </div>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                  <div className="text-3xl font-bold text-red-600">{validationResults.summary.errors}</div>
-                  <div className="text-sm text-red-800">Errores</div>
+                  <p className="text-2xl font-bold text-red-700">{validationResults.summary.errors}</p>
+                  <p className="text-sm text-red-600">Errores</p>
                 </div>
               </div>
 
-              {/* Preview table */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2 text-left">#</th>
-                        <th className="px-3 py-2 text-left">Nombre</th>
-                        <th className="px-3 py-2 text-left">Grupo</th>
-                        <th className="px-3 py-2 text-left">Presup.</th>
-                        <th className="px-3 py-2 text-left">Moneda</th>
-                        <th className="px-3 py-2 text-left">Tipo</th>
-                        <th className="px-3 py-2 text-left">Estado</th>
+              {/* Results Table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Estado</th>
+                      <th className="px-4 py-2 text-left">Nombre</th>
+                      <th className="px-4 py-2 text-left">Grupo</th>
+                      <th className="px-4 py-2 text-left">Presupuesto</th>
+                      <th className="px-4 py-2 text-left">Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validationResults.results.map((item, index) => (
+                      <tr key={index} className="border-t hover:bg-gray-50">
+                        <td className="px-4 py-2">
+                          {item.status === 'success' && (
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                              ✓ OK
+                            </span>
+                          )}
+                          {item.status === 'warning' && (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
+                              ⚠ Duplicado
+                            </span>
+                          )}
+                          {item.status === 'error' && (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
+                              ✗ Error
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">{item.nombre}</td>
+                        <td className="px-4 py-2">{item.grupo}</td>
+                        <td className="px-4 py-2">{item.presupuesto} {item.moneda}</td>
+                        <td className="px-4 py-2">{item.tipo}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {validationResults.results.map((item, index) => (
-                        <tr key={index} className={`border-t ${
-                          item.status === 'error' ? 'bg-red-50' :
-                          item.status === 'warning' ? 'bg-yellow-50' :
-                          'bg-white'
-                        }`}>
-                          <td className="px-3 py-2">{item.rowNumber}</td>
-                          <td className="px-3 py-2 font-medium">{item.nombre || '(vacío)'}</td>
-                          <td className="px-3 py-2">{item.grupo || '(vacío)'}</td>
-                          <td className="px-3 py-2">{item.presupuesto}</td>
-                          <td className="px-3 py-2">{item.moneda}</td>
-                          <td className="px-3 py-2">{item.tipo}</td>
-                          <td className="px-3 py-2">
-                            {item.status === 'ok' && (
-                              <span className="text-green-600">
-                                <i className="fas fa-check-circle mr-1"></i>OK
-                              </span>
-                            )}
-                            {item.status === 'warning' && (
-                              <span className="text-yellow-600 text-xs">
-                                <i className="fas fa-exclamation-triangle mr-1"></i>
-                                {item.warnings.join(', ')}
-                              </span>
-                            )}
-                            {item.status === 'error' && (
-                              <span className="text-red-600 text-xs">
-                                <i className="fas fa-times-circle mr-1"></i>
-                                {item.errors.join(', ')}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-between items-center pt-4 border-t">
+              <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setStep(1)}
                   className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
@@ -395,42 +387,41 @@ export default function ImportCategoriesModal({ isOpen, onClose, onImport, exist
                 </button>
                 <button
                   onClick={handleImport}
-                  disabled={validationResults.summary.errors > 0}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={validationResults.summary.success === 0}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <i className="fas fa-upload mr-2"></i>
-                  Importar {validationResults.summary.valid + validationResults.summary.warnings} Categorías
+                  <i className="fas fa-check mr-2"></i>
+                  Importar {validationResults.summary.success} Categorías
                 </button>
               </div>
-
-              {validationResults.summary.errors > 0 && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                  <i className="fas fa-exclamation-circle mr-2"></i>
-                  No se puede importar porque hay {validationResults.summary.errors} error(es). 
-                  Corrige los errores y vuelve a intentar.
-                </div>
-              )}
             </div>
           )}
 
-          {/* STEP 3: Result */}
-          {step === 3 && (
-            <div className="text-center py-8 space-y-6">
-              <div className="text-green-600">
-                <i className="fas fa-check-circle text-6xl"></i>
+          {/* Step 3: Result */}
+          {step === 3 && importResult && (
+            <div className="space-y-6 text-center py-8">
+              <div className="text-6xl text-green-600 mb-4">
+                <i className="fas fa-check-circle"></i>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800">
-                ¡Importación Exitosa!
-              </h3>
-              <p className="text-gray-600">
-                Las categorías han sido importadas correctamente.
-              </p>
+              <h3 className="text-2xl font-bold text-gray-800">¡Importación Completada!</h3>
+              
+              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-3xl font-bold text-green-700">{importResult.added}</p>
+                  <p className="text-sm text-green-600">Importadas</p>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-3xl font-bold text-yellow-700">{importResult.skipped}</p>
+                  <p className="text-sm text-yellow-600">Omitidas (duplicadas)</p>
+                </div>
+              </div>
+
               <button
                 onClick={handleClose}
-                className="px-8 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-all font-medium"
+                className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
               >
                 <i className="fas fa-check mr-2"></i>
-                Cerrar
+                Finalizar
               </button>
             </div>
           )}

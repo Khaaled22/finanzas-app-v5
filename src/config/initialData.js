@@ -646,8 +646,87 @@ export const INITIAL_DEBTS = [];
 
 export const INITIAL_SAVINGS_GOALS = [];
 
-export const INITIAL_INVESTMENTS = [];
+// ✅ M17: 6 Plataformas de Inversión Reales
+export const INITIAL_INVESTMENTS = [
+  {
+    id: 'inv_fintual',
+    platform: 'Fintual',
+    type: 'Mutual Fund',
+    name: 'Portafolio Fintual',
+    currentBalance: 1000000,
+    currency: 'CLP',
+    lastUpdated: new Date().toISOString(),
+    notes: 'Fondos mutuos diversificados',
+    icon: '📈'
+  },
+  {
+    id: 'inv_racional',
+    platform: 'Racional',
+    type: 'Mutual Fund',
+    name: 'Portafolio Racional',
+    currentBalance: 1000000,
+    currency: 'CLP',
+    lastUpdated: new Date().toISOString(),
+    notes: 'Fondos de inversión',
+    icon: '📊'
+  },
+  {
+    id: 'inv_tenpo',
+    platform: 'Tenpo',
+    type: 'Digital Account',
+    name: 'Débito Tenpo',
+    currentBalance: 1000000,
+    currency: 'CLP',
+    lastUpdated: new Date().toISOString(),
+    notes: 'Cuenta digital con rendimiento',
+    icon: '💳'
+  },
+  {
+    id: 'inv_binance',
+    platform: 'Binance',
+    type: 'Crypto',
+    name: 'Binance Portfolio',
+    currentBalance: 1000,
+    currency: 'USD',
+    lastUpdated: new Date().toISOString(),
+    notes: 'Criptomonedas diversificadas',
+    icon: '₿'
+  },
+  {
+    id: 'inv_zesty',
+    platform: 'Zesty',
+    type: 'Lending',
+    name: 'Zesty Lending',
+    currentBalance: 1000000,
+    currency: 'CLP',
+    lastUpdated: new Date().toISOString(),
+    notes: 'Préstamos P2P',
+    icon: '🏦'
+  },
+  {
+    id: 'inv_trade_republic',
+    platform: 'Trade Republic',
+    type: 'ETF',
+    name: 'ETF Portfolio',
+    currentBalance: 1000,
+    currency: 'EUR',
+    lastUpdated: new Date().toISOString(),
+    notes: 'ETFs diversificados',
+    icon: '🇪🇺'
+  }
+];
 
 export const INITIAL_YNAB_CONFIG = {
   monthlyIncome: 4500 // Estimado: 2874 Khaled + 1553 Ina + 332 Other ≈ 4759
 };
+
+// ✅ M18.2: Nueva estructura para presupuestos mensuales
+// Estructura esperada:
+// {
+//   '2024-12': {
+//     'cat_food_groceries': { budget: 400 },
+//     'cat_housing_rent': { budget: 850 },
+//   },
+//   '2025-01': { ... }
+// }
+export const INITIAL_MONTHLY_BUDGETS = {};

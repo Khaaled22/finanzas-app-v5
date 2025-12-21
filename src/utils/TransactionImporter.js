@@ -1,18 +1,14 @@
-// src/utils/TransactionImporter.js
+// ✅ M22 FINAL: src/utils/TransactionImporter.js
+// Búsqueda flexible: Con emojis Y sin emojis (normalizado)
+
 import * as XLSX from 'xlsx';
 import categoryMapping from '../config/category-mapping-M16.json';
 
-/**
- * Clase para procesar e importar transacciones desde Excel
- */
 export class TransactionImporter {
   constructor() {
     this.categoryMapping = categoryMapping;
   }
 
-  /**
-   * Lee el archivo Excel y extrae las transacciones
-   */
   async readExcelFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -36,28 +32,55 @@ export class TransactionImporter {
     });
   }
 
-  /**
-   * Mapea Category + Subcategory + Type → categoryId
-   */
-  getCategoryId(category, subcategory, type) {
-    const key = `${category}|${subcategory}|${type}`;
-    const categoryId = this.categoryMapping[key];
-    
-    if (!categoryId) {
-      console.warn(`⚠️ No mapping found for: ${key}`);
-      return null;
-    }
-    
-    return categoryId;
+  // ✅ M22: Función para remover emojis de strings
+  removeEmojis(str) {
+    if (!str) return '';
+    // Regex que captura todos los emojis Unicode
+    return str
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')  // Emojis básicos
+      .replace(/[\u{2600}-\u{26FF}]/gu, '')    // Símbolos misceláneos
+      .replace(/[\u{2700}-\u{27BF}]/gu, '')    // Dingbats
+      .trim();
   }
 
-  /**
-   * Valida una fila del Excel
-   */
+  // ✅ M22: Búsqueda flexible con fallback
+  getCategoryId(category, subcategory, type) {
+    // Intento 1: Búsqueda exacta (con emojis)
+    const key = `${category}|${subcategory}|${type}`;
+    let categoryId = this.categoryMapping[key];
+    
+    if (categoryId) {
+      console.log(`✅ Match exacto: ${key} → ${categoryId}`);
+      return categoryId;
+    }
+    
+    // Intento 2: Búsqueda sin emojis (normalizada)
+    const normalizedCategory = this.removeEmojis(category);
+    const normalizedSubcategory = this.removeEmojis(subcategory);
+    const normalizedKey = `${normalizedCategory}|${normalizedSubcategory}|${type}`;
+    
+    // Buscar en el mapping comparando sin emojis
+    for (const [mappingKey, mappingId] of Object.entries(this.categoryMapping)) {
+      const [mapCat, mapSubcat, mapType] = mappingKey.split('|');
+      const normalizedMapCat = this.removeEmojis(mapCat);
+      const normalizedMapSubcat = this.removeEmojis(mapSubcat);
+      
+      if (normalizedMapCat === normalizedCategory && 
+          normalizedMapSubcat === normalizedSubcategory && 
+          mapType === type) {
+        console.log(`✅ Match normalizado: ${key} → ${mappingKey} → ${mappingId}`);
+        return mappingId;
+      }
+    }
+    
+    console.warn(`❌ No mapping found for: ${key}`);
+    console.warn(`❌ Also tried normalized: ${normalizedKey}`);
+    return null;
+  }
+
   validateRow(row, index) {
     const errors = [];
     
-    // Validar campos obligatorios
     if (!row.Date) errors.push(`Fila ${index + 2}: Falta fecha`);
     if (!row.Category) errors.push(`Fila ${index + 2}: Falta categoría`);
     if (!row.Subcategory) errors.push(`Fila ${index + 2}: Falta subcategoría`);
@@ -67,19 +90,16 @@ export class TransactionImporter {
     }
     if (!row.Currency) errors.push(`Fila ${index + 2}: Falta moneda`);
     
-    // Validar que exista mapeo de categoría
     const categoryId = this.getCategoryId(row.Category, row.Subcategory, row.Type);
     if (!categoryId) {
       errors.push(`Fila ${index + 2}: No se encontró mapeo para ${row.Category} → ${row.Subcategory}`);
     }
     
-    // Validar moneda
     const validCurrencies = ['EUR', 'CLP', 'USD', 'UF'];
     if (row.Currency && !validCurrencies.includes(row.Currency)) {
       errors.push(`Fila ${index + 2}: Moneda inválida: ${row.Currency}`);
     }
     
-    // Validar tipo
     if (row.Type && !['Income', 'Expense'].includes(row.Type)) {
       errors.push(`Fila ${index + 2}: Tipo inválido: ${row.Type} (debe ser Income o Expense)`);
     }
@@ -87,9 +107,6 @@ export class TransactionImporter {
     return errors;
   }
 
-  /**
-   * Convierte fila de Excel a formato de transacción de la app
-   */
   convertToTransaction(row, index) {
     const categoryId = this.getCategoryId(row.Category, row.Subcategory, row.Type);
     
@@ -104,16 +121,21 @@ export class TransactionImporter {
     } else if (typeof row.Date === 'string') {
       dateISO = new Date(row.Date).toISOString();
     } else {
-      // Excel serial date
       const excelEpoch = new Date(1899, 11, 30);
       const date = new Date(excelEpoch.getTime() + row.Date * 86400000);
       dateISO = date.toISOString();
     }
     
-    // Manejar Description (puede ser NaN/null)
-    let description = row.Description || '';
-    if (typeof description !== 'string') {
-      description = '';
+    // ✅ M22: Description priority: Excel Description > Subcategory > Fallback
+    let description = '';
+    if (row.Description && typeof row.Description === 'string' && row.Description.trim()) {
+      description = row.Description.trim();
+    } else if (row.Subcategory) {
+      // Solo usar Subcategory sin Category
+      description = row.Subcategory;
+    } else {
+      // Fallback (raro caso)
+      description = `${row.Category} - ${row.Subcategory}`;
     }
     
     return {
@@ -122,24 +144,24 @@ export class TransactionImporter {
       categoryId: categoryId,
       amount: Math.abs(parseFloat(row.Amount)),
       currency: row.Currency,
-      description: description.trim() || `${row.Category} - ${row.Subcategory}`,
-      comment: '',
-      paymentMethod: 'Tarjeta', // Default según decisión M15
-      user: 'Usuario 1', // Default según decisión M15
-      imported: true, // Flag para identificar transacciones importadas
-      importedAt: new Date().toISOString()
+      description: description,
+      
+      // ✅ M21: Extended fields
+      paymentMethod: row.PaymentMethod || 'Tarjeta',
+      notes: row.Notes || '',
+      
+      // ✅ M21: Import metadata
+      imported: true,
+      importedAt: new Date().toISOString(),
+      
+      user: row.User || 'Usuario 1'
     };
   }
 
-  /**
-   * Procesa todo el archivo Excel
-   */
   async processFile(file) {
     try {
-      // 1. Leer Excel
       const rows = await this.readExcelFile(file);
       
-      // 2. Validar todas las filas
       const allErrors = [];
       rows.forEach((row, index) => {
         const errors = this.validateRow(row, index);
@@ -155,7 +177,6 @@ export class TransactionImporter {
         };
       }
       
-      // 3. Convertir a transacciones
       const transactions = [];
       const conversionErrors = [];
       
@@ -177,7 +198,6 @@ export class TransactionImporter {
         };
       }
       
-      // 4. Generar estadísticas
       const stats = this.generateStats(transactions);
       
       return {
@@ -197,9 +217,6 @@ export class TransactionImporter {
     }
   }
 
-  /**
-   * Genera estadísticas del archivo procesado
-   */
   generateStats(transactions) {
     const stats = {
       total: transactions.length,
@@ -219,18 +236,14 @@ export class TransactionImporter {
     };
     
     transactions.forEach(trans => {
-      // Por tipo (basado en categoría)
       const type = trans.categoryId.includes('income') ? 'Income' : 'Expense';
       stats.byType[type] = (stats.byType[type] || 0) + 1;
       
-      // Por moneda
       stats.byCurrency[trans.currency] = (stats.byCurrency[trans.currency] || 0) + 1;
       
-      // Por mes
-      const month = trans.date.substring(0, 7); // YYYY-MM
+      const month = trans.date.substring(0, 7);
       stats.byMonth[month] = (stats.byMonth[month] || 0) + 1;
       
-      // Rango de fechas
       const transDate = new Date(trans.date);
       if (!stats.dateRange.oldest || transDate < new Date(stats.dateRange.oldest)) {
         stats.dateRange.oldest = trans.date;
@@ -239,16 +252,12 @@ export class TransactionImporter {
         stats.dateRange.newest = trans.date;
       }
       
-      // Total por moneda
       stats.totalAmount[trans.currency] += trans.amount;
     });
     
     return stats;
   }
 
-  /**
-   * Filtra transacciones por rango de fechas
-   */
   filterByDateRange(transactions, startDate, endDate) {
     return transactions.filter(trans => {
       const transDate = new Date(trans.date);

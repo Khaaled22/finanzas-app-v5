@@ -11,14 +11,14 @@ export default function DebtsView() {
   // M5.4: Cálculo del saldo total de deudas
   const totalDebt = useMemo(() => {
     return debts.reduce((sum, debt) => {
-      return sum + convertCurrency(debt.currentBalance, debt.currency, displayCurrency);
+      return sum + convertCurrency(debt.currentBalance || 0, debt.currency, displayCurrency);
     }, 0);
   }, [debts, displayCurrency]);
 
   // Cálculo del pago mensual total
   const totalMonthlyPayment = useMemo(() => {
     return debts.reduce((sum, debt) => {
-      return sum + convertCurrency(debt.monthlyPayment, debt.currency, displayCurrency);
+      return sum + convertCurrency(debt.monthlyPayment || 0, debt.currency, displayCurrency);
     }, 0);
   }, [debts, displayCurrency]);
 
@@ -53,7 +53,7 @@ export default function DebtsView() {
       'Hipoteca': '🏠',
       'Préstamo Personal': '💰',
       'Préstamo Automotriz': '🚗',
-      'Préstamo de Consumo': '🛍️',
+      'Préstamo de Consumo': '🛒',
       'Tarjeta de Crédito': '💳',
       'Préstamo Estudiantil': '🎓',
       'Otro': '📋'
@@ -62,13 +62,17 @@ export default function DebtsView() {
   };
 
   const calculateProgress = (debt) => {
-    if (debt.originalAmount === 0) return 0;
-    return ((debt.originalAmount - debt.currentBalance) / debt.originalAmount) * 100;
+    const original = debt.originalAmount || 0;
+    const current = debt.currentBalance || 0;
+    if (original === 0) return 0;
+    return ((original - current) / original) * 100;
   };
 
   const calculateMonthsRemaining = (debt) => {
-    if (debt.monthlyPayment === 0 || debt.currentBalance === 0) return 0;
-    return Math.ceil(debt.currentBalance / debt.monthlyPayment);
+    const monthly = debt.monthlyPayment || 0;
+    const current = debt.currentBalance || 0;
+    if (monthly === 0 || current === 0) return 0;
+    return Math.ceil(current / monthly);
   };
 
   return (
@@ -143,7 +147,11 @@ export default function DebtsView() {
           {debts.map(debt => {
             const percentage = calculateProgress(debt);
             const monthsRemaining = calculateMonthsRemaining(debt);
-            const paidAmount = debt.originalAmount - debt.currentBalance;
+            const original = debt.originalAmount || 0;
+            const current = debt.currentBalance || 0;
+            const paidAmount = original - current;
+            const monthly = debt.monthlyPayment || 0;
+            const interestRate = debt.interestRate || 0;
 
             return (
               <div key={debt.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -184,11 +192,11 @@ export default function DebtsView() {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Saldo Actual</p>
                       <p className="text-xl font-bold text-red-600">
-                        {debt.currentBalance.toFixed(2)} {debt.currency}
+                        {current.toFixed(2)} {debt.currency}
                       </p>
                       {debt.currency !== displayCurrency && (
                         <p className="text-xs text-gray-500">
-                          ≈ {convertCurrency(debt.currentBalance, debt.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                          ≈ {convertCurrency(current, debt.currency, displayCurrency).toFixed(2)} {displayCurrency}
                         </p>
                       )}
                     </div>
@@ -196,11 +204,11 @@ export default function DebtsView() {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Cuota Mensual</p>
                       <p className="text-xl font-bold text-gray-800">
-                        {debt.monthlyPayment.toFixed(2)} {debt.currency}
+                        {monthly.toFixed(2)} {debt.currency}
                       </p>
                       {debt.currency !== displayCurrency && (
                         <p className="text-xs text-gray-500">
-                          ≈ {convertCurrency(debt.monthlyPayment, debt.currency, displayCurrency).toFixed(2)} {displayCurrency}
+                          ≈ {convertCurrency(monthly, debt.currency, displayCurrency).toFixed(2)} {displayCurrency}
                         </p>
                       )}
                     </div>
@@ -208,7 +216,7 @@ export default function DebtsView() {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Tasa Interés</p>
                       <p className="text-xl font-bold text-gray-800">
-                        {debt.interestRate.toFixed(2)}%
+                        {interestRate.toFixed(2)}%
                       </p>
                       <p className="text-xs text-gray-500">anual</p>
                     </div>
@@ -227,7 +235,7 @@ export default function DebtsView() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-gray-600 mb-1">Monto Original</p>
                       <p className="font-semibold text-gray-800">
-                        {debt.originalAmount.toFixed(2)} {debt.currency}
+                        {original.toFixed(2)} {debt.currency}
                       </p>
                     </div>
 
@@ -241,7 +249,7 @@ export default function DebtsView() {
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <p className="text-gray-600 mb-1">Meses Restantes</p>
                       <p className="font-semibold text-blue-700">
-                        ~{monthsRemaining} meses
+                        {monthsRemaining > 0 ? `~${monthsRemaining} meses` : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -255,7 +263,7 @@ export default function DebtsView() {
                     <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                       <div
                         className="h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
+                        style={{ width: `${Math.min(percentage, 100)}%` }}
                       ></div>
                     </div>
                   </div>

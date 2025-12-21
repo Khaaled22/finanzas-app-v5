@@ -1,4 +1,5 @@
 // src/views/Settings/components/CategoriesPanel.jsx
+// ✅ M20: CORREGIDO - updateCategory solo con metadata, budget va a category.budget (plantilla)
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../../context/AppContext';
 import CategoryModal from './CategoryModal';
@@ -11,8 +12,8 @@ export default function CategoriesPanel() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // all, income, expense, savings, investment
-  const [filterCurrency, setFilterCurrency] = useState('all'); // all, EUR, CLP, USD, UF
+  const [filterType, setFilterType] = useState('all');
+  const [filterCurrency, setFilterCurrency] = useState('all');
 
   // Estadísticas
   const stats = useMemo(() => {
@@ -32,16 +33,10 @@ export default function CategoriesPanel() {
   // Filtrar categorías
   const filteredCategories = useMemo(() => {
     return categories.filter(cat => {
-      // Filtro por búsqueda
       const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            cat.group.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Filtro por tipo
       const matchesType = filterType === 'all' || cat.type === filterType;
-      
-      // Filtro por moneda
       const matchesCurrency = filterCurrency === 'all' || cat.currency === filterCurrency;
-      
       return matchesSearch && matchesType && matchesCurrency;
     });
   }, [categories, searchTerm, filterType, filterCurrency]);
@@ -56,29 +51,31 @@ export default function CategoriesPanel() {
     return groups;
   }, [filteredCategories]);
 
-  // Abrir modal de nueva categoría
   const handleNewCategory = () => {
     setEditingCategory(null);
     setShowCategoryModal(true);
   };
 
-  // Abrir modal de editar categoría
   const handleEditCategory = (category) => {
     setEditingCategory(category);
     setShowCategoryModal(true);
   };
 
-  // Cerrar modal de categoría y guardar si hay datos
+  // ✅ M20: CORREGIDO - Actualizar plantilla directamente en setCategories
   const handleCategoryModalClose = (categoryData) => {
     if (categoryData) {
       if (categoryData.id) {
-        // Editar existente
-        const success = updateCategory(categoryData.id, categoryData);
-        if (success) {
-          alert('✅ Categoría actualizada correctamente');
-        } else {
-          alert('❌ Error al actualizar categoría');
-        }
+        // ✅ M20: Editar categoría existente
+        // En Settings, permitimos actualizar category.budget (plantilla)
+        // porque es donde se define el presupuesto base para nuevos meses
+        setCategories(prev => 
+          prev.map(cat => 
+            cat.id === categoryData.id 
+              ? { ...cat, ...categoryData }  // Actualiza TODO incluyendo budget (plantilla)
+              : cat
+          )
+        );
+        alert('✅ Categoría actualizada correctamente');
       } else {
         // Crear nueva
         const newCategory = {
@@ -94,46 +91,43 @@ export default function CategoriesPanel() {
     setEditingCategory(null);
   };
 
-  // Eliminar categoría
   const handleDeleteCategory = (category) => {
     if (!window.confirm(`¿Estás seguro de eliminar "${category.name}"?`)) {
       return;
     }
-
-    const result = deleteCategory(category.id);
     
-    if (result.success) {
-      alert('✅ Categoría eliminada correctamente');
+    const success = deleteCategory(category.id);
+    if (success) {
+      alert('✅ Categoría eliminada');
     } else {
-      alert(`❌ ${result.message}`);
+      alert('❌ No se puede eliminar (puede tener transacciones)');
     }
   };
 
-  // Importar categorías
-  const handleImport = (categoriesToImport) => {
-    const result = importCategories(categoriesToImport);
-    
-    if (result.success) {
-      const message = `✅ Importación exitosa!\n\n` +
-                     `✓ Importadas: ${result.imported}\n` +
-                     `⊘ Omitidas: ${result.skipped}\n` +
-                     (result.errors.length > 0 ? `\n⚠️ Advertencias:\n${result.errors.join('\n')}` : '');
-      alert(message);
-    } else {
-      alert('❌ Error al importar categorías');
-    }
+  const handleImportModalClose = () => {
+    setShowImportModal(false);
   };
 
-  // Limpiar filtros
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setFilterType('all');
-    setFilterCurrency('all');
+  const handleExportCSV = () => {
+    const csv = [
+      ['Nombre', 'Grupo', 'Tipo', 'Moneda', 'Presupuesto Base', 'Ícono'].join(','),
+      ...categories.map(cat => 
+        [cat.name, cat.group, cat.type, cat.currency, cat.budget, cat.icon].join(',')
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `categorias-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-6">
-      {/* Header con estadísticas */}
+      {/* Estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
@@ -141,7 +135,7 @@ export default function CategoriesPanel() {
               <p className="text-sm text-blue-600 font-medium">Total</p>
               <p className="text-3xl font-bold text-blue-700">{stats.total}</p>
             </div>
-            <i className="fas fa-list text-3xl text-blue-300"></i>
+            <i className="fas fa-list text-3xl text-blue-400"></i>
           </div>
         </div>
 
@@ -151,7 +145,7 @@ export default function CategoriesPanel() {
               <p className="text-sm text-green-600 font-medium">Ingresos</p>
               <p className="text-3xl font-bold text-green-700">{stats.income}</p>
             </div>
-            <i className="fas fa-arrow-up text-3xl text-green-300"></i>
+            <i className="fas fa-arrow-up text-3xl text-green-400"></i>
           </div>
         </div>
 
@@ -161,7 +155,7 @@ export default function CategoriesPanel() {
               <p className="text-sm text-red-600 font-medium">Gastos</p>
               <p className="text-3xl font-bold text-red-700">{stats.expense}</p>
             </div>
-            <i className="fas fa-arrow-down text-3xl text-red-300"></i>
+            <i className="fas fa-arrow-down text-3xl text-red-400"></i>
           </div>
         </div>
 
@@ -171,31 +165,31 @@ export default function CategoriesPanel() {
               <p className="text-sm text-purple-600 font-medium">Ahorro/Inv.</p>
               <p className="text-3xl font-bold text-purple-700">{stats.savings + stats.investment}</p>
             </div>
-            <i className="fas fa-piggy-bank text-3xl text-purple-300"></i>
+            <i className="fas fa-piggy-bank text-3xl text-purple-400"></i>
           </div>
         </div>
       </div>
 
-      {/* Acciones y filtros */}
+      {/* Gestión de Categorías */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h3 className="text-xl font-bold text-gray-800">
-            <i className="fas fa-folder-open mr-2 text-purple-600"></i>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center">
+            <i className="fas fa-folder-open mr-3 text-purple-600"></i>
             Gestión de Categorías
           </h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <button
               onClick={handleNewCategory}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all font-medium"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all"
             >
               <i className="fas fa-plus mr-2"></i>
               Nueva Categoría
             </button>
             <button
               onClick={() => setShowImportModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-all font-medium"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
             >
-              <i className="fas fa-file-csv mr-2"></i>
+              <i className="fas fa-file-import mr-2"></i>
               Importar CSV
             </button>
           </div>
@@ -203,28 +197,22 @@ export default function CategoriesPanel() {
 
         {/* Filtros */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Búsqueda */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Buscar
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
             <div className="relative">
+              <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Nombre o grupo..."
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
-              <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
             </div>
           </div>
 
-          {/* Filtro tipo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipo
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
@@ -238,111 +226,81 @@ export default function CategoriesPanel() {
             </select>
           </div>
 
-          {/* Filtro moneda */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Moneda
-            </label>
-            <div className="flex items-center space-x-2">
-              <select
-                value={filterCurrency}
-                onChange={(e) => setFilterCurrency(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="all">Todas</option>
-                <option value="EUR">EUR ({stats.eur})</option>
-                <option value="CLP">CLP ({stats.clp})</option>
-                <option value="USD">USD ({stats.usd})</option>
-                <option value="UF">UF ({stats.uf})</option>
-              </select>
-              {(searchTerm || filterType !== 'all' || filterCurrency !== 'all') && (
-                <button
-                  onClick={handleClearFilters}
-                  className="px-3 py-2 text-gray-600 hover:text-red-600 transition-colors"
-                  title="Limpiar filtros"
-                >
-                  <i className="fas fa-times"></i>
-                </button>
-              )}
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Moneda</label>
+            <select
+              value={filterCurrency}
+              onChange={(e) => setFilterCurrency(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">Todas</option>
+              <option value="EUR">EUR ({stats.eur})</option>
+              <option value="CLP">CLP ({stats.clp})</option>
+              <option value="USD">USD ({stats.usd})</option>
+              <option value="UF">UF ({stats.uf})</option>
+            </select>
           </div>
         </div>
 
-        {/* Resultado de filtros */}
-        {(searchTerm || filterType !== 'all' || filterCurrency !== 'all') && (
-          <div className="mb-4 text-sm text-gray-600">
-            <i className="fas fa-filter mr-2"></i>
-            Mostrando {filteredCategories.length} de {stats.total} categorías
-          </div>
-        )}
-
         {/* Lista de categorías agrupadas */}
-        {Object.keys(groupedCategories).length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <i className="fas fa-folder-open text-6xl mb-4 text-gray-300"></i>
-            <p className="text-lg font-medium">No hay categorías que coincidan</p>
-            <p className="text-sm">Intenta ajustar los filtros</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedCategories).map(([group, cats]) => (
+        <div className="space-y-4">
+          {Object.keys(groupedCategories).length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <i className="fas fa-search text-6xl mb-4 text-gray-300"></i>
+              <p className="text-lg font-medium">No se encontraron categorías</p>
+              <p className="text-sm">Intenta con otros filtros</p>
+            </div>
+          ) : (
+            Object.entries(groupedCategories).map(([group, cats]) => (
               <div key={group} className="border border-gray-200 rounded-lg overflow-hidden">
-                {/* Header del grupo */}
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                  <h4 className="font-semibold text-gray-800 flex items-center justify-between">
-                    <span>{group}</span>
-                    <span className="text-sm font-normal text-gray-500">
-                      {cats.length} categoría{cats.length !== 1 ? 's' : ''}
-                    </span>
+                <div className="bg-gray-100 px-4 py-3 flex justify-between items-center">
+                  <h4 className="font-bold text-gray-800 flex items-center">
+                    <span className="mr-2">{cats[0]?.icon || '📁'}</span>
+                    {group}
                   </h4>
+                  <span className="text-sm text-gray-600">{cats.length} categorías</span>
                 </div>
-
-                {/* Categorías del grupo */}
                 <div className="divide-y divide-gray-200">
-                  {cats.map(category => (
-                    <div
-                      key={category.id}
-                      className="px-4 py-3 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        {/* Info categoría */}
-                        <div className="flex items-center space-x-4 flex-1">
-                          <div className="text-3xl">{category.icon}</div>
+                  {cats.map(cat => (
+                    <div key={cat.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-3 flex-1">
+                          <span className="text-2xl">{cat.icon}</span>
                           <div className="flex-1">
-                            <h5 className="font-semibold text-gray-800">{category.name}</h5>
-                            <div className="flex items-center space-x-3 text-sm text-gray-600 mt-1">
-                              <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
-                                {category.type === 'income' ? '💰 Ingreso' :
-                                 category.type === 'savings' ? '🐷 Ahorro' :
-                                 category.type === 'investment' ? '📈 Inversión' :
-                                 '💳 Gasto'}
+                            <p className="font-semibold text-gray-800">{cat.name}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                cat.type === 'income' ? 'bg-green-100 text-green-800' :
+                                cat.type === 'expense' ? 'bg-red-100 text-red-800' :
+                                cat.type === 'savings' ? 'bg-blue-100 text-blue-800' :
+                                'bg-purple-100 text-purple-800'
+                              }`}>
+                                {cat.type === 'income' ? '💼 Ingreso' :
+                                 cat.type === 'expense' ? '💳 Gasto' :
+                                 cat.type === 'savings' ? '💰 Ahorro' :
+                                 '📈 Inversión'}
                               </span>
-                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                {category.currency}
+                              <span className="flex items-center">
+                                <i className="fas fa-coins mr-1"></i>
+                                {cat.currency}
                               </span>
-                              <span>
-                                Presupuesto: <strong>{category.budget.toFixed(2)}</strong>
-                              </span>
-                              <span className="text-gray-400">
-                                Gastado: {category.spent.toFixed(2)}
+                              <span className="flex items-center">
+                                <i className="fas fa-wallet mr-1"></i>
+                                Presupuesto: {cat.budget.toFixed(2)}
                               </span>
                             </div>
                           </div>
                         </div>
-
-                        {/* Acciones */}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex space-x-2">
                           <button
-                            onClick={() => handleEditCategory(category)}
-                            className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Editar"
+                            onClick={() => handleEditCategory(cat)}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-all"
                           >
                             <i className="fas fa-edit"></i>
                           </button>
                           <button
-                            onClick={() => handleDeleteCategory(category)}
-                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Eliminar"
+                            onClick={() => handleDeleteCategory(cat)}
+                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-all"
                           >
                             <i className="fas fa-trash"></i>
                           </button>
@@ -352,12 +310,12 @@ export default function CategoriesPanel() {
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Modales */}
+      {/* Modals */}
       <CategoryModal
         isOpen={showCategoryModal}
         onClose={handleCategoryModalClose}
@@ -367,8 +325,8 @@ export default function CategoriesPanel() {
 
       <ImportCategoriesModal
         isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImport={handleImport}
+        onClose={handleImportModalClose}
+        onImport={importCategories}
         existingCategories={categories}
       />
     </div>

@@ -1,4 +1,5 @@
 // src/views/Settings/components/CategoryModal.jsx
+// ✅ M20: CORREGIDO - Aclara que budget es plantilla base
 import React, { useState, useEffect } from 'react';
 
 export default function CategoryModal({ isOpen, onClose, category = null, existingCategories = [] }) {
@@ -255,7 +256,7 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
             {/* Presupuesto */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Presupuesto mensual
+                Presupuesto Base (Plantilla)
               </label>
               <input
                 type="number"
@@ -276,6 +277,9 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                   {errors.budget}
                 </p>
               )}
+              <p className="text-xs text-gray-500 mt-1">
+                Se usará para inicializar nuevos meses sin historial
+              </p>
             </div>
 
             {/* Moneda */}
@@ -345,17 +349,43 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
             </div>
           </div>
 
-          {/* Info sobre tipos */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
+          {/* ✅ M20: Info sobre presupuesto base vs mensual */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
+            <p className="text-sm text-blue-900 font-semibold mb-2">
               <i className="fas fa-info-circle mr-2"></i>
+              ℹ️ Sobre el Presupuesto Base:
+            </p>
+            <ul className="text-xs text-blue-800 space-y-1 ml-6">
+              <li>
+                <strong>Es una plantilla:</strong> Este valor se usa solo para inicializar 
+                nuevos meses que no tienen historial previo.
+              </li>
+              <li>
+                <strong>Herencia automática:</strong> Cuando cambias de mes, el presupuesto 
+                se copia automáticamente del mes anterior.
+              </li>
+              <li>
+                <strong>Presupuesto real por mes:</strong> El presupuesto que realmente usas 
+                cada mes se gestiona en la vista de <strong>Presupuesto</strong>.
+              </li>
+              <li>
+                <strong>No afecta meses existentes:</strong> Cambiar este valor NO modifica 
+                los presupuestos que ya están asignados en otros meses.
+              </li>
+            </ul>
+          </div>
+
+          {/* Info sobre tipos */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <p className="text-sm text-purple-800">
+              <i className="fas fa-tag mr-2"></i>
               <strong>Tipos de categoría:</strong>
             </p>
-            <ul className="text-xs text-blue-700 mt-2 space-y-1 ml-6">
+            <ul className="text-xs text-purple-700 mt-2 space-y-1 ml-6">
               <li><strong>Income:</strong> Ingresos (salarios, bonos, etc.)</li>
               <li><strong>Expense:</strong> Gastos normales (comida, transporte, etc.)</li>
               <li><strong>Savings:</strong> Ahorros líquidos (fondo emergencia, etc.)</li>
-              <li><strong>Investment:</strong> Inversiones (Fintual, Trade Republic, etc.) - El dinero sale del presupuesto</li>
+              <li><strong>Investment:</strong> Inversiones (Fintual, Trade Republic, etc.)</li>
             </ul>
           </div>
 

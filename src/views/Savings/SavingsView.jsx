@@ -8,7 +8,8 @@ export default function SavingsView() {
     registerSavingsContribution, 
     deleteSavingsGoal,
     displayCurrency,
-    convertCurrency 
+    convertCurrency,
+    investments // ✅ M18.4: Para mostrar info de plataformas vinculadas
   } = useApp()
   
   const [showAddGoal, setShowAddGoal] = useState(false)
@@ -47,6 +48,12 @@ export default function SavingsView() {
     if (confirmDelete) {
       deleteSavingsGoal(goal.id)
     }
+  }
+
+  // ✅ M18.4: Obtener info de plataforma vinculada
+  const getLinkedPlatformInfo = (linkedPlatformId) => {
+    if (!linkedPlatformId) return null
+    return investments.find(inv => inv.id === linkedPlatformId)
   }
 
   return (
@@ -152,6 +159,10 @@ export default function SavingsView() {
               (new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24)
             )
             
+            // ✅ M18.4: Obtener info de plataforma vinculada si existe
+            const linkedPlatform = getLinkedPlatformInfo(goal.linkedPlatformId)
+            const isLinked = !!linkedPlatform
+            
             const priorityConfig = {
               'Alta': { color: 'red', icon: '🔴', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
               'Media': { color: 'yellow', icon: '🟡', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
@@ -162,30 +173,37 @@ export default function SavingsView() {
             return (
               <div key={goal.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Header con color según prioridad */}
-                <div className={`bg-gradient-to-r from-green-500 to-green-600 p-6 text-white relative`}>
+                <div className={`bg-gradient-to-r ${isLinked ? 'from-purple-500 to-purple-600' : 'from-green-500 to-green-600'} p-6 text-white relative`}>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold mb-2 flex items-center">
                         <span className="mr-2">{config.icon}</span>
                         {goal.name}
+                        {/* ✅ M18.4: Badge si está vinculado */}
+                        {isLinked && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-white bg-opacity-30 rounded-full">
+                            <i className="fas fa-link mr-1"></i>
+                            Vinculado
+                          </span>
+                        )}
                       </h3>
-                      <p className="text-green-100 text-sm">
+                      <p className={`${isLinked ? 'text-purple-100' : 'text-green-100'} text-sm`}>
                         {goal.description || 'Sin descripción'}
                       </p>
                     </div>
                     
                     {/* Botones de acción */}
-                    <div className="flex space-x-2 ml-4">
+                    <div className="flex space-x-2">
                       <button
                         onClick={() => setEditingGoal(goal)}
-                        className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-colors"
+                        className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all"
                         title="Editar objetivo"
                       >
                         <i className="fas fa-edit"></i>
                       </button>
                       <button
                         onClick={() => handleDeleteGoal(goal)}
-                        className="bg-white bg-opacity-20 hover:bg-opacity-30 hover:bg-red-500 p-2 rounded-lg transition-colors"
+                        className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-all"
                         title="Eliminar objetivo"
                       >
                         <i className="fas fa-trash"></i>
@@ -193,10 +211,21 @@ export default function SavingsView() {
                     </div>
                   </div>
 
-                  {/* Badge de prioridad */}
-                  <div className="absolute top-4 right-16 bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-medium">
-                    Prioridad: {goal.priority}
-                  </div>
+                  {/* ✅ M18.4: Info de plataforma vinculada */}
+                  {isLinked && linkedPlatform && (
+                    <div className="mt-3 bg-white bg-opacity-20 rounded-lg p-3">
+                      <p className="text-xs text-purple-100 mb-1">
+                        <i className="fas fa-chart-line mr-1"></i>
+                        Vinculado a plataforma de inversión
+                      </p>
+                      <p className="text-sm font-semibold">
+                        {linkedPlatform.name}
+                      </p>
+                      <p className="text-xs text-purple-100 mt-1">
+                        El progreso se actualiza automáticamente
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Contenido */}
@@ -282,8 +311,29 @@ export default function SavingsView() {
                     </div>
                   </div>
 
-                  {/* Historial de aportes */}
-                  {goal.contributionHistory && goal.contributionHistory.length > 0 && (
+                  {/* ✅ M18.4: Info adicional si está vinculado */}
+                  {isLinked && linkedPlatform && (
+                    <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <i className="fas fa-info-circle text-purple-600 mt-1 mr-2"></i>
+                        <div className="text-sm text-gray-700">
+                          <p className="font-medium mb-1">Objetivo Vinculado</p>
+                          <p>
+                            El saldo actual ({goal.currentAmount.toFixed(0)} {goal.currency}) 
+                            se actualiza automáticamente desde{' '}
+                            <span className="font-semibold">{linkedPlatform.name}</span>.
+                          </p>
+                          <p className="text-xs text-gray-600 mt-2">
+                            No puedes hacer aportes manuales mientras esté vinculado.
+                            Para aportar, edita el balance de la plataforma en Inversiones.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Historial de aportes (solo si NO está vinculado) */}
+                  {!isLinked && goal.contributionHistory && goal.contributionHistory.length > 0 && (
                     <div className="mb-6">
                       <details className="group">
                         <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-green-600 transition-colors flex items-center justify-between">
@@ -318,8 +368,8 @@ export default function SavingsView() {
                     </div>
                   )}
 
-                  {/* Formulario de aporte */}
-                  {percentage < 100 && (
+                  {/* Formulario de aporte (solo si NO está vinculado y NO cumplido) */}
+                  {!isLinked && percentage < 100 && (
                     <div className="flex space-x-2">
                       <input
                         type="number"

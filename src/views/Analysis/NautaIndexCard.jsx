@@ -1,7 +1,18 @@
 // src/views/Analysis/NautaIndexCard.jsx
+// ✅ M18.5: Actualizado para nueva estructura de nautaIndex
 
 export default function NautaIndexCard({ nautaIndex }) {
-  const { score, breakdown, interpretation } = nautaIndex
+  const { score, breakdown, status, message } = nautaIndex
+
+  // ✅ M18.5: Derivar color e icono desde el score
+  const getColorAndIcon = (score) => {
+    if (score >= 80) return { color: 'green', icon: '🎉' }
+    if (score >= 60) return { color: 'blue', icon: '👍' }
+    if (score >= 40) return { color: 'yellow', icon: '⚠️' }
+    return { color: 'red', icon: '⚠️' }
+  }
+
+  const { color, icon } = getColorAndIcon(score)
 
   const colorClasses = {
     green: {
@@ -30,7 +41,11 @@ export default function NautaIndexCard({ nautaIndex }) {
     }
   }
 
-  const colors = colorClasses[interpretation.color]
+  const colors = colorClasses[color]
+
+  // ✅ M18.5: Calcular totalAchieved y totalPossible desde breakdown
+  const totalAchieved = Object.values(breakdown).reduce((sum, component) => sum + component.score, 0)
+  const totalPossible = Object.values(breakdown).reduce((sum, component) => sum + component.max, 0)
 
   return (
     <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -38,7 +53,7 @@ export default function NautaIndexCard({ nautaIndex }) {
       <div className={`bg-gradient-to-r ${colors.bg} p-8 text-white`}>
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <span className="text-6xl mr-4">{interpretation.icon}</span>
+            <span className="text-6xl mr-4">{icon}</span>
             <div className="text-left">
               <h2 className="text-3xl font-bold">Índice de Tranquilidad Financiera</h2>
               <p className="text-sm opacity-90 mt-1">Método Nauta</p>
@@ -46,9 +61,9 @@ export default function NautaIndexCard({ nautaIndex }) {
           </div>
           
           <div className="mt-6">
-            <div className="text-8xl font-bold mb-2">{score}</div>
+            <div className="text-8xl font-bold mb-2">{score.toFixed(1)}</div>
             <div className="text-2xl opacity-90">de 100 puntos</div>
-            <div className="mt-4 text-xl font-semibold">{interpretation.level}</div>
+            <div className="mt-4 text-xl font-semibold">{status}</div>
           </div>
           
           {/* Barra de progreso */}
@@ -61,7 +76,7 @@ export default function NautaIndexCard({ nautaIndex }) {
             </div>
           </div>
           
-          <p className="mt-4 text-lg opacity-95">{interpretation.message}</p>
+          <p className="mt-4 text-lg opacity-95">{message}</p>
         </div>
       </div>
 
@@ -130,11 +145,11 @@ export default function NautaIndexCard({ nautaIndex }) {
             <div>
               <p className="text-sm text-gray-600 mb-1">Puntuación Total</p>
               <p className="text-3xl font-bold text-gray-800">
-                {nautaIndex.totalAchieved.toFixed(1)} / {nautaIndex.totalPossible}
+                {totalAchieved.toFixed(1)} / {totalPossible}
               </p>
             </div>
             <div className={`text-6xl ${colors.text}`}>
-              {interpretation.icon}
+              {icon}
             </div>
           </div>
         </div>
@@ -180,16 +195,16 @@ function ComponentBreakdown({ icon, iconColor, title, score, max, details }) {
         ></div>
       </div>
 
-      {/* Detalles específicos - CORRECCIÓN AQUÍ */}
+      {/* Detalles específicos */}
       <details className="mt-3">
         <summary className="cursor-pointer text-sm text-gray-600 hover:text-purple-600 transition-colors">
           Ver detalles <i className="fas fa-chevron-down ml-1"></i>
         </summary>
         <div className="mt-3 pl-4 border-l-2 border-gray-200 text-sm text-gray-700 space-y-1">
           {Object.entries(details).map(([key, value]) => {
-            if (key === 'status') return null
+            if (key === 'status' || key === 'currency') return null
             
-            // 🔧 CORRECCIÓN: Manejar arrays de objetos correctamente
+            // Manejar arrays de objetos correctamente
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return (

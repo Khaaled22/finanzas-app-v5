@@ -1,5 +1,10 @@
+// src/App.jsx
+// ✅ M31: Integración con Supabase Auth
 import React, { useState } from 'react';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/auth/AuthForms';
 import { AppProvider } from './context/AppContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/layout/Header';
 import Navigation from './components/layout/Navigation';
 import Dashboard from './views/Dashboard/Dashboard';
@@ -10,12 +15,12 @@ import SavingsView from './views/Savings/SavingsView';
 import InvestmentsView from './views/Investments/InvestmentsView';
 import CashflowView from './views/Cashflow/CashflowView';
 import AnalysisView from './views/Analysis/AnalysisView';
-import SettingsView from './views/Settings/SettingsView'; // ⭐ M13 - NUEVO
+import SettingsView from './views/Settings/SettingsView';
 
-// ⭐ Nueva importación (M10 - PWA)
+// Importación PWA (M10)
 import InstallPWA from './components/common/InstallPWA';
 
-function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState('dashboard');
 
   const renderView = () => {
@@ -36,7 +41,7 @@ function App() {
         return <CashflowView />;
       case 'analysis':
         return <AnalysisView />;
-      case 'settings': // ⭐ M13 - NUEVO
+      case 'settings':
         return <SettingsView />;
       default:
         return <Dashboard />;
@@ -50,7 +55,9 @@ function App() {
         <Navigation currentView={currentView} setCurrentView={setCurrentView} />
         
         <main className="container mx-auto px-4 py-6">
-          {renderView()}
+          <ErrorBoundary>
+            {renderView()}
+          </ErrorBoundary>
         </main>
 
         {/* Footer */}
@@ -58,18 +65,39 @@ function App() {
           <div className="container mx-auto px-4 text-center text-gray-600">
             <p className="text-sm">
               <i className="fas fa-rocket mr-2"></i>
-              Finanzas PRO v5.1 - M13 Categorías ✅
+              Finanzas PRO v5.5 - M31 Supabase ✅
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Sistema de categorías editable implementado
+              Cloud Sync + Multi-device
             </p>
           </div>
         </footer>
 
-        {/* ⭐ M10: Componente para instalar la PWA */}
+        {/* M10: Componente para instalar la PWA */}
         <InstallPWA />
+
+        {/* Indicador visual de guardado automático */}
+        <div 
+          id="save-indicator"
+          className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50"
+        >
+          <i className="fas fa-check mr-2"></i>
+          Guardado
+        </div>
       </div>
     </AppProvider>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <ProtectedRoute>
+          <AppContent />
+        </ProtectedRoute>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

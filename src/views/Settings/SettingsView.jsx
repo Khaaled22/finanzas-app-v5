@@ -1,4 +1,5 @@
 // src/views/Settings/SettingsView.jsx
+// ✅ M19.7: Actualizado SIN AutoUpdatePanel (ahora integrado en ExchangeRatesPanel)
 import React, { useState } from 'react';
 import CategoriesPanel from './components/CategoriesPanel';
 import ExchangeRatesPanel from './components/ExchangeRatesPanel';
@@ -8,7 +9,7 @@ export default function SettingsView() {
 
   const tabs = [
     { id: 'categories', label: 'Categorías', icon: 'fa-folder-open' },
-    { id: 'rates', label: 'Tasas de Cambio', icon: 'fa-exchange-alt' }, // YA NO disabled
+    { id: 'rates', label: 'Tasas de Cambio', icon: 'fa-exchange-alt' },
     { id: 'preferences', label: 'Preferencias', icon: 'fa-cog', disabled: true }
   ];
 
@@ -55,7 +56,10 @@ export default function SettingsView() {
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'categories' && <CategoriesPanel />}
+          
+          {/* ✅ M19.7: ExchangeRatesPanel ahora incluye todo (auto-update integrado) */}
           {activeTab === 'rates' && <ExchangeRatesPanel />}
+          
           {activeTab === 'preferences' && (
             <div className="text-center py-12 text-gray-500">
               <i className="fas fa-cog text-6xl mb-4 text-gray-300"></i>

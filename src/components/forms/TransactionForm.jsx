@@ -3,7 +3,8 @@ import { useApp } from '../../context/AppContext';
 import Modal from '../common/Modal';
 
 export default function TransactionForm({ isOpen, onClose, transaction = null }) {
-  const { addTransaction, updateTransaction, categories } = useApp();
+  // ✅ M19.2.1: Agregar convertCurrencyAtDate y displayCurrency del context
+  const { addTransaction, updateTransaction, categories, convertCurrencyAtDate, displayCurrency } = useApp();
   
   const [formData, setFormData] = useState({
     date: transaction?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
@@ -25,7 +26,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
         amount: transaction.amount,
         currency: transaction.currency,
         categoryId: transaction.categoryId,
-        paymentMethod: transaction.paymentMethod
+        paymentMethod: transaction.paymentMethod || 'Tarjeta'  // ✅ M21: Default explícito
       });
     } else {
       setFormData({
@@ -52,6 +53,23 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
   // ✅ Detectar si la categoría seleccionada es income
   const selectedCategory = categories.find(cat => cat.id === formData.categoryId);
   const isIncome = selectedCategory?.type === 'income';
+
+  // ✅ M19.2.1: Calcular conversión usando tasa histórica
+  const previewConversion = () => {
+    if (!formData.amount || isNaN(parseFloat(formData.amount))) return null;
+    if (!formData.currency || !displayCurrency) return null;
+    if (formData.currency === displayCurrency) return null;
+
+    const amount = parseFloat(formData.amount);
+    const converted = convertCurrencyAtDate(
+      amount,
+      formData.currency,
+      displayCurrency,
+      formData.date
+    );
+
+    return converted;
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -103,12 +121,28 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     onClose();
   };
 
+  // ✅ M18.6 - Auto-detectar moneda al cambiar categoría
   const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Si cambió la categoría, sugerir su moneda predeterminada
+      if (field === 'categoryId') {
+        const cat = categories.find(c => c.id === value);
+        if (cat && cat.currency) {
+          newData.currency = cat.currency;
+        }
+      }
+      
+      return newData;
+    });
+    
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
   };
+
+  const converted = previewConversion();
 
   return (
     <Modal 
@@ -224,7 +258,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </div>
         </div>
 
-        {/* ✅ Categoría AGRUPADA */}
+        {/* ✅ Categoría AGRUPADA con auto-detección de moneda */}
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
             <i className="fas fa-folder mr-2 text-blue-600"></i>
@@ -278,7 +312,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </select>
         </div>
 
-        {/* ✅ Vista previa con COLORES CORRECTOS */}
+        {/* ✅ M19.2.1: Vista previa con CONVERSIÓN HISTÓRICA */}
         {formData.description && formData.amount && !isNaN(parseFloat(formData.amount)) && selectedCategory && (
           <div className={`${isIncome ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-4`}>
             <p className={`text-sm ${isIncome ? 'text-green-800' : 'text-blue-800'} font-medium mb-1`}>
@@ -294,7 +328,20 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
             <p className={`text-2xl font-bold ${isIncome ? 'text-green-700' : 'text-red-700'} mt-1`}>
               {isIncome ? '+' : '-'}{parseFloat(formData.amount).toFixed(2)} {formData.currency}
             </p>
-            <p className="text-xs text-gray-600 mt-1">
+            
+            {/* ✅ M19.2.1: Mostrar conversión con tasa histórica */}
+            {converted !== null && (
+              <div className="mt-2 pt-2 border-t border-gray-300">
+                <p className="text-xs text-gray-600 mb-1">
+                  Conversión a {displayCurrency} (usando tasa del {new Date(formData.date).toLocaleDateString('es-ES')}):
+                </p>
+                <p className={`text-lg font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+                  ≈ {isIncome ? '+' : '-'}{converted.toFixed(2)} {displayCurrency}
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-600 mt-2">
               {new Date(formData.date).toLocaleDateString('es-ES', { 
                 weekday: 'long', 
                 year: 'numeric', 
