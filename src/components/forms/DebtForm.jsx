@@ -1,23 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import Modal from '../common/Modal';
 
 export default function DebtForm({ isOpen, onClose, debt = null }) {
   const { addDebt, updateDebt } = useApp();
 
+  // ✅ M32: Tipos con sugerencia de clasificación
   const DEBT_TYPES = [
-    'Hipoteca',
-    'Préstamo Personal',
-    'Préstamo Automotriz',
-    'Préstamo de Consumo',
-    'Tarjeta de Crédito',
-    'Préstamo Estudiantil',
-    'Otro'
+    { value: 'Hipoteca', suggestedToxic: false },
+    { value: 'Préstamo Personal', suggestedToxic: true },
+    { value: 'Préstamo Automotriz', suggestedToxic: true },
+    { value: 'Préstamo de Consumo', suggestedToxic: true },
+    { value: 'Tarjeta de Crédito', suggestedToxic: true },
+    { value: 'Préstamo Estudiantil', suggestedToxic: false },
+    { value: 'Otro', suggestedToxic: false }
   ];
 
   const [formData, setFormData] = useState({
     name: debt?.name || '',
     type: debt?.type || 'Préstamo Personal',
+    isToxic: debt?.isToxic !== undefined ? debt.isToxic : true, // ✅ M32: Nuevo campo
     originalAmount: debt?.originalAmount || '',
     currentBalance: debt?.currentBalance || '',
     interestRate: debt?.interestRate || '',
@@ -28,38 +30,62 @@ export default function DebtForm({ isOpen, onClose, debt = null }) {
 
   const [errors, setErrors] = useState({});
 
+  // ✅ M32: Reset form cuando cambia debt o isOpen
+  useEffect(() => {
+    if (debt) {
+      setFormData({
+        name: debt.name || '',
+        type: debt.type || 'Préstamo Personal',
+        isToxic: debt.isToxic !== undefined ? debt.isToxic : true,
+        originalAmount: debt.originalAmount || '',
+        currentBalance: debt.currentBalance || '',
+        interestRate: debt.interestRate || '',
+        monthlyPayment: debt.monthlyPayment || '',
+        currency: debt.currency || 'EUR',
+        startDate: debt.startDate || new Date().toISOString().slice(0, 10)
+      });
+    } else {
+      setFormData({
+        name: '',
+        type: 'Préstamo Personal',
+        isToxic: true,
+        originalAmount: '',
+        currentBalance: '',
+        interestRate: '',
+        monthlyPayment: '',
+        currency: 'EUR',
+        startDate: new Date().toISOString().slice(0, 10)
+      });
+    }
+    setErrors({});
+  }, [debt, isOpen]);
+
   const validate = () => {
     const newErrors = {};
 
-    // Validar nombre
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es obligatorio';
     }
 
-    // Validar monto original
     const originalAmount = parseFloat(formData.originalAmount);
     if (isNaN(originalAmount) || originalAmount <= 0) {
       newErrors.originalAmount = 'El monto original debe ser mayor a 0';
     }
 
-    // Validar saldo actual
     const currentBalance = parseFloat(formData.currentBalance);
     if (isNaN(currentBalance) || currentBalance < 0) {
       newErrors.currentBalance = 'El saldo actual no puede ser negativo';
     }
 
-    // Validar que saldo actual <= monto original
     if (currentBalance > originalAmount) {
       newErrors.currentBalance = 'El saldo actual no puede ser mayor al monto original';
     }
 
-    // Validar tasa de interés
     const interestRate = parseFloat(formData.interestRate);
     if (isNaN(interestRate) || interestRate < 0) {
       newErrors.interestRate = 'La tasa de interés no puede ser negativa';
     }
 
-    // Validar cuota mensual
     const monthlyPayment = parseFloat(formData.monthlyPayment);
     if (isNaN(monthlyPayment) || monthlyPayment <= 0) {
       newErrors.monthlyPayment = 'La cuota mensual debe ser mayor a 0';
@@ -77,6 +103,7 @@ export default function DebtForm({ isOpen, onClose, debt = null }) {
     const debtData = {
       name: formData.name.trim(),
       type: formData.type,
+      isToxic: formData.isToxic, // ✅ M32: Incluir clasificación
       originalAmount: parseFloat(formData.originalAmount),
       currentBalance: parseFloat(formData.currentBalance),
       interestRate: parseFloat(formData.interestRate),
@@ -86,10 +113,8 @@ export default function DebtForm({ isOpen, onClose, debt = null }) {
     };
 
     if (debt) {
-      // Editar deuda existente
       updateDebt(debt.id, debtData);
     } else {
-      // Crear nueva deuda
       addDebt({
         ...debtData,
         paymentsMade: 0,
@@ -102,13 +127,21 @@ export default function DebtForm({ isOpen, onClose, debt = null }) {
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
-    // Limpiar error del campo
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
   };
 
-  // Calcular progreso de pago
+  // ✅ M32: Auto-sugerir clasificación al cambiar tipo
+  const handleTypeChange = (newType) => {
+    const typeConfig = DEBT_TYPES.find(t => t.value === newType);
+    setFormData(prev => ({
+      ...prev,
+      type: newType,
+      isToxic: typeConfig?.suggestedToxic ?? true
+    }));
+  };
+
   const calculateProgress = () => {
     const original = parseFloat(formData.originalAmount) || 0;
     const current = parseFloat(formData.currentBalance) || 0;
@@ -163,13 +196,68 @@ export default function DebtForm({ isOpen, onClose, debt = null }) {
           <select
             id="type"
             value={formData.type}
-            onChange={(e) => handleChange('type', e.target.value)}
+            onChange={(e) => handleTypeChange(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {DEBT_TYPES.map(type => (
-              <option key={type} value={type}>{type}</option>
+              <option key={type.value} value={type.value}>{type.value}</option>
             ))}
           </select>
+        </div>
+
+        {/* ✅ M32: Clasificación Tóxica/Buena */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            <i className="fas fa-exclamation-triangle mr-2 text-orange-500"></i>
+            Clasificación de la deuda
+          </label>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => handleChange('isToxic', false)}
+              className={`p-3 rounded-lg border-2 transition-all text-left ${
+                !formData.isToxic
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-green-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">✅</span>
+                <span className={`font-semibold text-sm ${!formData.isToxic ? 'text-green-700' : 'text-gray-700'}`}>
+                  Deuda Buena
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                Hipoteca, educación
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleChange('isToxic', true)}
+              className={`p-3 rounded-lg border-2 transition-all text-left ${
+                formData.isToxic
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-gray-200 hover:border-red-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">⚠️</span>
+                <span className={`font-semibold text-sm ${formData.isToxic ? 'text-red-700' : 'text-gray-700'}`}>
+                  Deuda Tóxica
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                Tarjetas, consumo
+              </p>
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-2">
+            <i className="fas fa-info-circle mr-1"></i>
+            Afecta tu Índice de Tranquilidad Financiera
+          </p>
         </div>
 
         {/* Monto original y Saldo actual */}
@@ -327,27 +415,42 @@ export default function DebtForm({ isOpen, onClose, debt = null }) {
 
         {/* Vista previa del progreso */}
         {formData.originalAmount && formData.currentBalance && (
-          <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-red-800 font-medium mb-2">Vista previa:</p>
+          <div className={`border rounded-lg p-4 ${
+            formData.isToxic 
+              ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200' 
+              : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+          }`}>
+            <div className="flex justify-between items-center mb-2">
+              <p className={`text-sm font-medium ${formData.isToxic ? 'text-red-800' : 'text-green-800'}`}>
+                {formData.isToxic ? '⚠️ Deuda Tóxica' : '✅ Deuda Buena'}
+              </p>
+              <p className={`text-sm font-bold ${formData.isToxic ? 'text-red-700' : 'text-green-700'}`}>
+                {progress.toFixed(1)}% pagado
+              </p>
+            </div>
             
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
-                <p className="text-xs text-red-600">Pagado hasta ahora:</p>
-                <p className="text-2xl font-bold text-red-700">
+                <p className={`text-xs ${formData.isToxic ? 'text-red-600' : 'text-green-600'}`}>Pagado:</p>
+                <p className={`text-xl font-bold ${formData.isToxic ? 'text-red-700' : 'text-green-700'}`}>
                   {(parseFloat(formData.originalAmount) - parseFloat(formData.currentBalance)).toFixed(2)} {formData.currency}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-red-600">Progreso:</p>
-                <p className="text-2xl font-bold text-red-700">
-                  {progress.toFixed(1)}%
+                <p className={`text-xs ${formData.isToxic ? 'text-red-600' : 'text-green-600'}`}>Pendiente:</p>
+                <p className={`text-xl font-bold ${formData.isToxic ? 'text-red-700' : 'text-green-700'}`}>
+                  {parseFloat(formData.currentBalance).toFixed(2)} {formData.currency}
                 </p>
               </div>
             </div>
 
-            <div className="w-full bg-red-200 rounded-full h-3 overflow-hidden">
+            <div className={`w-full rounded-full h-3 overflow-hidden ${formData.isToxic ? 'bg-red-200' : 'bg-green-200'}`}>
               <div
-                className="h-3 bg-gradient-to-r from-red-500 to-red-600 rounded-full transition-all duration-500"
+                className={`h-3 rounded-full transition-all duration-500 ${
+                  formData.isToxic 
+                    ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                    : 'bg-gradient-to-r from-green-500 to-green-600'
+                }`}
                 style={{ width: `${Math.min(progress, 100)}%` }}
               ></div>
             </div>

@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 
 export default function SavingsGoalForm({ onClose, goal = null }) {
   const { 
     addSavingsGoal, 
     updateSavingsGoal,
-    investments, // ✅ M18.4: Para listar plataformas disponibles
-    convertCurrency // ✅ M18.4: Para convertir monedas
+    investments,
+    convertCurrency
   } = useApp()
   
   const [formData, setFormData] = useState({
@@ -17,16 +17,76 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
     currency: goal?.currency || 'EUR',
     deadline: goal?.deadline || '',
     priority: goal?.priority || 'Media',
-    linkedPlatformId: goal?.linkedPlatformId || null // ✅ M18.4: Nuevo campo
+    isEmergencyFund: goal?.isEmergencyFund || false, // ✅ M32: Flag fondo emergencia
+    linkedPlatformId: goal?.linkedPlatformId || null, // Mantener para backward compatibility
+    linkedPlatforms: goal?.linkedPlatforms || [] // ✅ M32: Múltiples plataformas
   })
 
-  // ✅ M18.4: Filtrar solo plataformas (no activos individuales)
+  // ✅ M32: Reset form cuando cambia goal
+  useEffect(() => {
+    if (goal) {
+      setFormData({
+        name: goal.name || '',
+        description: goal.description || '',
+        targetAmount: goal.targetAmount || '',
+        currentAmount: goal.currentAmount || '',
+        currency: goal.currency || 'EUR',
+        deadline: goal.deadline || '',
+        priority: goal.priority || 'Media',
+        isEmergencyFund: goal.isEmergencyFund || goal.name?.toLowerCase().includes('emergencia') || false,
+        linkedPlatformId: goal.linkedPlatformId || null,
+        linkedPlatforms: goal.linkedPlatforms || (goal.linkedPlatformId ? [goal.linkedPlatformId] : [])
+      })
+    }
+  }, [goal])
+
+  // Filtrar solo plataformas
   const availablePlatforms = investments.filter(inv => inv.currentBalance !== undefined)
+
+  // ✅ M32: Calcular saldo total de plataformas vinculadas
+  const calculateLinkedBalance = () => {
+    if (!formData.linkedPlatforms || formData.linkedPlatforms.length === 0) {
+      // Fallback a linkedPlatformId singular
+      if (formData.linkedPlatformId) {
+        const platform = investments.find(inv => inv.id === formData.linkedPlatformId)
+        if (platform) {
+          return convertCurrency(platform.currentBalance, platform.currency, formData.currency)
+        }
+      }
+      return 0
+    }
+    
+    return formData.linkedPlatforms.reduce((sum, platformId) => {
+      const platform = investments.find(inv => inv.id === platformId)
+      if (platform) {
+        return sum + convertCurrency(platform.currentBalance, platform.currency, formData.currency)
+      }
+      return sum
+    }, 0)
+  }
+
+  // ✅ M32: Toggle plataforma en array
+  const togglePlatform = (platformId) => {
+    setFormData(prev => {
+      const current = prev.linkedPlatforms || []
+      const isLinked = current.includes(platformId)
+      
+      const newLinkedPlatforms = isLinked
+        ? current.filter(id => id !== platformId)
+        : [...current, platformId]
+      
+      return {
+        ...prev,
+        linkedPlatforms: newLinkedPlatforms,
+        // Mantener linkedPlatformId para backward compatibility
+        linkedPlatformId: newLinkedPlatforms[0] || null
+      }
+    })
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Validaciones
     if (!formData.name.trim()) {
       alert('El nombre del objetivo es obligatorio')
       return
@@ -46,53 +106,26 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
       alert('La fecha límite es obligatoria')
       return
     }
+
+    const linkedBalance = calculateLinkedBalance()
+    const hasLinkedPlatforms = formData.linkedPlatforms.length > 0 || formData.linkedPlatformId
     
     const savingsGoalData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
       targetAmount: parseFloat(formData.targetAmount),
-      currentAmount: parseFloat(formData.currentAmount) || 0,
+      currentAmount: hasLinkedPlatforms ? linkedBalance : (parseFloat(formData.currentAmount) || 0),
       currency: formData.currency,
       deadline: formData.deadline,
       priority: formData.priority,
-      linkedPlatformId: formData.linkedPlatformId // ✅ M18.4: Incluir vinculación
+      isEmergencyFund: formData.isEmergencyFund, // ✅ M32
+      linkedPlatformId: formData.linkedPlatforms[0] || formData.linkedPlatformId || null, // Backward compat
+      linkedPlatforms: formData.linkedPlatforms // ✅ M32: Array
     }
     
     if (goal) {
-      // Modo edición
-      if (formData.linkedPlatformId) {
-        // ✅ M18.4: Si se está vinculando, actualizar currentAmount desde plataforma
-        const platform = investments.find(inv => inv.id === formData.linkedPlatformId)
-        if (platform) {
-          savingsGoalData.currentAmount = convertCurrency(
-            platform.currentBalance,
-            platform.currency,
-            formData.currency
-          )
-        }
-      } else if (goal.linkedPlatformId && !formData.linkedPlatformId) {
-        // ✅ M18.4: Si se está desvinculando, mantener el currentAmount actual
-        savingsGoalData.currentAmount = goal.currentAmount
-      } else {
-        // Si no hay cambio en vinculación, mantener currentAmount actual
-        savingsGoalData.currentAmount = goal.currentAmount
-      }
-      
       updateSavingsGoal(goal.id, savingsGoalData)
     } else {
-      // Modo creación
-      if (formData.linkedPlatformId) {
-        // ✅ M18.4: Si se crea vinculado, obtener balance desde plataforma
-        const platform = investments.find(inv => inv.id === formData.linkedPlatformId)
-        if (platform) {
-          savingsGoalData.currentAmount = convertCurrency(
-            platform.currentBalance,
-            platform.currency,
-            formData.currency
-          )
-        }
-      }
-      
       addSavingsGoal(savingsGoalData)
     }
     
@@ -103,10 +136,8 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // ✅ M18.4: Obtener info de plataforma seleccionada
-  const selectedPlatform = formData.linkedPlatformId 
-    ? investments.find(inv => inv.id === formData.linkedPlatformId)
-    : null
+  const linkedBalance = calculateLinkedBalance()
+  const hasLinkedPlatforms = formData.linkedPlatforms.length > 0 || formData.linkedPlatformId
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -149,6 +180,27 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
             />
           </div>
 
+          {/* ✅ M32: Checkbox Fondo de Emergencia */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.isEmergencyFund}
+                onChange={(e) => handleChange('isEmergencyFund', e.target.checked)}
+                className="w-5 h-5 text-blue-600 rounded mt-0.5"
+              />
+              <div>
+                <span className="font-medium text-gray-800 flex items-center gap-2">
+                  🛡️ Este es mi Fondo de Emergencia
+                </span>
+                <p className="text-xs text-gray-600 mt-1">
+                  Se usará para calcular los "Meses cubiertos" en tu Índice de Tranquilidad Financiera.
+                  Se recomienda tener 6 meses de gastos.
+                </p>
+              </div>
+            </label>
+          </div>
+
           {/* Descripción */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -163,49 +215,65 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
             />
           </div>
 
-          {/* ✅ M18.4: Vinculación a Plataforma */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <i className="fas fa-link mr-2 text-purple-600"></i>
-              Vincular a Plataforma de Inversión (Opcional)
-            </label>
-            <select
-              value={formData.linkedPlatformId || ''}
-              onChange={(e) => handleChange('linkedPlatformId', e.target.value || null)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">Sin vincular (aportes manuales)</option>
-              {availablePlatforms.map(platform => (
-                <option key={platform.id} value={platform.id}>
-                  {platform.name} - {platform.currentBalance.toFixed(0)} {platform.currency}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-2">
-              <i className="fas fa-info-circle mr-1"></i>
-              Si vinculas a una plataforma, el progreso se actualizará automáticamente desde ella.
-            </p>
-            
-            {/* ✅ M18.4: Mostrar info de plataforma seleccionada */}
-            {selectedPlatform && (
-              <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
-                <p className="text-xs text-purple-700 font-medium mb-1">
-                  Plataforma Seleccionada:
-                </p>
-                <p className="text-sm font-semibold text-gray-800">
-                  {selectedPlatform.name}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Balance actual: {selectedPlatform.currentBalance.toFixed(0)} {selectedPlatform.currency}
-                </p>
-                {selectedPlatform.currency !== formData.currency && (
-                  <p className="text-xs text-gray-600">
-                    ≈ {convertCurrency(selectedPlatform.currentBalance, selectedPlatform.currency, formData.currency).toFixed(0)} {formData.currency}
-                  </p>
-                )}
+          {/* ✅ M32: Vinculación a MÚLTIPLES Plataformas */}
+          {availablePlatforms.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <i className="fas fa-link mr-2 text-purple-600"></i>
+                Vincular a Plataformas de Inversión (Opcional)
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Selecciona una o más plataformas. El saldo se sumará automáticamente.
+              </p>
+              
+              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                {availablePlatforms.map(platform => {
+                  const isLinked = formData.linkedPlatforms.includes(platform.id) || 
+                                   formData.linkedPlatformId === platform.id
+                  return (
+                    <div
+                      key={platform.id}
+                      onClick={() => togglePlatform(platform.id)}
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        isLinked
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isLinked}
+                            onChange={() => {}}
+                            className="w-4 h-4 text-purple-600 rounded"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-800 text-sm">{platform.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {platform.currentBalance?.toLocaleString()} {platform.currency}
+                            </p>
+                          </div>
+                        </div>
+                        {isLinked && (
+                          <i className="fas fa-check-circle text-purple-600"></i>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-            )}
-          </div>
+
+              {hasLinkedPlatforms && (
+                <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm text-purple-800">
+                    <i className="fas fa-calculator mr-2"></i>
+                    Saldo vinculado: <strong>{linkedBalance.toLocaleString()} {formData.currency}</strong>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Meta y Monto Actual */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -227,30 +295,24 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {goal ? 'Ahorrado Actual (no editable)' : 'Monto Inicial (opcional)'}
+                {hasLinkedPlatforms ? 'Saldo Vinculado' : (goal ? 'Ahorrado Actual' : 'Monto Inicial')}
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                value={goal ? goal.currentAmount : formData.currentAmount}
-                onChange={(e) => !goal && !formData.linkedPlatformId && handleChange('currentAmount', e.target.value)}
+                value={hasLinkedPlatforms ? linkedBalance.toFixed(2) : (goal ? goal.currentAmount : formData.currentAmount)}
+                onChange={(e) => !goal && !hasLinkedPlatforms && handleChange('currentAmount', e.target.value)}
                 placeholder="0"
                 className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  (goal || formData.linkedPlatformId) ? 'bg-gray-100 cursor-not-allowed' : ''
+                  (goal || hasLinkedPlatforms) ? 'bg-gray-100 cursor-not-allowed' : ''
                 }`}
-                disabled={!!goal || !!formData.linkedPlatformId}
+                disabled={!!goal || hasLinkedPlatforms}
               />
-              {goal && (
-                <p className="text-xs text-gray-500 mt-1">
-                  <i className="fas fa-info-circle mr-1"></i>
-                  Cambia con aportes, no aquí
-                </p>
-              )}
-              {!goal && formData.linkedPlatformId && (
+              {hasLinkedPlatforms && (
                 <p className="text-xs text-purple-600 mt-1">
                   <i className="fas fa-link mr-1"></i>
-                  Se obtendrá desde la plataforma
+                  Calculado desde plataformas
                 </p>
               )}
             </div>
@@ -304,7 +366,7 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
             />
           </div>
 
-          {/* Información Adicional */}
+          {/* Info adicional en edición */}
           {goal && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="font-semibold text-green-800 mb-2 flex items-center">
@@ -317,24 +379,15 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
                   <span className="ml-2">{new Date(goal.id).toLocaleDateString('es-ES')}</span>
                 </div>
                 <div>
-                  <span className="font-medium">Aportes:</span>
-                  <span className="ml-2">{goal.contributionHistory?.length || 0}</span>
-                </div>
-                <div className="col-span-2">
                   <span className="font-medium">Progreso:</span>
                   <span className="ml-2">
                     {((goal.currentAmount / goal.targetAmount) * 100).toFixed(1)}%
                   </span>
                 </div>
-                {/* ✅ M18.4: Mostrar si está vinculado */}
-                {goal.linkedPlatformId && (
+                {goal.isEmergencyFund && (
                   <div className="col-span-2">
-                    <span className="font-medium text-purple-700">
-                      <i className="fas fa-link mr-1"></i>
-                      Vinculado a:
-                    </span>
-                    <span className="ml-2">
-                      {investments.find(inv => inv.id === goal.linkedPlatformId)?.name || 'Plataforma'}
+                    <span className="text-blue-700 font-medium">
+                      🛡️ Fondo de Emergencia
                     </span>
                   </div>
                 )}
@@ -342,16 +395,15 @@ export default function SavingsGoalForm({ onClose, goal = null }) {
             </div>
           )}
 
-          {/* ✅ M18.4: Advertencia si está vinculado */}
-          {formData.linkedPlatformId && (
+          {/* Advertencia si vinculado */}
+          {hasLinkedPlatforms && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-start">
-                <i className="fas fa-exclamation-triangle text-purple-600 mt-1 mr-2"></i>
+                <i className="fas fa-info-circle text-purple-600 mt-1 mr-2"></i>
                 <div className="text-sm text-gray-700">
                   <p className="font-medium mb-1">Objetivo Vinculado</p>
                   <p>
-                    El saldo de este objetivo se actualizará automáticamente desde la plataforma seleccionada.
-                    No podrás hacer aportes manuales mientras esté vinculado.
+                    El saldo se actualiza automáticamente desde las plataformas seleccionadas.
                   </p>
                 </div>
               </div>

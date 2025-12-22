@@ -1,5 +1,5 @@
 // src/views/Transactions/TransactionsView.jsx
-// ✅ M23: Fix filtro de mes (timezone)
+// ✅ M32: Fix modal (isOpen) + Header con resumen del mes + Formato números
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import TransactionForm from '../../components/forms/TransactionForm';
@@ -12,7 +12,7 @@ export default function TransactionsView() {
   
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [filters, setFilters] = useState({ search: '', month: '' });
+  const [filters, setFilters] = useState({ search: '', month: new Date().toISOString().slice(0, 7) }); // ✅ Mes actual por defecto
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
 
@@ -23,7 +23,6 @@ export default function TransactionsView() {
           trans.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
           trans.notes?.toLowerCase().includes(filters.search.toLowerCase());
         
-        // ✅ M23: Fix timezone - usar slice directo en vez de Date parsing
         const matchesMonth = !filters.month || 
           trans.date?.slice(0, 7) === filters.month;
         
@@ -35,13 +34,42 @@ export default function TransactionsView() {
   const availableMonths = useMemo(() => {
     const months = new Set();
     transactions.forEach(t => {
-      // ✅ M23: Usar slice directo
       if (t.date) {
         months.add(t.date.slice(0, 7));
       }
     });
     return Array.from(months).sort().reverse();
   }, [transactions]);
+
+  // ✅ M32: Calcular resumen del mes (Ingresos/Gastos/Inversión/Balance)
+  const monthSummary = useMemo(() => {
+    let ingresos = 0;
+    let gastos = 0;
+    let inversiones = 0;
+
+    filteredTransactions.forEach(tx => {
+      const cat = categories.find(c => c.id === tx.categoryId);
+      const amount = convertCurrencyAtDate
+        ? convertCurrencyAtDate(tx.amount, tx.currency, displayCurrency, tx.date)
+        : convertCurrency(tx.amount, tx.currency, displayCurrency);
+
+      if (cat?.type === 'income') {
+        ingresos += amount;
+      } else if (
+        cat?.group?.toLowerCase().includes('invers') || 
+        cat?.name?.toLowerCase().includes('invers') ||
+        cat?.name?.toLowerCase().includes('apv') ||
+        cat?.name?.toLowerCase().includes('ahorro')
+      ) {
+        inversiones += amount;
+      } else {
+        gastos += amount;
+      }
+    });
+
+    const balance = ingresos - gastos - inversiones;
+    return { ingresos, gastos, inversiones, balance, count: filteredTransactions.length };
+  }, [filteredTransactions, categories, displayCurrency, convertCurrency, convertCurrencyAtDate]);
 
   const getCategoryInfo = (categoryId) => {
     const cat = categories.find(c => c.id === categoryId);
@@ -62,38 +90,43 @@ export default function TransactionsView() {
     }
   };
 
-  const formatAmount = (amount, currency) => {
-    if (amount === undefined || amount === null || isNaN(amount)) {
-      return `0.00 ${currency}`;
-    }
-    return `${parseFloat(amount).toFixed(2)} ${currency}`;
+  // ✅ M32: Formatear número con separador de miles
+  const formatNumber = (num, decimals = 0) => {
+    if (num === undefined || num === null || isNaN(num)) return '0';
+    return new Intl.NumberFormat('de-DE', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    }).format(num);
   };
 
-  const totals = useMemo(() => {
-    let totalOriginal = 0;
-    let totalConverted = 0;
-    
-    filteredTransactions.forEach(t => {
-      const amount = parseFloat(t.amount) || 0;
-      totalOriginal += amount;
-      // ✅ M23: Usar tasa histórica si disponible
-      const converted = convertCurrencyAtDate 
-        ? convertCurrencyAtDate(amount, t.currency, displayCurrency, t.date)
-        : convertCurrency(amount, t.currency, displayCurrency);
-      totalConverted += converted;
-    });
-    
-    return { original: totalOriginal, converted: totalConverted };
-  }, [filteredTransactions, displayCurrency, convertCurrency, convertCurrencyAtDate]);
+  const formatAmount = (amount, currency) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return `0 ${currency}`;
+    }
+    return `${formatNumber(amount, 2)} ${currency}`;
+  };
+
+  // Nombre del mes
+  const getMonthName = (monthStr) => {
+    if (!monthStr) return 'Todos';
+    const [year, month] = monthStr.split('-');
+    const date = new Date(year, parseInt(month) - 1);
+    return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  };
 
   return (
     <div className="space-y-6 animate-in">
       {/* Header */}
       <div className="flex flex-wrap justify-between items-center gap-4">
-        <h2 className="text-3xl font-bold text-gray-800">
-          <i className="fas fa-receipt mr-3 text-blue-600"></i>
-          Transacciones
-        </h2>
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <i className="fas fa-receipt mr-3 text-blue-600"></i>
+            Transacciones
+          </h2>
+          <p className="text-gray-500 text-sm mt-1 capitalize">
+            {getMonthName(filters.month)}
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowDiagnostic(!showDiagnostic)}
@@ -104,17 +137,17 @@ export default function TransactionsView() {
           </button>
           <button
             onClick={() => setShowImportModal(true)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all"
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all text-sm"
           >
-            <i className="fas fa-file-import mr-2"></i>
-            Importar
+            <i className="fas fa-file-import mr-1"></i>
+            <span className="hidden sm:inline">Importar</span>
           </button>
           <button
             onClick={() => setShowAddTransaction(true)}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
           >
             <i className="fas fa-plus mr-2"></i>
-            Nueva Transacción
+            Nueva
           </button>
         </div>
       </div>
@@ -122,30 +155,87 @@ export default function TransactionsView() {
       {/* Diagnóstico de tasas */}
       {showDiagnostic && <RateDiagnostic onClose={() => setShowDiagnostic(false)} />}
 
+      {/* ✅ M32: Resumen del Mes */}
+      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
+          {/* Ingresos */}
+          <div className="p-4 text-center hover:bg-green-50 transition-colors">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <i className="fas fa-arrow-down text-green-600 text-sm"></i>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Ingresos</p>
+            <p className="text-lg md:text-xl font-bold text-green-600">
+              +{formatNumber(monthSummary.ingresos)}
+            </p>
+            <p className="text-xs text-gray-400">{displayCurrency}</p>
+          </div>
+
+          {/* Gastos */}
+          <div className="p-4 text-center hover:bg-red-50 transition-colors">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <i className="fas fa-arrow-up text-red-600 text-sm"></i>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Gastos</p>
+            <p className="text-lg md:text-xl font-bold text-red-600">
+              -{formatNumber(monthSummary.gastos)}
+            </p>
+            <p className="text-xs text-gray-400">{displayCurrency}</p>
+          </div>
+
+          {/* Inversión */}
+          <div className="p-4 text-center hover:bg-purple-50 transition-colors">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <i className="fas fa-chart-line text-purple-600 text-sm"></i>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Inversión</p>
+            <p className="text-lg md:text-xl font-bold text-purple-600">
+              {formatNumber(monthSummary.inversiones)}
+            </p>
+            <p className="text-xs text-gray-400">{displayCurrency}</p>
+          </div>
+
+          {/* Balance */}
+          <div className={`p-4 text-center ${monthSummary.balance >= 0 ? 'bg-blue-50' : 'bg-orange-50'}`}>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                monthSummary.balance >= 0 ? 'bg-blue-100' : 'bg-orange-100'
+              }`}>
+                <i className={`fas fa-wallet text-sm ${
+                  monthSummary.balance >= 0 ? 'text-blue-600' : 'text-orange-600'
+                }`}></i>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Balance</p>
+            <p className={`text-lg md:text-xl font-bold ${
+              monthSummary.balance >= 0 ? 'text-blue-600' : 'text-orange-600'
+            }`}>
+              {monthSummary.balance >= 0 ? '+' : ''}{formatNumber(monthSummary.balance)}
+            </p>
+            <p className="text-xs text-gray-400">{displayCurrency}</p>
+          </div>
+        </div>
+
+        {/* Contador */}
+        <div className="bg-gray-50 px-4 py-2 text-center border-t">
+          <span className="text-sm text-gray-600">
+            <i className="fas fa-list mr-2"></i>
+            {monthSummary.count} transacciones
+          </span>
+        </div>
+      </div>
+
       {/* Filtros */}
       <TransactionFilters
         filters={filters}
         setFilters={setFilters}
         availableMonths={availableMonths}
       />
-
-      {/* Resumen */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <p className="text-gray-600 text-sm">Transacciones mostradas</p>
-            <p className="text-2xl font-bold text-blue-600">{filteredTransactions.length}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-600 text-sm">Total (monedas originales)</p>
-            <p className="text-2xl font-bold text-gray-800">{totals.original.toFixed(2)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-600 text-sm">Total en {displayCurrency}</p>
-            <p className="text-2xl font-bold text-green-600">{totals.converted.toFixed(2)} {displayCurrency}</p>
-          </div>
-        </div>
-      </div>
 
       {/* Lista de transacciones */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -178,15 +268,19 @@ export default function TransactionsView() {
               const convertedAmount = convertCurrencyAtDate
                 ? convertCurrencyAtDate(trans.amount, trans.currency, displayCurrency, trans.date)
                 : convertCurrency(trans.amount, trans.currency, displayCurrency);
+              const isIncome = category.type === 'income';
               
               return (
                 <div 
                   key={trans.id} 
-                  className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
+                  className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between cursor-pointer"
+                  onClick={() => setEditingTransaction(trans)}
                 >
                   <div className="flex items-center space-x-4">
                     {/* Icono de categoría */}
-                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-2xl">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${
+                      isIncome ? 'bg-green-100' : 'bg-blue-100'
+                    }`}>
                       {category.icon}
                     </div>
                     
@@ -223,26 +317,32 @@ export default function TransactionsView() {
                   {/* Monto y acciones */}
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <p className="font-bold text-gray-800">
-                        {formatAmount(trans.amount, trans.currency)}
+                      <p className={`font-bold ${isIncome ? 'text-green-600' : 'text-gray-800'}`}>
+                        {isIncome ? '+' : '-'}{formatNumber(trans.amount, 2)} {trans.currency}
                       </p>
                       {trans.currency !== displayCurrency && (
                         <p className="text-xs text-gray-500">
-                          ≈ {formatAmount(convertedAmount, displayCurrency)}
+                          ≈ {formatNumber(convertedAmount, 0)} {displayCurrency}
                         </p>
                       )}
                     </div>
                     
                     <div className="flex space-x-1">
                       <button
-                        onClick={() => setEditingTransaction(trans)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTransaction(trans);
+                        }}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Editar"
                       >
                         <i className="fas fa-edit"></i>
                       </button>
                       <button
-                        onClick={() => handleDelete(trans.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(trans.id);
+                        }}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Eliminar"
                       >
@@ -257,16 +357,18 @@ export default function TransactionsView() {
         )}
       </div>
 
-      {/* Modal de nueva transacción */}
+      {/* ✅ M32 FIX: Modal de nueva transacción - PASAR isOpen */}
       {showAddTransaction && (
         <TransactionForm
+          isOpen={showAddTransaction}
           onClose={() => setShowAddTransaction(false)}
         />
       )}
 
-      {/* Modal de editar transacción */}
+      {/* ✅ M32 FIX: Modal de editar transacción - PASAR isOpen */}
       {editingTransaction && (
         <TransactionForm
+          isOpen={!!editingTransaction}
           transaction={editingTransaction}
           onClose={() => setEditingTransaction(null)}
         />

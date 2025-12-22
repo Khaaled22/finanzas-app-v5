@@ -1,32 +1,17 @@
 /**
  * Motor de Análisis Financiero
- * Implementa el Índice de Tranquilidad Financiera (Método Nauta) y otros KPIs
- * ✅ M18.5: Soporte completo para conversión de monedas
+ * ✅ M32: Actualizado para usar campos nuevos:
+ * - debt.isToxic (clasificación manual)
+ * - goal.isEmergencyFund (flag fondo emergencia)
+ * - goal.linkedPlatforms (múltiples plataformas)
  */
 
 export const AnalysisEngine = {
   /**
-   * M8: Calcula el Índice de Tranquilidad Financiera de Nauta
-   * ✅ M18.5: Ahora recibe convertCurrency y displayCurrency para cálculos multi-moneda
-   * 
-   * Componentes (70 puntos totales → escalado a 100):
-   * 1. Fondo de Emergencia (0-20 pts): Evalúa meses cubiertos (objetivo: 6 meses)
-   * 2. Tasa de Ahorro (0-20 pts): Evalúa porcentaje ahorrado (objetivo: 20%)
-   * 3. Deudas Tóxicas (0-10 pts): Penaliza deudas no hipotecarias
-   * 4. Seguros (0-10 pts): Valora protección médica
-   * 5. APV/Pensión (0-10 pts): Considera ahorro previsional
-   * 
-   * @param {Object} data - Datos financieros
-   * @param {Array} data.categories - Categorías de presupuesto
-   * @param {Array} data.debts - Deudas activas
-   * @param {Array} data.savingsGoals - Objetivos de ahorro
-   * @param {Object} data.ynabConfig - Configuración YNAB (ingreso mensual)
-   * @param {Function} convertCurrency - Función de conversión (amount, from, to)
-   * @param {String} displayCurrency - Moneda de visualización
-   * @returns {Object} { score, breakdown }
+   * Calcula el Índice de Tranquilidad Financiera de Nauta
    */
   calculateNautaIndex(data, convertCurrency, displayCurrency) {
-    const { categories, debts, savingsGoals, ynabConfig } = data
+    const { categories, debts, savingsGoals, investments, ynabConfig } = data
     
     let totalScore = 0
     const breakdown = {
@@ -37,36 +22,55 @@ export const AnalysisEngine = {
       retirement: { score: 0, max: 10, details: {} }
     }
 
-    // ✅ M18.5: Calcular gasto mensual total con conversión de monedas
-    const monthlyExpenses = categories.reduce((sum, cat) => {
-      return sum + convertCurrency(cat.budget, cat.currency, displayCurrency)
-    }, 0)
+    // Calcular gasto mensual total
+    const monthlyExpenses = categories.reduce((sum, cat) => 
+      sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
+    )
     
-    // ✅ M18.5: Convertir ingreso mensual a displayCurrency
+    // Convertir ingreso mensual
     const monthlyIncome = ynabConfig?.monthlyIncome 
-      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency, displayCurrency)
+      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency || 'EUR', displayCurrency)
       : 0
 
     // ============================================
     // 1. FONDO DE EMERGENCIA (0-20 puntos)
+    // ✅ M32: Buscar por isEmergencyFund o nombre
     // ============================================
     const emergencyFund = savingsGoals.find(g => 
-      g.name.toLowerCase().includes('emergencia') || 
-      g.name.toLowerCase().includes('emergency')
+      g.isEmergencyFund === true ||
+      g.name?.toLowerCase().includes('emergencia') || 
+      g.name?.toLowerCase().includes('emergency')
     )
     
     if (emergencyFund && monthlyExpenses > 0) {
-      // ✅ M18.5: Convertir monto del fondo a displayCurrency
-      const fundAmount = convertCurrency(
-        emergencyFund.currentAmount, 
-        emergencyFund.currency, 
-        displayCurrency
-      )
+      let fundAmount = 0
+      
+      // ✅ M32: Usar linkedPlatforms (array) si existe
+      if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0) {
+        fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
+          const platform = investments?.find(inv => inv.id === platformId)
+          if (platform) {
+            return sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+          }
+          return sum
+        }, 0)
+      } else if (emergencyFund.linkedPlatformId) {
+        // Fallback a linkedPlatformId singular
+        const platform = investments?.find(inv => inv.id === emergencyFund.linkedPlatformId)
+        if (platform) {
+          fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+        }
+      } else {
+        fundAmount = convertCurrency(
+          emergencyFund.currentAmount || 0, 
+          emergencyFund.currency || 'EUR', 
+          displayCurrency
+        )
+      }
       
       const monthsCovered = fundAmount / monthlyExpenses
-      const objective = 6 // 6 meses es el objetivo
+      const objective = 6
       
-      // Escala: 0 meses = 0 pts, 6+ meses = 20 pts
       const score = Math.min((monthsCovered / objective) * 20, 20)
       
       breakdown.emergencyFund.score = score
@@ -76,6 +80,7 @@ export const AnalysisEngine = {
         objective: objective,
         monthlyExpenses: monthlyExpenses,
         currency: displayCurrency,
+        goalName: emergencyFund.name,
         status: monthsCovered >= 6 ? 'Excelente' : 
                 monthsCovered >= 3 ? 'Bueno' : 
                 monthsCovered >= 1 ? 'Regular' : 'Insuficiente'
@@ -101,8 +106,6 @@ export const AnalysisEngine = {
       const savingsRate = savingsAmount / monthlyIncome
       const savingsRatePercent = savingsRate * 100
       
-      // Escala: 0% = 0 pts, 20%+ = 20 pts
-      // Fórmula: (tasa / 0.20) * 20
       const score = Math.min(Math.max(savingsRate, 0) * (20 / 0.20), 20)
       
       breakdown.savingsRate.score = score
@@ -112,7 +115,7 @@ export const AnalysisEngine = {
         savingsAmount: savingsAmount,
         savingsRatePercent: savingsRatePercent,
         currency: displayCurrency,
-        objective: 20, // 20% es el objetivo
+        objective: 20,
         status: savingsRatePercent >= 20 ? 'Excelente' : 
                 savingsRatePercent >= 10 ? 'Bueno' : 
                 savingsRatePercent >= 5 ? 'Regular' : 'Insuficiente'
@@ -133,27 +136,27 @@ export const AnalysisEngine = {
 
     // ============================================
     // 3. DEUDAS TÓXICAS (0-10 puntos)
+    // ✅ M32: Usar campo isToxic en vez de tipo
     // ============================================
-    // Deudas tóxicas son aquellas con alta tasa de interés y no productivas
-    const toxicDebtTypes = [
-      'Préstamo Automotriz',
-      'Préstamo de Consumo',
-      'Tarjeta de Crédito'
-    ]
+    const toxicDebts = debts.filter(d => {
+      // Si tiene el campo isToxic, usarlo
+      if (d.isToxic !== undefined) {
+        return d.isToxic === true
+      }
+      // Fallback: clasificar por tipo (backward compatibility)
+      const toxicTypes = ['Préstamo Automotriz', 'Préstamo de Consumo', 'Tarjeta de Crédito']
+      return toxicTypes.includes(d.type)
+    })
     
-    const toxicDebts = debts.filter(d => toxicDebtTypes.includes(d.type))
     const toxicDebtCount = toxicDebts.length
     
-    // ✅ M18.5: Convertir deudas tóxicas a displayCurrency
-    const toxicDebtTotal = toxicDebts.reduce((sum, d) => {
-      return sum + convertCurrency(d.currentBalance, d.currency, displayCurrency)
-    }, 0)
+    const toxicDebtTotal = toxicDebts.reduce((sum, d) => 
+      sum + convertCurrency(d.currentBalance || 0, d.currency || 'EUR', displayCurrency), 0
+    )
     
-    // Penalización: -2.5 puntos por cada deuda tóxica
-    // Máximo 10 puntos si no hay deudas tóxicas
-    const score = Math.max(10 - (toxicDebtCount * 2.5), 0)
+    const score3 = Math.max(10 - (toxicDebtCount * 2.5), 0)
     
-    breakdown.toxicDebts.score = score
+    breakdown.toxicDebts.score = score3
     breakdown.toxicDebts.details = {
       count: toxicDebtCount,
       totalAmount: toxicDebtTotal,
@@ -161,39 +164,34 @@ export const AnalysisEngine = {
       types: toxicDebts.map(d => ({ 
         name: d.name, 
         type: d.type, 
-        balance: convertCurrency(d.currentBalance, d.currency, displayCurrency)
+        balance: convertCurrency(d.currentBalance || 0, d.currency || 'EUR', displayCurrency)
       })),
       status: toxicDebtCount === 0 ? 'Excelente - Sin deudas tóxicas' : 
               toxicDebtCount <= 2 ? 'Mejorable' : 'Crítico'
     }
     
-    totalScore += score
+    totalScore += score3
 
     // ============================================
     // 4. SEGUROS (0-10 puntos)
     // ============================================
-    // Detectar si tiene seguros en las categorías
     const hasHealthInsurance = categories.some(c => 
-      c.name.toLowerCase().includes('seguro') && 
-      (c.name.toLowerCase().includes('médico') || 
-       c.name.toLowerCase().includes('salud') ||
-       c.name.toLowerCase().includes('complementario'))
+      c.name?.toLowerCase().includes('seguro') && 
+      (c.name?.toLowerCase().includes('médico') || 
+       c.name?.toLowerCase().includes('salud') ||
+       c.name?.toLowerCase().includes('complementario'))
     )
     
     const hasLifeInsurance = categories.some(c => 
-      c.name.toLowerCase().includes('seguro') && 
-      c.name.toLowerCase().includes('vida')
+      c.name?.toLowerCase().includes('seguro') && 
+      c.name?.toLowerCase().includes('vida')
     )
     
     const hasCatastrophicInsurance = categories.some(c => 
-      c.name.toLowerCase().includes('seguro') && 
-      c.name.toLowerCase().includes('catastróf')
+      c.name?.toLowerCase().includes('seguro') && 
+      c.name?.toLowerCase().includes('catastróf')
     )
     
-    // Puntuación:
-    // - Complementario/Salud: 4 pts
-    // - Catastrófico: 3 pts
-    // - Vida: 3 pts
     let insuranceScore = 0
     if (hasHealthInsurance) insuranceScore += 4
     if (hasCatastrophicInsurance) insuranceScore += 3
@@ -213,184 +211,146 @@ export const AnalysisEngine = {
     // ============================================
     // 5. APV / PENSIÓN (0-10 puntos)
     // ============================================
-    // Detectar si tiene APV o ahorro previsional
-    const hasRetirementSavings = categories.some(c => 
-      c.name.toLowerCase().includes('apv') || 
-      c.name.toLowerCase().includes('pensión') ||
-      c.name.toLowerCase().includes('pension') ||
-      c.name.toLowerCase().includes('jubilación')
+    const hasAPV = categories.some(c => 
+      c.name?.toLowerCase().includes('apv') ||
+      c.name?.toLowerCase().includes('previsional') ||
+      c.name?.toLowerCase().includes('pensión')
     )
     
-    const retirementGoal = savingsGoals.find(g => 
-      g.name.toLowerCase().includes('retiro') ||
-      g.name.toLowerCase().includes('pensión') ||
-      g.name.toLowerCase().includes('jubilación')
+    const hasAPVInvestment = investments?.some(inv =>
+      inv.name?.toLowerCase().includes('apv') ||
+      inv.type?.toLowerCase() === 'apv'
     )
     
-    // Puntuación simplificada:
-    // - Tiene categoría APV/Pensión: 5 pts
-    // - Tiene objetivo de ahorro para retiro: 5 pts
     let retirementScore = 0
-    if (hasRetirementSavings) retirementScore += 5
-    if (retirementGoal) retirementScore += 5
+    if (hasAPV) retirementScore += 5
+    if (hasAPVInvestment) retirementScore += 5
     
-    breakdown.retirement.score = retirementScore
+    breakdown.retirement.score = Math.min(retirementScore, 10)
     breakdown.retirement.details = {
-      hasRetirementCategory: hasRetirementSavings,
-      hasRetirementGoal: !!retirementGoal,
-      status: retirementScore >= 8 ? 'Excelente planificación' : 
-              retirementScore >= 5 ? 'Planificación básica' : 'Sin planificación'
+      hasAPVCategory: hasAPV,
+      hasAPVInvestment: hasAPVInvestment,
+      status: retirementScore >= 10 ? 'Excelente' :
+              retirementScore >= 5 ? 'Bueno' : 'Sin APV'
     }
     
-    totalScore += retirementScore
+    totalScore += Math.min(retirementScore, 10)
 
-    // ============================================
-    // RESULTADO FINAL
-    // ============================================
-    // Escalar de 70 puntos a 100 puntos
-    const finalScore = (totalScore / 70) * 100
+    // Escalar de 70 a 100
+    const scaledScore = (totalScore / 70) * 100
+    
+    let status, message
+    if (scaledScore >= 80) {
+      status = 'Excelente'
+      message = '¡Felicitaciones! Tu situación financiera es muy sólida.'
+    } else if (scaledScore >= 60) {
+      status = 'Bueno'
+      message = 'Vas por buen camino. Hay aspectos que puedes mejorar.'
+    } else if (scaledScore >= 40) {
+      status = 'Regular'
+      message = 'Tu situación requiere atención en varios aspectos.'
+    } else {
+      status = 'Crítico'
+      message = 'Es importante tomar acción inmediata para mejorar tu salud financiera.'
+    }
 
     return {
-      score: finalScore,
+      score: scaledScore,
       breakdown,
-      status: finalScore >= 80 ? 'Excelente' :
-              finalScore >= 60 ? 'Bueno' :
-              finalScore >= 40 ? 'Regular' : 'Mejorable',
-      message: finalScore >= 80 
-        ? 'Tu situación financiera es muy sólida. ¡Sigue así!' 
-        : finalScore >= 60 
-        ? 'Vas por buen camino. Hay algunos aspectos por mejorar.'
-        : finalScore >= 40
-        ? 'Tu situación financiera necesita atención. Enfócate en las áreas críticas.'
-        : 'Es momento de tomar acción. Prioriza el fondo de emergencia y reduce deudas.'
+      status,
+      message
     }
   },
 
   /**
-   * Calcula Patrimonio Neto (Assets - Liabilities)
-   * ✅ M18.5: Ahora requiere conversión de monedas
-   */
-  calculateNetWorth(assets, liabilities, convertCurrency, displayCurrency) {
-    const totalAssets = assets.reduce((sum, asset) => 
-      sum + convertCurrency(asset.value, asset.currency, displayCurrency), 0
-    )
-    const totalLiabilities = liabilities.reduce((sum, liability) => 
-      sum + convertCurrency(liability.value, liability.currency, displayCurrency), 0
-    )
-    return totalAssets - totalLiabilities
-  },
-
-  /**
-   * NUEVA: Calcula salud financiera básica (0-100)
-   * ✅ M18.5: Actualizado con conversión de monedas
-   * Necesaria para ExportPDFButton
+   * Calcula Salud Financiera (para header/dashboard)
    */
   calculateFinancialHealth(data, convertCurrency, displayCurrency) {
-    let score = 0;
-    
-    // ✅ M18.5: Convertir ingreso mensual
-    const monthlyIncome = data.ynabConfig?.monthlyIncome
-      ? convertCurrency(data.ynabConfig.monthlyIncome, data.ynabConfig.currency, displayCurrency)
-      : data.totals.budgeted;
-    
-    // ✅ M18.5: Convertir pagos mensuales de deuda
-    const monthlyDebtPayment = data.debts.reduce((sum, d) => 
-      sum + convertCurrency(d.monthlyPayment, d.currency, displayCurrency), 0
-    );
-    
-    // Ratio deuda/ingreso (30 puntos)
-    const debtRatio = monthlyIncome > 0 ? monthlyDebtPayment / monthlyIncome : 0;
-    if (debtRatio < 0.2) score += 30;
-    else if (debtRatio < 0.36) score += 20;
-    else if (debtRatio < 0.5) score += 10;
-    
-    // Tasa de ahorro (25 puntos)
-    const savingsRate = monthlyIncome > 0 ? data.totals.available / monthlyIncome : 0;
-    if (savingsRate > 0.2) score += 25;
-    else if (savingsRate > 0.1) score += 15;
-    else if (savingsRate > 0) score += 5;
-    
-    // Fondo de emergencia (25 puntos)
-    const emergencyFund = data.savingsGoals.find(g => 
-      g.name.toLowerCase().includes('emergencia')
-    );
-    if (emergencyFund && monthlyIncome > 0) {
-      const fundAmount = convertCurrency(
-        emergencyFund.currentAmount,
-        emergencyFund.currency,
-        displayCurrency
-      );
-      const monthsCovered = fundAmount / monthlyIncome;
-      if (monthsCovered >= 6) score += 25;
-      else if (monthsCovered >= 3) score += 15;
-      else if (monthsCovered >= 1) score += 5;
-    }
-    
-    // Diversificación (20 puntos)
-    if (data.investments.length >= 5) score += 20;
-    else if (data.investments.length >= 3) score += 15;
-    else if (data.investments.length >= 1) score += 5;
-    
-    return Math.min(score, 100);
+    const result = this.calculateNautaIndex(data, convertCurrency, displayCurrency)
+    return Math.round(result.score)
   },
 
   /**
-   * M9.1: Ratio Deuda/Ingreso anual
-   * ✅ M18.5: Ahora recibe convertCurrency y displayCurrency
+   * Ratio Deuda/Ingreso Anual
    */
   calculateDebtToIncomeRatio(debts, monthlyIncome, convertCurrency, displayCurrency, incomeCurrency) {
     if (!monthlyIncome || monthlyIncome === 0) return 0
     
-    // ✅ M18.5: Convertir ingreso a displayCurrency
-    const incomeInDisplay = convertCurrency(monthlyIncome, incomeCurrency, displayCurrency)
+    const annualIncome = convertCurrency(monthlyIncome * 12, incomeCurrency || 'EUR', displayCurrency)
     
-    // ✅ M18.5: Convertir deudas totales a displayCurrency
     const totalDebt = debts.reduce((sum, d) => 
-      sum + convertCurrency(d.currentBalance, d.currency, displayCurrency), 0
+      sum + convertCurrency(d.currentBalance || 0, d.currency || 'EUR', displayCurrency), 0
     )
     
-    return (totalDebt / (incomeInDisplay * 12)) * 100
+    return (totalDebt / annualIncome) * 100
   },
 
   /**
-   * M9.3: Ratio Servicio de Deuda
-   * ✅ M18.5: Ahora recibe convertCurrency y displayCurrency
+   * Tasa de Ahorro
+   */
+  calculateSavingsRate(totals, ynabConfig, convertCurrency, displayCurrency) {
+    const monthlyIncome = ynabConfig?.monthlyIncome
+      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency || 'EUR', displayCurrency)
+      : 0
+    
+    if (monthlyIncome === 0) return 0
+    
+    const savings = totals.available || 0
+    return (savings / monthlyIncome) * 100
+  },
+
+  /**
+   * Ratio Servicio de Deuda
    */
   calculateDebtServiceRatio(debts, monthlyIncome, convertCurrency, displayCurrency, incomeCurrency) {
     if (!monthlyIncome || monthlyIncome === 0) return 0
     
-    // ✅ M18.5: Convertir ingreso a displayCurrency
-    const incomeInDisplay = convertCurrency(monthlyIncome, incomeCurrency, displayCurrency)
+    const incomeInDisplay = convertCurrency(monthlyIncome, incomeCurrency || 'EUR', displayCurrency)
     
-    // ✅ M18.5: Convertir pagos mensuales a displayCurrency
     const monthlyPayment = debts.reduce((sum, d) => 
-      sum + convertCurrency(d.monthlyPayment, d.currency, displayCurrency), 0
+      sum + convertCurrency(d.monthlyPayment || 0, d.currency || 'EUR', displayCurrency), 0
     )
     
     return (monthlyPayment / incomeInDisplay) * 100
   },
 
   /**
-   * M9.4: Meses cubiertos por Fondo de Emergencia
-   * ✅ M18.5: Ahora recibe convertCurrency y displayCurrency
+   * Meses cubiertos por Fondo de Emergencia
+   * ✅ M32: Soporta linkedPlatforms
    */
-  calculateEmergencyFundMonths(savingsGoals, categories, convertCurrency, displayCurrency) {
+  calculateEmergencyFundMonths(savingsGoals, investments, categories, convertCurrency, displayCurrency) {
     const emergencyFund = savingsGoals.find(g => 
-      g.name.toLowerCase().includes('emergencia') ||
-      g.name.toLowerCase().includes('emergency')
+      g.isEmergencyFund === true ||
+      g.name?.toLowerCase().includes('emergencia') ||
+      g.name?.toLowerCase().includes('emergency')
     )
     if (!emergencyFund) return 0
     
-    // ✅ M18.5: Convertir monto del fondo a displayCurrency
-    const fundAmount = convertCurrency(
-      emergencyFund.currentAmount,
-      emergencyFund.currency,
-      displayCurrency
-    )
+    let fundAmount = 0
     
-    // ✅ M18.5: Convertir gastos mensuales a displayCurrency
+    if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0) {
+      fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
+        const platform = investments?.find(inv => inv.id === platformId)
+        if (platform) {
+          return sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+        }
+        return sum
+      }, 0)
+    } else if (emergencyFund.linkedPlatformId) {
+      const platform = investments?.find(inv => inv.id === emergencyFund.linkedPlatformId)
+      if (platform) {
+        fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+      }
+    } else {
+      fundAmount = convertCurrency(
+        emergencyFund.currentAmount || 0,
+        emergencyFund.currency || 'EUR',
+        displayCurrency
+      )
+    }
+    
     const monthlyExpenses = categories.reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget, cat.currency, displayCurrency), 0
+      sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
     )
     
     if (monthlyExpenses === 0) return 0
@@ -400,7 +360,6 @@ export const AnalysisEngine = {
 
   /**
    * Genera insights automáticos
-   * ✅ M18.5: Actualizado con conversión de monedas
    */
   generateInsights(data, convertCurrency, displayCurrency) {
     const insights = []
@@ -422,7 +381,7 @@ export const AnalysisEngine = {
 
     // Tasa de ahorro
     const monthlyIncome = ynabConfig?.monthlyIncome
-      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency, displayCurrency)
+      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency || 'EUR', displayCurrency)
       : totals.budgeted
     
     const savingsRate = monthlyIncome > 0 ? totals.available / monthlyIncome : 0
@@ -445,18 +404,16 @@ export const AnalysisEngine = {
       })
     }
 
-    // ✅ M18.5: Convertir deuda total a displayCurrency
-    const totalDebt = debts.reduce((sum, d) => 
-      sum + convertCurrency(d.currentBalance, d.currency, displayCurrency), 0
-    )
+    // Deudas tóxicas
+    const toxicDebts = debts.filter(d => d.isToxic === true || 
+      ['Préstamo Automotriz', 'Préstamo de Consumo', 'Tarjeta de Crédito'].includes(d.type))
     
-    const debtToIncomeRatio = monthlyIncome > 0 ? totalDebt / (monthlyIncome * 12) : 0
-    if (debtToIncomeRatio > 3) {
+    if (toxicDebts.length > 0) {
       insights.push({
         type: 'danger',
-        icon: 'fa-exclamation-circle',
-        title: 'Nivel de deuda alto',
-        message: `Tu deuda total representa ${debtToIncomeRatio.toFixed(1)} años de ingresos.`,
+        icon: 'fa-credit-card',
+        title: `${toxicDebts.length} deuda(s) tóxica(s)`,
+        message: 'Prioriza pagar estas deudas para mejorar tu salud financiera.',
         priority: 'high'
       })
     }
@@ -469,7 +426,6 @@ export const AnalysisEngine = {
 
   /**
    * Compara con el mes anterior
-   * ✅ M18.5: Actualizado con conversión de monedas
    */
   compareWithPreviousMonth(currentTransactions, convertCurrency, displayCurrency) {
     const now = new Date();
@@ -489,13 +445,12 @@ export const AnalysisEngine = {
       return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear;
     });
 
-    // ✅ M18.5: Convertir montos de transacciones
     const currentTotal = currentMonthTransactions.reduce((sum, t) => 
-      sum + convertCurrency(t.amount, t.currency, displayCurrency), 0
+      sum + convertCurrency(t.amount || 0, t.currency || 'EUR', displayCurrency), 0
     );
     
     const lastTotal = lastMonthTransactions.reduce((sum, t) => 
-      sum + convertCurrency(t.amount, t.currency, displayCurrency), 0
+      sum + convertCurrency(t.amount || 0, t.currency || 'EUR', displayCurrency), 0
     );
     
     const difference = currentTotal - lastTotal;
@@ -521,24 +476,20 @@ export const AnalysisEngine = {
 
   /**
    * Proyecta el cashflow para los próximos 12 meses
-   * ✅ M18.5: Actualizado con conversión de monedas
    */
   projectCashflow(categories, debts, ynabConfig, convertCurrency, displayCurrency) {
     const projection = [];
     
-    // ✅ M18.5: Convertir gastos mensuales a displayCurrency
     const monthlyExpenses = categories.reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget, cat.currency, displayCurrency), 0
+      sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
     );
     
-    // ✅ M18.5: Convertir pagos de deuda a displayCurrency
     const monthlyDebtPayment = debts.reduce((sum, d) => 
-      sum + convertCurrency(d.monthlyPayment, d.currency, displayCurrency), 0
+      sum + convertCurrency(d.monthlyPayment || 0, d.currency || 'EUR', displayCurrency), 0
     );
     
-    // ✅ M18.5: Convertir ingreso mensual a displayCurrency
     const monthlyIncome = ynabConfig?.monthlyIncome
-      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency, displayCurrency)
+      ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency || 'EUR', displayCurrency)
       : monthlyExpenses;
     
     let cumulativeBalance = monthlyIncome - monthlyExpenses;
@@ -565,5 +516,4 @@ export const AnalysisEngine = {
   }
 }
 
-// Export por defecto
 export default AnalysisEngine;
