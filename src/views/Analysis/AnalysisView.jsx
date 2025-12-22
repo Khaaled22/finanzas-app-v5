@@ -1,6 +1,9 @@
+// src/views/Analysis/AnalysisView.jsx
+// ✅ M32: Agregado gráfico de evolución de patrimonio neto
 import { useAnalytics } from '../../hooks/useAnalytics'
 import { useApp } from '../../context/AppContext'
 import NautaIndexCard from './NautaIndexCard'
+import NetWorthHistoryChart from './NetWorthHistoryChart'
 
 export default function AnalysisView() {
   const { displayCurrency, ynabConfig } = useApp()
@@ -10,7 +13,8 @@ export default function AnalysisView() {
     savingsRate,
     debtServiceRatio,
     emergencyFundMonths,
-    netWorth
+    netWorth,
+    netWorthHistory // ✅ M32: Nuevo
   } = useAnalytics()
 
   return (
@@ -28,6 +32,13 @@ export default function AnalysisView() {
 
       {/* M8: Índice de Tranquilidad Financiera (Nauta) */}
       <NautaIndexCard nautaIndex={nautaIndex} />
+
+      {/* ✅ M32: Gráfico de Patrimonio Neto */}
+      <NetWorthHistoryChart 
+        history={netWorthHistory} 
+        currentNetWorth={netWorth}
+        displayCurrency={displayCurrency}
+      />
 
       {/* M9: KPIs Adicionales */}
       <div>
@@ -180,6 +191,24 @@ export default function AnalysisView() {
               icon="fa-trophy"
               color="text-green-600"
               text="¡Excelente trabajo! Mantén estos buenos hábitos financieros."
+            />
+          )}
+
+          {/* ✅ M32: Recomendación de seguros */}
+          {nautaIndex.breakdown?.insurance?.score < 4 && (
+            <RecommendationItem
+              icon="fa-shield-alt"
+              color="text-purple-600"
+              text="Considera agregar más seguros (salud, vida, catastrófico). Configúralos en Ajustes > Seguros."
+            />
+          )}
+
+          {/* ✅ M32: Recomendación de APV */}
+          {nautaIndex.breakdown?.retirement?.score < 5 && (
+            <RecommendationItem
+              icon="fa-clock"
+              color="text-indigo-600"
+              text="No detectamos ahorro previsional (APV). Considera agregarlo para mejorar tu jubilación."
             />
           )}
         </div>

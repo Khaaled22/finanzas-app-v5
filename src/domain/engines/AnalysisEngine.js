@@ -1,10 +1,11 @@
-/**
- * Motor de Análisis Financiero
- * ✅ M32: Actualizado para usar campos nuevos:
- * - debt.isToxic (clasificación manual)
- * - goal.isEmergencyFund (flag fondo emergencia)
- * - goal.linkedPlatforms (múltiples plataformas)
- */
+// src/domain/engines/AnalysisEngine.js
+// ✅ M32: Completo con:
+// - debt.isToxic (clasificación manual)
+// - goal.isEmergencyFund + linkedPlatforms (múltiples plataformas)
+// - insuranceConfig desde Settings
+// - Detección de APV en inversiones
+
+import StorageManager from '../../modules/storage/StorageManager';
 
 export const AnalysisEngine = {
   /**
@@ -12,6 +13,9 @@ export const AnalysisEngine = {
    */
   calculateNautaIndex(data, convertCurrency, displayCurrency) {
     const { categories, debts, savingsGoals, investments, ynabConfig } = data
+    
+    // ✅ M32: Cargar config de seguros
+    const insuranceConfig = StorageManager.load('insuranceConfig_v5', null);
     
     let totalScore = 0
     const breakdown = {
@@ -23,7 +27,7 @@ export const AnalysisEngine = {
     }
 
     // Calcular gasto mensual total
-    const monthlyExpenses = categories.reduce((sum, cat) => 
+    const monthlyExpenses = (categories || []).reduce((sum, cat) => 
       sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
     )
     
@@ -34,9 +38,9 @@ export const AnalysisEngine = {
 
     // ============================================
     // 1. FONDO DE EMERGENCIA (0-20 puntos)
-    // ✅ M32: Buscar por isEmergencyFund o nombre
+    // ✅ M32: Buscar por isEmergencyFund o nombre + linkedPlatforms
     // ============================================
-    const emergencyFund = savingsGoals.find(g => 
+    const emergencyFund = (savingsGoals || []).find(g => 
       g.isEmergencyFund === true ||
       g.name?.toLowerCase().includes('emergencia') || 
       g.name?.toLowerCase().includes('emergency')
@@ -46,17 +50,16 @@ export const AnalysisEngine = {
       let fundAmount = 0
       
       // ✅ M32: Usar linkedPlatforms (array) si existe
-      if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0) {
+      if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0 && investments) {
         fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
-          const platform = investments?.find(inv => inv.id === platformId)
+          const platform = investments.find(inv => inv.id === platformId)
           if (platform) {
             return sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
           }
           return sum
         }, 0)
-      } else if (emergencyFund.linkedPlatformId) {
-        // Fallback a linkedPlatformId singular
-        const platform = investments?.find(inv => inv.id === emergencyFund.linkedPlatformId)
+      } else if (emergencyFund.linkedPlatformId && investments) {
+        const platform = investments.find(inv => inv.id === emergencyFund.linkedPlatformId)
         if (platform) {
           fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
         }
@@ -81,9 +84,9 @@ export const AnalysisEngine = {
         monthlyExpenses: monthlyExpenses,
         currency: displayCurrency,
         goalName: emergencyFund.name,
-        status: monthsCovered >= 6 ? 'Excelente' : 
-                monthsCovered >= 3 ? 'Bueno' : 
-                monthsCovered >= 1 ? 'Regular' : 'Insuficiente'
+        status: monthsCovered >= 6 ? 'Excelente - 6+ meses cubiertos' : 
+                monthsCovered >= 3 ? 'Bueno - 3-6 meses cubiertos' : 
+                monthsCovered >= 1 ? 'Regular - 1-3 meses cubiertos' : 'Insuficiente - menos de 1 mes'
       }
       
       totalScore += score
@@ -94,7 +97,7 @@ export const AnalysisEngine = {
         objective: 6,
         monthlyExpenses: monthlyExpenses,
         currency: displayCurrency,
-        status: 'Sin fondo de emergencia'
+        status: emergencyFund ? 'Sin gastos configurados' : 'Sin fondo de emergencia configurado'
       }
     }
 
@@ -116,9 +119,9 @@ export const AnalysisEngine = {
         savingsRatePercent: savingsRatePercent,
         currency: displayCurrency,
         objective: 20,
-        status: savingsRatePercent >= 20 ? 'Excelente' : 
-                savingsRatePercent >= 10 ? 'Bueno' : 
-                savingsRatePercent >= 5 ? 'Regular' : 'Insuficiente'
+        status: savingsRatePercent >= 20 ? 'Excelente - 20%+ de ahorro' : 
+                savingsRatePercent >= 10 ? 'Bueno - 10-20% de ahorro' : 
+                savingsRatePercent >= 5 ? 'Regular - 5-10% de ahorro' : 'Insuficiente - menos del 5%'
       }
       
       totalScore += score
@@ -138,13 +141,11 @@ export const AnalysisEngine = {
     // 3. DEUDAS TÓXICAS (0-10 puntos)
     // ✅ M32: Usar campo isToxic en vez de tipo
     // ============================================
-    const toxicDebts = debts.filter(d => {
-      // Si tiene el campo isToxic, usarlo
+    const toxicDebts = (debts || []).filter(d => {
       if (d.isToxic !== undefined) {
         return d.isToxic === true
       }
-      // Fallback: clasificar por tipo (backward compatibility)
-      const toxicTypes = ['Préstamo Automotriz', 'Préstamo de Consumo', 'Tarjeta de Crédito']
+      const toxicTypes = ['Préstamo Automotriz', 'Préstamo de Consumo', 'Tarjeta de Crédito', 'Préstamo Personal']
       return toxicTypes.includes(d.type)
     })
     
@@ -167,30 +168,46 @@ export const AnalysisEngine = {
         balance: convertCurrency(d.currentBalance || 0, d.currency || 'EUR', displayCurrency)
       })),
       status: toxicDebtCount === 0 ? 'Excelente - Sin deudas tóxicas' : 
-              toxicDebtCount <= 2 ? 'Mejorable' : 'Crítico'
+              toxicDebtCount <= 2 ? 'Mejorable - 1-2 deudas tóxicas' : 'Crítico - 3+ deudas tóxicas'
     }
     
     totalScore += score3
 
     // ============================================
     // 4. SEGUROS (0-10 puntos)
+    // ✅ M32: Primero checkear config de Settings, luego categorías
     // ============================================
-    const hasHealthInsurance = categories.some(c => 
-      c.name?.toLowerCase().includes('seguro') && 
-      (c.name?.toLowerCase().includes('médico') || 
-       c.name?.toLowerCase().includes('salud') ||
-       c.name?.toLowerCase().includes('complementario'))
-    )
+    let hasHealthInsurance = false;
+    let hasLifeInsurance = false;
+    let hasCatastrophicInsurance = false;
+
+    // Primero: Config de Settings (tiene prioridad)
+    if (insuranceConfig) {
+      hasHealthInsurance = insuranceConfig.hasHealthInsurance || false;
+      hasLifeInsurance = insuranceConfig.hasLifeInsurance || false;
+      hasCatastrophicInsurance = insuranceConfig.hasCatastrophicInsurance || false;
+    }
     
-    const hasLifeInsurance = categories.some(c => 
-      c.name?.toLowerCase().includes('seguro') && 
-      c.name?.toLowerCase().includes('vida')
-    )
-    
-    const hasCatastrophicInsurance = categories.some(c => 
-      c.name?.toLowerCase().includes('seguro') && 
-      c.name?.toLowerCase().includes('catastróf')
-    )
+    // Si no hay config, detectar desde categorías
+    if (!insuranceConfig || (!hasHealthInsurance && !hasLifeInsurance && !hasCatastrophicInsurance)) {
+      hasHealthInsurance = hasHealthInsurance || (categories || []).some(c => 
+        c.name?.toLowerCase().includes('seguro') && 
+        (c.name?.toLowerCase().includes('médico') || 
+         c.name?.toLowerCase().includes('salud') ||
+         c.name?.toLowerCase().includes('complementario') ||
+         c.name?.toLowerCase().includes('isapre'))
+      );
+      
+      hasLifeInsurance = hasLifeInsurance || (categories || []).some(c => 
+        c.name?.toLowerCase().includes('seguro') && 
+        c.name?.toLowerCase().includes('vida')
+      );
+      
+      hasCatastrophicInsurance = hasCatastrophicInsurance || (categories || []).some(c => 
+        c.name?.toLowerCase().includes('seguro') && 
+        (c.name?.toLowerCase().includes('catastróf') || c.name?.toLowerCase().includes('ges'))
+      );
+    }
     
     let insuranceScore = 0
     if (hasHealthInsurance) insuranceScore += 4
@@ -202,36 +219,40 @@ export const AnalysisEngine = {
       hasHealthInsurance: hasHealthInsurance,
       hasLifeInsurance: hasLifeInsurance,
       hasCatastrophicInsurance: hasCatastrophicInsurance,
+      configuredInSettings: !!insuranceConfig,
       status: insuranceScore >= 7 ? 'Buena protección' : 
-              insuranceScore >= 4 ? 'Protección básica' : 'Sin protección'
+              insuranceScore >= 4 ? 'Protección básica' : 'Sin protección detectada'
     }
     
     totalScore += Math.min(insuranceScore, 10)
 
     // ============================================
     // 5. APV / PENSIÓN (0-10 puntos)
+    // ✅ M32: Detecta tipo APV en inversiones
     // ============================================
-    const hasAPV = categories.some(c => 
+    const hasAPVCategory = (categories || []).some(c => 
       c.name?.toLowerCase().includes('apv') ||
       c.name?.toLowerCase().includes('previsional') ||
-      c.name?.toLowerCase().includes('pensión')
+      c.name?.toLowerCase().includes('pensión') ||
+      c.name?.toLowerCase().includes('afp')
     )
     
-    const hasAPVInvestment = investments?.some(inv =>
+    const hasAPVInvestment = (investments || []).some(inv =>
       inv.name?.toLowerCase().includes('apv') ||
-      inv.type?.toLowerCase() === 'apv'
+      inv.type?.toLowerCase() === 'apv' ||
+      inv.type === 'APV'
     )
     
     let retirementScore = 0
-    if (hasAPV) retirementScore += 5
+    if (hasAPVCategory) retirementScore += 5
     if (hasAPVInvestment) retirementScore += 5
     
     breakdown.retirement.score = Math.min(retirementScore, 10)
     breakdown.retirement.details = {
-      hasAPVCategory: hasAPV,
+      hasAPVCategory: hasAPVCategory,
       hasAPVInvestment: hasAPVInvestment,
-      status: retirementScore >= 10 ? 'Excelente' :
-              retirementScore >= 5 ? 'Bueno' : 'Sin APV'
+      status: retirementScore >= 10 ? 'Excelente - APV activo' :
+              retirementScore >= 5 ? 'Bueno - Categoría o inversión APV' : 'Sin APV detectado'
     }
     
     totalScore += Math.min(retirementScore, 10)
@@ -278,7 +299,7 @@ export const AnalysisEngine = {
     
     const annualIncome = convertCurrency(monthlyIncome * 12, incomeCurrency || 'EUR', displayCurrency)
     
-    const totalDebt = debts.reduce((sum, d) => 
+    const totalDebt = (debts || []).reduce((sum, d) => 
       sum + convertCurrency(d.currentBalance || 0, d.currency || 'EUR', displayCurrency), 0
     )
     
@@ -307,7 +328,7 @@ export const AnalysisEngine = {
     
     const incomeInDisplay = convertCurrency(monthlyIncome, incomeCurrency || 'EUR', displayCurrency)
     
-    const monthlyPayment = debts.reduce((sum, d) => 
+    const monthlyPayment = (debts || []).reduce((sum, d) => 
       sum + convertCurrency(d.monthlyPayment || 0, d.currency || 'EUR', displayCurrency), 0
     )
     
@@ -319,7 +340,7 @@ export const AnalysisEngine = {
    * ✅ M32: Soporta linkedPlatforms
    */
   calculateEmergencyFundMonths(savingsGoals, investments, categories, convertCurrency, displayCurrency) {
-    const emergencyFund = savingsGoals.find(g => 
+    const emergencyFund = (savingsGoals || []).find(g => 
       g.isEmergencyFund === true ||
       g.name?.toLowerCase().includes('emergencia') ||
       g.name?.toLowerCase().includes('emergency')
@@ -328,16 +349,16 @@ export const AnalysisEngine = {
     
     let fundAmount = 0
     
-    if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0) {
+    if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0 && investments) {
       fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
-        const platform = investments?.find(inv => inv.id === platformId)
+        const platform = investments.find(inv => inv.id === platformId)
         if (platform) {
           return sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
         }
         return sum
       }, 0)
-    } else if (emergencyFund.linkedPlatformId) {
-      const platform = investments?.find(inv => inv.id === emergencyFund.linkedPlatformId)
+    } else if (emergencyFund.linkedPlatformId && investments) {
+      const platform = investments.find(inv => inv.id === emergencyFund.linkedPlatformId)
       if (platform) {
         fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
       }
@@ -349,7 +370,7 @@ export const AnalysisEngine = {
       )
     }
     
-    const monthlyExpenses = categories.reduce((sum, cat) => 
+    const monthlyExpenses = (categories || []).reduce((sum, cat) => 
       sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
     )
     
@@ -359,14 +380,66 @@ export const AnalysisEngine = {
   },
 
   /**
+   * ✅ M32: Calcula patrimonio neto con historial
+   */
+  calculateNetWorth(data, convertCurrency, displayCurrency) {
+    const { savingsGoals, investments, debts } = data;
+    
+    const totalSavings = (savingsGoals || []).reduce((sum, goal) => 
+      sum + convertCurrency(goal.currentAmount || 0, goal.currency || 'EUR', displayCurrency), 0
+    );
+    
+    const totalInvestments = (investments || []).reduce((sum, inv) => {
+      let value;
+      if (inv.currentBalance !== undefined) {
+        value = inv.currentBalance;
+      } else if (inv.quantity && inv.currentPrice) {
+        value = inv.quantity * inv.currentPrice;
+      } else {
+        value = 0;
+      }
+      return sum + convertCurrency(value, inv.currency || 'EUR', displayCurrency);
+    }, 0);
+    
+    const totalDebt = (debts || []).reduce((sum, debt) => 
+      sum + convertCurrency(debt.currentBalance || 0, debt.currency || 'EUR', displayCurrency), 0
+    );
+    
+    return totalSavings + totalInvestments - totalDebt;
+  },
+
+  /**
+   * ✅ M32: Guardar snapshot de patrimonio neto
+   */
+  saveNetWorthSnapshot(netWorth, displayCurrency) {
+    const today = new Date().toISOString().slice(0, 10);
+    const history = StorageManager.load('netWorthHistory_v5', {});
+    
+    history[today] = {
+      value: netWorth,
+      currency: displayCurrency,
+      timestamp: new Date().toISOString()
+    };
+    
+    StorageManager.save('netWorthHistory_v5', history);
+    return history;
+  },
+
+  /**
+   * ✅ M32: Obtener historial de patrimonio neto
+   */
+  getNetWorthHistory() {
+    return StorageManager.load('netWorthHistory_v5', {});
+  },
+
+  /**
    * Genera insights automáticos
    */
   generateInsights(data, convertCurrency, displayCurrency) {
     const insights = []
     const { categories, totals, debts, savingsGoals, ynabConfig } = data
 
-    // Análisis de gastos
-    categories.forEach(cat => {
+    (categories || []).forEach(cat => {
       const percentage = cat.budget > 0 ? (cat.spent / cat.budget) * 100 : 0
       if (percentage > 100) {
         insights.push({
@@ -379,12 +452,11 @@ export const AnalysisEngine = {
       }
     })
 
-    // Tasa de ahorro
     const monthlyIncome = ynabConfig?.monthlyIncome
       ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency || 'EUR', displayCurrency)
-      : totals.budgeted
+      : totals?.budgeted || 0
     
-    const savingsRate = monthlyIncome > 0 ? totals.available / monthlyIncome : 0
+    const savingsRate = monthlyIncome > 0 ? (totals?.available || 0) / monthlyIncome : 0
     
     if (savingsRate < 0.1) {
       insights.push({
@@ -404,9 +476,10 @@ export const AnalysisEngine = {
       })
     }
 
-    // Deudas tóxicas
-    const toxicDebts = debts.filter(d => d.isToxic === true || 
-      ['Préstamo Automotriz', 'Préstamo de Consumo', 'Tarjeta de Crédito'].includes(d.type))
+    const toxicDebts = (debts || []).filter(d => {
+      if (d.isToxic !== undefined) return d.isToxic === true
+      return ['Préstamo Automotriz', 'Préstamo de Consumo', 'Tarjeta de Crédito', 'Préstamo Personal'].includes(d.type)
+    })
     
     if (toxicDebts.length > 0) {
       insights.push({
@@ -435,12 +508,12 @@ export const AnalysisEngine = {
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    const currentMonthTransactions = currentTransactions.filter(t => {
+    const currentMonthTransactions = (currentTransactions || []).filter(t => {
       const date = new Date(t.date);
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
     });
 
-    const lastMonthTransactions = currentTransactions.filter(t => {
+    const lastMonthTransactions = (currentTransactions || []).filter(t => {
       const date = new Date(t.date);
       return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear;
     });
@@ -480,11 +553,11 @@ export const AnalysisEngine = {
   projectCashflow(categories, debts, ynabConfig, convertCurrency, displayCurrency) {
     const projection = [];
     
-    const monthlyExpenses = categories.reduce((sum, cat) => 
+    const monthlyExpenses = (categories || []).reduce((sum, cat) => 
       sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
     );
     
-    const monthlyDebtPayment = debts.reduce((sum, d) => 
+    const monthlyDebtPayment = (debts || []).reduce((sum, d) => 
       sum + convertCurrency(d.monthlyPayment || 0, d.currency || 'EUR', displayCurrency), 0
     );
     

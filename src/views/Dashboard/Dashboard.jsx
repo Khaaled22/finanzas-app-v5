@@ -1,32 +1,30 @@
 // src/views/Dashboard/Dashboard.jsx
-// ✅ M24: Agregado selector de mes sincronizado con BudgetView
+// ✅ M33: Dashboard mejorado con formateo de números y proyección de gasto
 import { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { formatNumber, formatPercent, formatCompact, getValueColors } from '../../utils/formatters';
 import BarChart from '../../components/charts/BarChart';
 import LineChart from '../../components/charts/LineChart';
 import DoughnutChart from '../../components/charts/DoughnutChart';
-import InvestmentSummaryCard from '../../components/dashboard/InvestmentSummaryCard';
-import NetWorthCard from '../../components/dashboard/NetWorthCard';
 import AchievementsPanel from '../../components/investments/AchievementsPanel';
 
 export default function Dashboard() {
   const { 
-    categories, 
     displayCurrency, 
     debts, 
     savingsGoals, 
     investments, 
     totals,
-    // ✅ M24: Selector de mes
     selectedBudgetMonth,
     setSelectedBudgetMonth,
-    categoriesWithMonthlyBudget
+    categoriesWithMonthlyBudget,
+    convertCurrency
   } = useApp();
   
   const { nautaIndex, netWorth, savingsRate, emergencyFundMonths } = useAnalytics();
 
-  // ✅ M24: Generar lista de meses disponibles
+  // Generar lista de meses disponibles
   const availableMonths = useMemo(() => {
     const months = [];
     const now = new Date();
@@ -41,42 +39,105 @@ export default function Dashboard() {
     return months;
   }, []);
 
-  // ✅ M24: Usar categoriesWithMonthlyBudget que ya está filtrado por mes
+  // Proyección del mes con estado
   const monthProjection = useMemo(() => {
     const now = new Date();
     const [selectedYear, selectedMonth] = selectedBudgetMonth.split('-').map(Number);
     const isCurrentMonth = now.getFullYear() === selectedYear && (now.getMonth() + 1) === selectedMonth;
     
-    if (isCurrentMonth) {
-      const currentDay = now.getDate();
-      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-      const projectedSpent = (totals.spent / currentDay) * daysInMonth;
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
+    const percentDaysPassed = (currentDay / daysInMonth) * 100;
+    
+    // Calcular presupuesto total (de categorías de gasto)
+    const totalBudget = categoriesWithMonthlyBudget
+      .filter(cat => cat.type === 'Gasto' || !cat.type)
+      .reduce((sum, cat) => sum + (cat.budgetInDisplayCurrency || 0), 0);
+    
+    // Calcular gasto real
+    const totalSpent = totals.spent || 0;
+    const percentSpent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+    
+    // Proyección
+    const projectedSpent = isCurrentMonth && currentDay > 0
+      ? (totalSpent / currentDay) * daysInMonth
+      : totalSpent;
+    
+    // Determinar estado
+    let status = 'on_track';
+    let statusMessage = '';
+    
+    if (totalBudget === 0) {
+      status = 'no_budget';
+      statusMessage = 'Sin presupuesto asignado';
+    } else if (isCurrentMonth) {
+      const expectedSpent = (totalBudget * percentDaysPassed) / 100;
+      const difference = totalSpent - expectedSpent;
+      const percentDifference = (difference / totalBudget) * 100;
       
-      return {
-        currentDay,
-        daysInMonth,
-        projectedSpent,
-        remainingDays: daysInMonth - currentDay,
-        isCurrentMonth: true
-      };
+      if (percentSpent > 100) {
+        status = 'over_budget';
+        statusMessage = `¡Presupuesto excedido por ${formatNumber(totalSpent - totalBudget)}!`;
+      } else if (percentDifference > 10) {
+        status = 'warning';
+        statusMessage = `Gastando más rápido de lo esperado`;
+      } else if (percentDifference < -10) {
+        status = 'under_budget';
+        statusMessage = 'Excelente control del gasto';
+      } else {
+        status = 'on_track';
+        statusMessage = 'Vas bien, mantén el ritmo';
+      }
     }
     
-    // Para meses pasados o futuros
-    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const remainingBudget = Math.max(0, totalBudget - totalSpent);
+    const remainingDays = Math.max(0, daysInMonth - currentDay);
+    const dailyBudget = remainingDays > 0 ? remainingBudget / remainingDays : 0;
+    
     return {
-      currentDay: daysInMonth,
+      currentDay,
       daysInMonth,
-      projectedSpent: totals.spent,
-      remainingDays: 0,
-      isCurrentMonth: false
+      percentDaysPassed,
+      totalBudget,
+      totalSpent,
+      percentSpent,
+      projectedSpent,
+      remainingBudget,
+      remainingDays,
+      dailyBudget,
+      status,
+      statusMessage,
+      isCurrentMonth
     };
-  }, [totals.spent, selectedBudgetMonth]);
+  }, [totals.spent, selectedBudgetMonth, categoriesWithMonthlyBudget]);
 
+  // Calcular totales de inversiones
+  const investmentsTotals = useMemo(() => {
+    const totalValue = investments.reduce((sum, inv) => {
+      const balance = inv.currentBalance || 0;
+      return sum + convertCurrency(balance, inv.currency, displayCurrency);
+    }, 0);
+    
+    return { totalValue };
+  }, [investments, displayCurrency, convertCurrency]);
+
+  // Calcular deuda total
+  const debtTotal = useMemo(() => {
+    return debts.reduce((sum, debt) => 
+      sum + convertCurrency(debt.currentBalance || 0, debt.currency, displayCurrency), 0
+    );
+  }, [debts, displayCurrency, convertCurrency]);
+
+  // Datos para gráfico de barras
   const budgetChartData = useMemo(() => ({
     labels: ['Presupuestado', 'Gastado', 'Disponible'],
     datasets: [{
       label: 'Monto',
-      data: [totals.budgeted, totals.spent, totals.available],
+      data: [
+        monthProjection.totalBudget, 
+        monthProjection.totalSpent, 
+        monthProjection.remainingBudget
+      ],
       backgroundColor: [
         'rgba(59, 130, 246, 0.6)',
         'rgba(239, 68, 68, 0.6)',
@@ -89,33 +150,57 @@ export default function Dashboard() {
       ],
       borderWidth: 2
     }]
-  }), [totals]);
+  }), [monthProjection]);
 
-  const projectionChartData = useMemo(() => ({
-    labels: ['Inicio Mes', 'Hoy', 'Proyección Fin Mes'],
-    datasets: [
-      {
-        label: 'Gasto Real',
-        data: [0, totals.spent, null],
-        borderColor: 'rgb(239, 68, 68)',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        borderWidth: 3,
-        tension: 0.1,
-        spanGaps: false
-      },
-      {
-        label: 'Proyección',
-        data: [0, totals.spent, monthProjection.projectedSpent],
-        borderColor: 'rgb(239, 68, 68)',
-        backgroundColor: 'rgba(239, 68, 68, 0.05)',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        tension: 0.1
-      }
-    ]
-  }), [totals.spent, monthProjection.projectedSpent]);
+  // Datos para gráfico de proyección
+  const projectionChartData = useMemo(() => {
+    const labels = ['Inicio', `Día ${monthProjection.currentDay}`, 'Fin de Mes'];
+    
+    const realData = [0, monthProjection.totalSpent, null];
+    const projectionData = [0, monthProjection.totalSpent, monthProjection.projectedSpent];
+    const budgetLine = [0, 
+      (monthProjection.totalBudget * monthProjection.currentDay) / monthProjection.daysInMonth,
+      monthProjection.totalBudget
+    ];
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Gasto Real',
+          data: realData,
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 3,
+          tension: 0.1,
+          spanGaps: false,
+          pointRadius: 6
+        },
+        {
+          label: 'Proyección',
+          data: projectionData,
+          borderColor: 'rgb(239, 68, 68)',
+          backgroundColor: 'rgba(239, 68, 68, 0.05)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.1,
+          pointRadius: 4
+        },
+        {
+          label: 'Presupuesto',
+          data: budgetLine,
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [10, 5],
+          tension: 0,
+          pointRadius: 0
+        }
+      ]
+    };
+  }, [monthProjection]);
 
-  // ✅ M24: Usar categoriesWithMonthlyBudget para datos del mes seleccionado
+  // Datos para gráfico de categorías
   const categoryChartData = useMemo(() => {
     const categoriesWithSpent = categoriesWithMonthlyBudget.filter(c => c.spentInDisplayCurrency > 0);
     
@@ -148,7 +233,7 @@ export default function Dashboard() {
     };
   }, [categoriesWithMonthlyBudget]);
 
-  // ✅ M24: Formatear nombre del mes seleccionado
+  // Formatear nombre del mes seleccionado
   const selectedMonthName = useMemo(() => {
     const [year, month] = selectedBudgetMonth.split('-').map(Number);
     return new Date(year, month - 1).toLocaleDateString('es-ES', { 
@@ -156,6 +241,15 @@ export default function Dashboard() {
       month: 'long' 
     });
   }, [selectedBudgetMonth]);
+
+  // Colores según status
+  const statusColors = {
+    on_track: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: '✓' },
+    under_budget: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: '🎉' },
+    warning: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', icon: '⚠️' },
+    over_budget: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: '🚨' },
+    no_budget: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', icon: '📝' }
+  };
 
   return (
     <div className="space-y-6 animate-in">
@@ -192,7 +286,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ✅ M24: Selector de Mes */}
+      {/* Selector de Mes */}
       <div className="bg-white rounded-xl shadow-md p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -212,90 +306,85 @@ export default function Dashboard() {
               ))}
             </select>
           </div>
-          <p className="text-sm text-gray-500">
-            {monthProjection.isCurrentMonth 
-              ? `Día ${monthProjection.currentDay} de ${monthProjection.daysInMonth} • ${monthProjection.remainingDays} días restantes`
-              : `Mes completo (${monthProjection.daysInMonth} días)`
-            }
-          </p>
+          
+          {monthProjection.isCurrentMonth && (
+            <p className="text-sm text-gray-500">
+              Día {monthProjection.currentDay} de {monthProjection.daysInMonth} • {monthProjection.remainingDays} días restantes
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Métricas Principales */}
+      {/* Tarjetas KPI principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Presupuestado"
-          value={totals.budgeted.toFixed(0)}
+          value={formatNumber(monthProjection.totalBudget)}
           currency={displayCurrency}
-          icon="fa-wallet"
+          subtitle={monthProjection.totalBudget === 0 ? 'Sin presupuesto' : selectedMonthName}
+          icon="fa-calculator"
           color="blue"
-          subtitle={selectedMonthName}
         />
-
+        
         <MetricCard
           title="Gastado"
-          value={totals.spent.toFixed(0)}
+          value={formatNumber(monthProjection.totalSpent)}
           currency={displayCurrency}
-          icon="fa-credit-card"
+          subtitle={monthProjection.totalBudget > 0 ? `${formatPercent(monthProjection.percentSpent)} del presupuesto` : ''}
+          icon="fa-receipt"
           color="red"
-          subtitle={totals.budgeted > 0 
-            ? `${Math.min((totals.spent / totals.budgeted) * 100, 999).toFixed(1)}% usado`
-            : 'Sin presupuesto'
-          }
         />
-
+        
         <MetricCard
           title="Disponible"
-          value={totals.available.toFixed(0)}
+          value={formatNumber(monthProjection.remainingBudget)}
           currency={displayCurrency}
+          subtitle={monthProjection.totalBudget === 0 ? 'Sin presupuesto' : `${formatNumber(monthProjection.dailyBudget)}/día`}
           icon="fa-piggy-bank"
-          color={totals.available >= 0 ? 'green' : 'red'}
-          subtitle={totals.budgeted > 0 
-            ? `${Math.min((totals.available / totals.budgeted) * 100, 999).toFixed(1)}% libre`
-            : 'Sin presupuesto'
-          }
+          color={monthProjection.remainingBudget >= 0 ? 'green' : 'red'}
         />
-
+        
         <MetricCard
           title="Patrimonio Neto"
-          value={netWorth.toFixed(0)}
+          value={formatNumber(netWorth)}
           currency={displayCurrency}
-          icon="fa-chart-line"
-          color={netWorth >= 0 ? 'green' : 'red'}
           subtitle="Activos - Pasivos"
+          icon="fa-chart-line"
+          color="purple"
         />
       </div>
 
-      {/* KPIs Rápidos */}
+      {/* Mini KPIs secundarios */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MiniKPI
-          label="Tasa de Ahorro"
-          value={`${savingsRate.toFixed(1)}%`}
+        <MiniKPI 
+          label="Tasa de Ahorro" 
+          value={formatPercent(savingsRate)} 
           icon="fa-piggy-bank"
           status={savingsRate >= 20 ? 'good' : savingsRate >= 10 ? 'warning' : 'danger'}
         />
-        <MiniKPI
-          label="Fondo Emergencia"
-          value={`${emergencyFundMonths.toFixed(1)} meses`}
+        <MiniKPI 
+          label="Fondo Emergencia" 
+          value={`${emergencyFundMonths.toFixed(1)} meses`} 
           icon="fa-shield-alt"
           status={emergencyFundMonths >= 6 ? 'good' : emergencyFundMonths >= 3 ? 'warning' : 'danger'}
         />
-        <MiniKPI
-          label="Deuda Total"
-          value={`${(totals.totalDebt / 1000).toFixed(0)}k`}
+        <MiniKPI 
+          label="Deuda Total" 
+          value={formatCompact(debtTotal, displayCurrency)} 
           icon="fa-credit-card"
-          status={totals.totalDebt === 0 ? 'good' : totals.totalDebt < 50000 ? 'warning' : 'danger'}
+          status={debtTotal === 0 ? 'good' : debtTotal < 10000 ? 'warning' : 'danger'}
         />
-        <MiniKPI
-          label="Inversiones"
-          value={`${(totals.totalInvestments / 1000).toFixed(0)}k`}
+        <MiniKPI 
+          label="Inversiones" 
+          value={formatCompact(investmentsTotals.totalValue, displayCurrency)} 
           icon="fa-chart-pie"
-          status={totals.totalInvestments > 10000 ? 'good' : totals.totalInvestments > 0 ? 'warning' : 'danger'}
+          status={investmentsTotals.totalValue > 0 ? 'good' : 'warning'}
         />
       </div>
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Resumen del mes */}
         <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <i className="fas fa-chart-bar mr-2 text-blue-600"></i>
@@ -307,21 +396,45 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Proyección de Gasto */}
         <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <i className="fas fa-chart-line mr-2 text-red-600"></i>
+            <i className="fas fa-chart-line mr-2 text-purple-600"></i>
             {monthProjection.isCurrentMonth ? 'Proyección de Gasto' : 'Gasto del Mes'}
           </h3>
-          <div className="chart-container">
-            <LineChart data={projectionChartData} height={300} />
-          </div>
+          
+          {/* Status card */}
           {monthProjection.isCurrentMonth && (
-            <p className="text-sm text-gray-500 mt-3 text-center">
-              Proyección fin de mes: <span className="font-bold text-red-600">
-                {monthProjection.projectedSpent.toFixed(0)} {displayCurrency}
-              </span>
-            </p>
+            <div className={`mb-4 p-4 rounded-lg border-2 ${statusColors[monthProjection.status].bg} ${statusColors[monthProjection.status].border}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`font-semibold ${statusColors[monthProjection.status].text}`}>
+                    {statusColors[monthProjection.status].icon} {monthProjection.statusMessage}
+                  </p>
+                  {monthProjection.status !== 'no_budget' && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Proyección fin de mes: <span className="font-bold">{formatNumber(monthProjection.projectedSpent)} {displayCurrency}</span>
+                      {monthProjection.totalBudget > 0 && (
+                        <span className={monthProjection.projectedSpent > monthProjection.totalBudget ? 'text-red-600' : 'text-green-600'}>
+                          {' '}({monthProjection.projectedSpent > monthProjection.totalBudget ? '+' : ''}{formatNumber(monthProjection.projectedSpent - monthProjection.totalBudget)})
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+                {monthProjection.remainingDays > 0 && monthProjection.dailyBudget > 0 && (
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-gray-800">{formatNumber(monthProjection.dailyBudget)}</p>
+                    <p className="text-xs text-gray-500">{displayCurrency}/día disponible</p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
+          
+          <div className="chart-container">
+            <LineChart data={projectionChartData} height={250} />
+          </div>
         </div>
       </div>
 
@@ -358,7 +471,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-700">{debt.name}</span>
               <span className="text-sm font-semibold text-red-600">
-                {debt.currentBalance.toFixed(0)} {debt.currency}
+                {formatNumber(debt.currentBalance)} {debt.currency}
               </span>
             </div>
           )}
@@ -372,13 +485,13 @@ export default function Dashboard() {
           items={savingsGoals.slice(0, 3)}
           emptyMessage="Sin objetivos creados"
           renderItem={(goal) => {
-            const progress = (goal.currentAmount / goal.targetAmount) * 100;
+            const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
             return (
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm text-gray-700">{goal.name}</span>
                   <span className="text-xs font-semibold text-green-600">
-                    {progress.toFixed(0)}%
+                    {formatPercent(progress)}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -397,45 +510,27 @@ export default function Dashboard() {
           icon="fa-chart-line"
           iconColor="text-purple-600"
           iconBg="bg-purple-100"
-          items={investments.slice(0, 3)}
+          items={investments.filter(inv => !inv.isArchived).slice(0, 3)}
           emptyMessage="Sin inversiones registradas"
           renderItem={(inv) => {
-            if (inv.type === 'platform' || (inv.platform && !inv.quantity)) {
-              const history = inv.balanceHistory || [];
-              let changePercent = 0;
-              
-              if (history.length >= 2) {
-                const oldest = history[0].balance;
-                const current = inv.currentBalance;
-                changePercent = oldest > 0 ? ((current - oldest) / oldest * 100) : 0;
-              }
-              
-              return (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">{inv.name || inv.platform}</span>
-                  <span className={`text-sm font-semibold ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
-                  </span>
-                </div>
-              );
-            } else if (inv.quantity && inv.currentPrice && inv.purchasePrice) {
-              const roi = ((inv.currentPrice - inv.purchasePrice) / inv.purchasePrice) * 100;
-              return (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">{inv.symbol || inv.name}</span>
-                  <span className={`text-sm font-semibold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
-                  </span>
-                </div>
-              );
-            } else {
-              return (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">{inv.name || inv.platform || 'N/A'}</span>
-                  <span className="text-sm text-gray-500">—</span>
-                </div>
-              );
+            const history = inv.balanceHistory || [];
+            let changePercent = 0;
+            
+            if (history.length >= 2) {
+              const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+              const oldest = sorted[0].balance;
+              const current = inv.currentBalance || 0;
+              changePercent = oldest > 0 ? ((current - oldest) / oldest * 100) : 0;
             }
+            
+            return (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-700">{inv.name}</span>
+                <span className={`text-sm font-semibold ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
+                </span>
+              </div>
+            );
           }}
         />
       </div>

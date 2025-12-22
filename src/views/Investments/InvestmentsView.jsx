@@ -1,145 +1,120 @@
-import { useState, useMemo } from 'react'
-import { useApp } from '../../context/AppContext'
-import InvestmentForm from '../../components/forms/InvestmentForm'
-import UpdateInvestmentModal from '../../components/modals/UpdateInvestmentModal'
-import PlatformModal from '../../components/modals/PlatformModal'
-import PlatformDetailModal from '../../components/modals/PlatformDetailModal'
-import PlatformEvolutionModal from '../../components/modals/PlatformEvolutionModal'
-import BalanceHistoryModal from '../../components/modals/BalanceHistoryModal'
-import MonthlyComparisonTable from '../../components/investments/MonthlyComparisonTable'
+// src/views/Investments/InvestmentsView.jsx
+// ✅ M33: Vista simplificada - Solo plataformas con historial de balances
+// ✅ M34: Gráfico de evolución total del portafolio
+import { useState, useMemo } from 'react';
+import { useApp, PLATFORM_GOALS, PLATFORM_SUBTYPES } from '../../context/AppContext';
+import { formatNumber, formatPercent, getValueColors } from '../../utils/formatters';
+import PlatformForm from '../../components/forms/PlatformForm';
+import BalanceHistoryModal from '../../components/modals/BalanceHistoryModal';
+import PortfolioEvolutionChart from '../../components/charts/PortfolioEvolutionChart';
+
+// ✅ Colores fijos para goals (Tailwind no soporta clases dinámicas)
+const GOAL_COLORS = {
+  fi_step1: { bg: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-300' },
+  emergency: { bg: 'bg-green-500', light: 'bg-green-50', text: 'text-green-600', border: 'border-green-300' },
+  down_payment: { bg: 'bg-purple-500', light: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-300' },
+  real_state: { bg: 'bg-orange-500', light: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-300' },
+  retirement: { bg: 'bg-indigo-500', light: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-300' },
+  growth: { bg: 'bg-cyan-500', light: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-300' },
+  cash: { bg: 'bg-gray-500', light: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-300' },
+  other: { bg: 'bg-slate-500', light: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-300' }
+};
 
 export default function InvestmentsView() {
   const { 
     investments, 
-    updateInvestment,
-    updateInvestmentPrice,
-    savePlatform,
-    deleteInvestment,
-    addHoldingToPlatform,
-    updateHoldingInPlatform,
-    deleteHoldingFromPlatform,
-    addBalanceHistory,
-    updateBalanceHistory,
-    addBalanceEntry,
-    deleteBalanceEntry,
+    updatePlatformBalance,
+    calculatePlatformROI,
     displayCurrency,
     convertCurrency 
-  } = useApp()
+  } = useApp();
   
-  const [showAddInvestment, setShowAddInvestment] = useState(false)
-  const [editingInvestment, setEditingInvestment] = useState(null)
-  const [updatingPrices, setUpdatingPrices] = useState({})
+  // Modales
+  const [showPlatformForm, setShowPlatformForm] = useState(false);
+  const [editingPlatform, setEditingPlatform] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [showEvolutionChart, setShowEvolutionChart] = useState(false);
   
-  // Modales de plataformas
-  const [showPlatformModal, setShowPlatformModal] = useState(false)
-  const [editingPlatform, setEditingPlatform] = useState(null)
-  const [showPlatformDetail, setShowPlatformDetail] = useState(false)
-  const [selectedPlatform, setSelectedPlatform] = useState(null)
-  const [showUpdateModal, setShowUpdateModal] = useState(false)
-  const [showEvolutionModal, setShowEvolutionModal] = useState(false)
-  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  // Filtros
+  const [filterGoal, setFilterGoal] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
-  // Separar plataformas de activos individuales
-  const { platforms, assets } = useMemo(() => {
-    const platforms = investments.filter(inv => inv.platform && !inv.quantity)
-    const assets = investments.filter(inv => inv.quantity)
-    return { platforms, assets }
-  }, [investments])
-
-  // Calcular totales de activos individuales
-  const assetsValue = assets.reduce((sum, inv) => {
-    const value = inv.quantity * inv.currentPrice
-    return sum + convertCurrency(value, inv.currency, displayCurrency)
-  }, 0)
-  
-  const assetsCost = assets.reduce((sum, inv) => {
-    const cost = inv.quantity * inv.purchasePrice
-    return sum + convertCurrency(cost, inv.currency, displayCurrency)
-  }, 0)
-
-  // Calcular totales de plataformas
-  const platformsValue = platforms.reduce((sum, inv) => {
-    return sum + convertCurrency(inv.currentBalance, inv.currency, displayCurrency)
-  }, 0)
-  
-  // Totales generales
-  const portfolioValue = assetsValue + platformsValue
-  const portfolioCost = assetsCost
-  const totalGainLoss = assetsValue - assetsCost
-  const totalROI = portfolioCost > 0 ? (totalGainLoss / portfolioCost) * 100 : 0
-
-  const handleUpdatePrice = async (investmentId) => {
-    setUpdatingPrices(prev => ({ ...prev, [investmentId]: true }))
+  // Filtrar plataformas
+  const { activePlatforms, archivedPlatforms, filteredPlatforms } = useMemo(() => {
+    const active = investments.filter(inv => !inv.isArchived);
+    const archived = investments.filter(inv => inv.isArchived);
     
-    setTimeout(() => {
-      updateInvestmentPrice(investmentId)
-      setUpdatingPrices(prev => ({ ...prev, [investmentId]: false }))
-    }, 500)
-  }
+    let filtered = showArchived ? archived : active;
+    
+    if (filterGoal !== 'all') {
+      filtered = filtered.filter(inv => inv.goal === filterGoal);
+    }
+    
+    // Ordenar por balance (mayor primero)
+    filtered.sort((a, b) => {
+      const balanceA = convertCurrency(a.currentBalance || 0, a.currency, displayCurrency);
+      const balanceB = convertCurrency(b.currentBalance || 0, b.currency, displayCurrency);
+      return balanceB - balanceA;
+    });
+    
+    return { activePlatforms: active, archivedPlatforms: archived, filteredPlatforms: filtered };
+  }, [investments, filterGoal, showArchived, displayCurrency, convertCurrency]);
 
+  // Calcular totales
+  const totals = useMemo(() => {
+    const platforms = showArchived ? archivedPlatforms : activePlatforms;
+    
+    const totalValue = platforms.reduce((sum, inv) => 
+      sum + convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency), 0
+    );
+    
+    const liquidValue = platforms
+      .filter(inv => inv.isLiquid !== false)
+      .reduce((sum, inv) => sum + convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency), 0);
+    
+    const byGoal = {};
+    PLATFORM_GOALS.forEach(goal => {
+      byGoal[goal.id] = platforms
+        .filter(inv => inv.goal === goal.id)
+        .reduce((sum, inv) => sum + convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency), 0);
+    });
+    
+    return { totalValue, liquidValue, byGoal, count: platforms.length };
+  }, [activePlatforms, archivedPlatforms, showArchived, displayCurrency, convertCurrency]);
+
+  // Handlers
   const handleAddPlatform = () => {
-    setEditingPlatform(null)
-    setShowPlatformModal(true)
-  }
+    setEditingPlatform(null);
+    setShowPlatformForm(true);
+  };
 
   const handleEditPlatform = (platform) => {
-    setEditingPlatform(platform)
-    setShowPlatformModal(true)
-  }
-
-  const handleSavePlatform = (platformData) => {
-    savePlatform(platformData)
-  }
-
-  const handleDeletePlatform = (platformId) => {
-    deleteInvestment(platformId)
-  }
-
-  const handleViewPlatformDetails = (platform) => {
-    setSelectedPlatform(platform)
-    setShowPlatformDetail(true)
-  }
-
-  const handleUpdatePlatform = (platform) => {
-    setSelectedPlatform(platform)
-    setShowUpdateModal(true)
-  }
-
-  const handleUpdatePlatformBalance = (platformId, updates) => {
-    updateInvestment(platformId, updates)
-    
-    // Agregar al historial
-    if (updates.currentBalance !== undefined) {
-      addBalanceHistory(platformId, updates.currentBalance, updates.notes || 'Actualización manual')
-    }
-  }
-
-  const handleAddHolding = (platformId, holding) => {
-    addHoldingToPlatform(platformId, holding)
-  }
-
-  const handleUpdateHolding = (platformId, holdingId, updates) => {
-    updateHoldingInPlatform(platformId, holdingId, updates)
-  }
-
-  const handleDeleteHolding = (platformId, holdingId) => {
-    deleteHoldingFromPlatform(platformId, holdingId)
-  }
-
-  const handleUpdateBalance = (platformId, newBalance) => {
-    updateInvestment(platformId, { currentBalance: newBalance })
-    addBalanceHistory(platformId, newBalance, 'Actualización manual desde detalle')
-  }
-
-  const handleViewEvolution = (platform) => {
-    setSelectedPlatform(platform)
-    setShowEvolutionModal(true)
-  }
+    setEditingPlatform(platform);
+    setShowPlatformForm(true);
+  };
 
   const handleViewHistory = (platform) => {
-    setSelectedPlatform(platform)
-    setShowHistoryModal(true)
-  }
+    setSelectedPlatform(platform);
+    setShowHistoryModal(true);
+  };
+
+  const handleQuickUpdate = (platform) => {
+    const newBalance = prompt(
+      `Nuevo balance para ${platform.name}:`,
+      (platform.currentBalance || 0).toString()
+    );
+    
+    if (newBalance !== null && !isNaN(parseFloat(newBalance))) {
+      updatePlatformBalance(platform.id, parseFloat(newBalance), 'Actualización rápida');
+    }
+  };
+
+  // Obtener info del goal
+  const getGoalInfo = (goalId) => PLATFORM_GOALS.find(g => g.id === goalId) || PLATFORM_GOALS[PLATFORM_GOALS.length - 1];
+  const getSubtypeInfo = (subtypeId) => PLATFORM_SUBTYPES.find(s => s.id === subtypeId) || PLATFORM_SUBTYPES[PLATFORM_SUBTYPES.length - 1];
+  const getGoalColors = (goalId) => GOAL_COLORS[goalId] || GOAL_COLORS.other;
 
   return (
     <div className="space-y-6 animate-in">
@@ -151,547 +126,412 @@ export default function InvestmentsView() {
             Portafolio de Inversiones
           </h2>
           <p className="text-gray-600 mt-1">
-            {platforms.length} plataforma{platforms.length !== 1 ? 's' : ''} • {assets.length} activo{assets.length !== 1 ? 's' : ''}
+            {totals.count} plataforma{totals.count !== 1 ? 's' : ''} activa{totals.count !== 1 ? 's' : ''}
+            {archivedPlatforms.length > 0 && (
+              <span className="text-gray-400 ml-2">
+                • {archivedPlatforms.length} archivada{archivedPlatforms.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowEvolutionChart(true)}
+            className="bg-purple-100 text-purple-700 px-4 py-3 rounded-lg hover:bg-purple-200 transition-all font-medium"
+          >
+            <i className="fas fa-chart-area mr-2"></i>
+            Ver Evolución
+          </button>
           <button
             onClick={handleAddPlatform}
             className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl font-medium"
           >
-            <i className="fas fa-building mr-2"></i>
-            Nueva Plataforma
-          </button>
-          <button
-            onClick={() => setShowAddInvestment(true)}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl font-medium"
-          >
             <i className="fas fa-plus mr-2"></i>
-            Nuevo Activo
+            Nueva Plataforma
           </button>
         </div>
       </div>
 
-      {/* Métricas del Portafolio */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Métricas Principales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Valor Total</p>
-              <p className="text-3xl font-bold text-gray-800">
-                {portfolioValue.toFixed(0)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
-            </div>
-            <div className="bg-purple-100 p-4 rounded-full">
-              <i className="fas fa-wallet text-2xl text-purple-600"></i>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Plataformas</p>
-              <p className="text-3xl font-bold text-gray-800">
-                {platformsValue.toFixed(0)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
-            </div>
-            <div className="bg-green-100 p-4 rounded-full">
-              <i className="fas fa-building text-2xl text-green-600"></i>
-            </div>
-          </div>
+          <p className="text-sm text-gray-600 mb-1">Valor Total</p>
+          <p className="text-3xl font-bold text-gray-800">
+            {formatNumber(totals.totalValue)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Activos</p>
-              <p className="text-3xl font-bold text-gray-800">
-                {assetsValue.toFixed(0)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
-            </div>
-            <div className="bg-blue-100 p-4 rounded-full">
-              <i className="fas fa-chart-pie text-2xl text-blue-600"></i>
-            </div>
-          </div>
+          <p className="text-sm text-gray-600 mb-1">Liquidez Disponible</p>
+          <p className="text-3xl font-bold text-blue-600">
+            {formatNumber(totals.liquidValue)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500">
+          <p className="text-sm text-gray-600 mb-1">Fondo Emergencia</p>
+          <p className="text-3xl font-bold text-green-600">
+            {formatNumber(totals.byGoal.emergency || 0)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-orange-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">ROI Activos</p>
-              <p className={`text-3xl font-bold ${totalROI >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {totalROI >= 0 ? '+' : ''}{totalROI.toFixed(1)}%
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Retorno</p>
-            </div>
-            <div className="bg-orange-100 p-4 rounded-full">
-              <i className="fas fa-percentage text-2xl text-orange-600"></i>
+          <p className="text-sm text-gray-600 mb-1">Real State</p>
+          <p className="text-3xl font-bold text-orange-600">
+            {formatNumber(totals.byGoal.real_state || 0)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">{displayCurrency}</p>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white p-4 rounded-xl shadow-md">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterGoal('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filterGoal === 'all'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Todas
+            </button>
+            {PLATFORM_GOALS.slice(0, 6).map(goal => (
+              <button
+                key={goal.id}
+                onClick={() => setFilterGoal(goal.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filterGoal === goal.id
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {goal.icon} {goal.name}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+              />
+              Ver archivadas
+            </label>
+            
+            <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-2 ${viewMode === 'cards' ? 'bg-purple-100 text-purple-600' : 'text-gray-500'}`}
+              >
+                <i className="fas fa-th-large"></i>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-2 ${viewMode === 'table' ? 'bg-purple-100 text-purple-600' : 'text-gray-500'}`}
+              >
+                <i className="fas fa-list"></i>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Plataformas */}
-      {platforms.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold text-gray-800">
-            <i className="fas fa-building mr-2 text-green-600"></i>
-            Plataformas de Inversión
+      {/* Lista de Plataformas */}
+      {filteredPlatforms.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-md p-12 text-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">
+            {showArchived ? 'No hay plataformas archivadas' : 'No hay plataformas registradas'}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {platforms.map(inv => {
-              const balanceInDisplay = convertCurrency(inv.currentBalance, inv.currency, displayCurrency)
-              const holdingsCount = inv.holdings?.length || 0;
-              
-              return (
-                <div
-                  key={inv.id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500"
-                >
-                  <div className="p-6">
-                    {/* Header de la plataforma */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-4xl">
-                          {inv.icon}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-lg">
-                            {inv.platform}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            {inv.type}
-                          </p>
-                        </div>
+          <p className="text-gray-600 mb-6">
+            {showArchived 
+              ? 'Las plataformas archivadas aparecerán aquí'
+              : 'Comienza agregando tu primera plataforma de inversión'
+            }
+          </p>
+          {!showArchived && (
+            <button
+              onClick={handleAddPlatform}
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg font-medium"
+            >
+              <i className="fas fa-plus mr-2"></i>
+              Agregar Plataforma
+            </button>
+          )}
+        </div>
+      ) : viewMode === 'cards' ? (
+        // Vista de tarjetas
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPlatforms.map(platform => {
+            const goalInfo = getGoalInfo(platform.goal);
+            const subtypeInfo = getSubtypeInfo(platform.subtype);
+            const colors = getGoalColors(platform.goal);
+            const roiData = calculatePlatformROI ? calculatePlatformROI(platform) : { roi: 0, change: 0, hasPreviousMonth: false };
+            const roiColors = getValueColors(roiData.roi);
+            const valueInDisplay = convertCurrency(platform.currentBalance || 0, platform.currency, displayCurrency);
+            
+            return (
+              <div 
+                key={platform.id}
+                className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow ${
+                  platform.isArchived ? 'opacity-60' : ''
+                }`}
+              >
+                {/* Header de la tarjeta */}
+                <div className={`p-4 ${colors.bg} text-white`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{goalInfo.icon}</span>
+                      <div>
+                        <h3 className="font-bold text-lg">{platform.name}</h3>
+                        <p className="text-sm opacity-90">{goalInfo.name}</p>
                       </div>
-                      {/* Botón editar */}
-                      <button
-                        onClick={() => handleEditPlatform(inv)}
-                        className="text-gray-400 hover:text-blue-600 transition-colors"
-                        title="Editar plataforma"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
                     </div>
-
-                    {/* Nombre del portafolio */}
-                    <p className="text-sm text-gray-600 mb-4">
-                      {inv.name}
-                    </p>
-
-                    {/* Saldo actual */}
-                    <div className="bg-green-50 rounded-lg p-4 mb-4">
-                      <p className="text-xs text-gray-600 mb-1">Saldo Actual</p>
-                      <p className="text-2xl font-bold text-green-700">
-                        {inv.currentBalance.toLocaleString('es-ES', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })} {inv.currency}
-                      </p>
-                      {inv.currency !== displayCurrency && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          ≈ {balanceInDisplay.toLocaleString('es-ES', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          })} {displayCurrency}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Holdings badge */}
-                    {holdingsCount > 0 && (
-                      <div className="mb-4">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          <i className="fas fa-layer-group mr-1"></i>
-                          {holdingsCount} activo{holdingsCount !== 1 ? 's' : ''}
-                        </span>
-                      </div>
+                    {platform.isLiquid === false && (
+                      <span className="px-2 py-1 bg-white bg-opacity-20 rounded text-xs">
+                        No líquida
+                      </span>
                     )}
-
-                    {/* Notas */}
-                    {inv.notes && (
-                      <div className="mb-4">
-                        <p className="text-xs text-gray-500 mb-1">
-                          <i className="fas fa-sticky-note mr-1"></i>
-                          Notas
-                        </p>
-                        <p className="text-sm text-gray-700 italic">
-                          {inv.notes}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Última actualización */}
-                    <div className="border-t pt-3 mb-4">
-                      <p className="text-xs text-gray-500">
-                        <i className="fas fa-clock mr-1"></i>
-                        Última actualización: {new Date(inv.lastUpdated).toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-
-                    {/* Botones */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => handleViewPlatformDetails(inv)}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                      >
-                        <i className="fas fa-eye mr-1"></i>
-                        Detalle
-                      </button>
-                      <button
-                        onClick={() => handleViewEvolution(inv)}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                      >
-                        <i className="fas fa-chart-line mr-1"></i>
-                        Evolución
-                      </button>
-                      <button
-                        onClick={() => handleViewHistory(inv)}
-                        className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-                      >
-                        <i className="fas fa-history mr-1"></i>
-                        Historial
-                      </button>
-                      <button
-                        onClick={() => handleUpdatePlatform(inv)}
-                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                      >
-                        <i className="fas fa-sync-alt mr-1"></i>
-                        Actualizar
-                      </button>
-                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Contenido */}
+                <div className="p-4">
+                  {/* Balance */}
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-500 mb-1">Balance Actual</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-bold text-gray-800">
+                        {formatNumber(platform.currentBalance || 0)}
+                      </span>
+                      <span className="text-gray-500">{platform.currency}</span>
+                    </div>
+                    {platform.currency !== displayCurrency && (
+                      <p className="text-sm text-gray-400">
+                        ≈ {formatNumber(valueInDisplay)} {displayCurrency}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ROI */}
+                  <div className={`p-3 rounded-lg ${roiColors.bg} mb-4`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">
+                        {roiData.hasPreviousMonth ? 'ROI vs mes anterior' : 'ROI total'}
+                      </span>
+                      <span className={`font-bold ${roiColors.text}`}>
+                        {roiColors.icon} {formatPercent(roiData.roi, 1, true)}
+                      </span>
+                    </div>
+                    {roiData.change !== 0 && (
+                      <p className={`text-xs ${roiColors.text} mt-1`}>
+                        {roiData.change >= 0 ? '+' : ''}{formatNumber(roiData.change)} {platform.currency}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Info adicional */}
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    <span>{subtypeInfo.icon} {subtypeInfo.name}</span>
+                    <span>{platform.balanceHistory?.length || 0} registros</span>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={() => handleQuickUpdate(platform)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors text-center"
+                      title="Actualizar balance"
+                    >
+                      <i className="fas fa-sync-alt"></i>
+                    </button>
+                    <button
+                      onClick={() => handleViewHistory(platform)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-center"
+                      title="Ver historial"
+                    >
+                      <i className="fas fa-history"></i>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedPlatform(platform);
+                        setShowEvolutionChart(true);
+                      }}
+                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors text-center"
+                      title="Ver gráfico"
+                    >
+                      <i className="fas fa-chart-line"></i>
+                    </button>
+                    <button
+                      onClick={() => handleEditPlatform(platform)}
+                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-center"
+                      title="Editar"
+                    >
+                      <i className="fas fa-edit"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      )}
-
-      {/* Activos Individuales */}
-      {assets.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold text-gray-800">
-            <i className="fas fa-chart-line mr-2 text-purple-600"></i>
-            Activos Individuales
-          </h3>
-          <div className="space-y-6">
-            {assets.map(inv => {
-              const currentValue = inv.quantity * inv.currentPrice
-              const purchaseValue = inv.quantity * inv.purchasePrice
-              const gainLoss = currentValue - purchaseValue
-              const roi = purchaseValue > 0 ? (gainLoss / purchaseValue) * 100 : 0
-
-              const typeConfig = {
-                'Stock': { icon: 'fa-chart-line', color: 'blue', bgColor: 'bg-blue-500' },
-                'ETF': { icon: 'fa-layer-group', color: 'indigo', bgColor: 'bg-indigo-500' },
-                'Crypto': { icon: 'fa-bitcoin', color: 'orange', bgColor: 'bg-orange-500' },
-                'Fondo Mutuo': { icon: 'fa-briefcase', color: 'green', bgColor: 'bg-green-500' }
-              }
-              const config = typeConfig[inv.type] || typeConfig['Stock']
-
-              return (
-                <div key={inv.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Header */}
-                  <div className={`bg-gradient-to-r from-${config.color}-500 to-${config.color}-600 ${config.bgColor} p-6 text-white`}>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <i className={`fas ${config.icon} text-3xl`}></i>
+      ) : (
+        // Vista de tabla
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Plataforma</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Objetivo</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Balance</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">ROI</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Liquidez</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredPlatforms.map(platform => {
+                  const goalInfo = getGoalInfo(platform.goal);
+                  const roiData = calculatePlatformROI ? calculatePlatformROI(platform) : { roi: 0 };
+                  const roiColors = getValueColors(roiData.roi);
+                  
+                  return (
+                    <tr key={platform.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{goalInfo.icon}</span>
                           <div>
-                            <h3 className="text-2xl font-bold">{inv.name}</h3>
-                            <p className="text-sm opacity-90">{inv.symbol} • {inv.type}</p>
+                            <p className="font-medium text-gray-800">{platform.name}</p>
+                            {platform.notes && (
+                              <p className="text-sm text-gray-500">{platform.notes}</p>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm opacity-90">
-                          <span>
-                            <i className="fas fa-boxes mr-1"></i>
-                            {inv.quantity} unidades
-                          </span>
-                          <span className={`${gainLoss >= 0 ? 'text-green-200' : 'text-red-200'}`}>
-                            {gainLoss >= 0 ? '▲' : '▼'} {roi.toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleUpdatePrice(inv.id)}
-                          disabled={updatingPrices[inv.id]}
-                          className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-colors disabled:opacity-50"
-                          title="Actualizar precio"
-                        >
-                          <i className={`fas fa-sync-alt ${updatingPrices[inv.id] ? 'animate-spin' : ''}`}></i>
-                        </button>
-                        <button
-                          onClick={() => setEditingInvestment(inv)}
-                          className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-lg transition-colors"
-                          title="Editar inversión"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contenido */}
-                  <div className="p-6">
-                    {/* Estadísticas principales */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-xs text-gray-600 mb-1">Cantidad</p>
-                        <p className="text-xl font-bold text-gray-800">
-                          {inv.quantity}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
+                          {goalInfo.name}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <p className="font-bold text-gray-800">
+                          {formatNumber(platform.currentBalance || 0)} {platform.currency}
                         </p>
-                        <p className="text-xs text-gray-500">unidades</p>
-                      </div>
-
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-xs text-gray-600 mb-1">Precio Actual</p>
-                        <p className="text-xl font-bold text-purple-600">
-                          {inv.currentPrice.toFixed(2)} {inv.currency}
-                        </p>
-                        {inv.currency !== displayCurrency && (
-                          <p className="text-xs text-gray-500">
-                            ≈ {convertCurrency(inv.currentPrice, inv.currency, displayCurrency).toFixed(2)} {displayCurrency}
-                          </p>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`font-bold ${roiColors.text}`}>
+                          {formatPercent(roiData.roi, 1, true)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {platform.isLiquid !== false ? (
+                          <span className="text-green-600">✓</span>
+                        ) : (
+                          <span className="text-gray-400">✗</span>
                         )}
-                      </div>
-
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-xs text-gray-600 mb-1">Valor Total</p>
-                        <p className="text-xl font-bold text-gray-800">
-                          {currentValue.toFixed(2)} {inv.currency}
-                        </p>
-                        {inv.currency !== displayCurrency && (
-                          <p className="text-xs text-gray-500">
-                            ≈ {convertCurrency(currentValue, inv.currency, displayCurrency).toFixed(2)} {displayCurrency}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-xs text-gray-600 mb-1">ROI</p>
-                        <p className={`text-xl font-bold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
-                        </p>
-                        <p className={`text-xs ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {roi >= 0 ? '+' : ''}{gainLoss.toFixed(2)} {inv.currency}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Detalles adicionales */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Precio Compra</span>
-                        <span className="font-semibold text-gray-800">
-                          {inv.purchasePrice.toFixed(2)} {inv.currency}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                        <span className="text-sm text-gray-700">Inversión Total</span>
-                        <span className="font-semibold text-gray-800">
-                          {purchaseValue.toFixed(2)} {inv.currency}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Barra de rendimiento */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">
-                          Rendimiento
-                        </span>
-                        <span className={`text-sm font-bold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {roi >= 0 ? '📈' : '📉'} {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                        <div
-                          className={`h-3 transition-all duration-500 ${
-                            roi >= 20 ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                            roi >= 10 ? 'bg-gradient-to-r from-green-300 to-green-500' :
-                            roi >= 0 ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                            roi >= -10 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
-                            'bg-gradient-to-r from-red-400 to-red-600'
-                          }`}
-                          style={{ 
-                            width: `${Math.abs(roi) > 100 ? 100 : Math.abs(roi)}%`,
-                            marginLeft: roi < 0 ? `${100 - Math.abs(roi)}%` : '0'
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Información adicional */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center text-gray-600">
-                          <i className="fas fa-calendar-alt mr-2 text-gray-400"></i>
-                          <span>Última actualización:</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleQuickUpdate(platform)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                            title="Actualizar"
+                          >
+                            <i className="fas fa-sync-alt"></i>
+                          </button>
+                          <button
+                            onClick={() => handleViewHistory(platform)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                            title="Historial"
+                          >
+                            <i className="fas fa-history"></i>
+                          </button>
+                          <button
+                            onClick={() => handleEditPlatform(platform)}
+                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                            title="Editar"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
                         </div>
-                        <div className="text-right font-medium text-gray-800">
-                          {new Date(inv.lastUpdated).toLocaleDateString('es-ES', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-
-                        {inv.purchaseHistory && inv.purchaseHistory.length > 0 && (
-                          <>
-                            <div className="flex items-center text-gray-600">
-                              <i className="fas fa-history mr-2 text-gray-400"></i>
-                              <span>Primera compra:</span>
-                            </div>
-                            <div className="text-right font-medium text-gray-800">
-                              {new Date(inv.purchaseHistory[0].date).toLocaleDateString('es-ES', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Comparación Mensual */}
-      {platforms.length > 0 && (
-        <MonthlyComparisonTable
-          platforms={platforms}
-          currency={displayCurrency}
-        />
-      )}
-
-      {/* Mensaje si no hay inversiones */}
-      {investments.length === 0 && (
-        <div className="bg-white rounded-xl shadow-md p-12 text-center">
-          <div className="flex flex-col items-center">
-            <div className="bg-purple-100 p-8 rounded-full mb-6">
-              <i className="fas fa-chart-line text-6xl text-purple-600"></i>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">
-              No tienes inversiones registradas
-            </h3>
-            <p className="text-gray-600 mb-6 max-w-md">
-              Comienza agregando una plataforma o un activo individual
-            </p>
-            <div className="flex space-x-4">
-              <button
-                onClick={handleAddPlatform}
-                className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg font-medium"
-              >
-                <i className="fas fa-building mr-2"></i>
-                Agregar Plataforma
-              </button>
-              <button
-                onClick={() => setShowAddInvestment(true)}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg font-medium"
-              >
-                <i className="fas fa-plus mr-2"></i>
-                Agregar Activo
-              </button>
-            </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {/* Modales */}
-      {showAddInvestment && (
-        <InvestmentForm onClose={() => setShowAddInvestment(false)} />
-      )}
-
-      {editingInvestment && (
-        <InvestmentForm 
-          investment={editingInvestment}
-          onClose={() => setEditingInvestment(null)} 
-        />
-      )}
-
-      {/* Modal CRUD de plataformas */}
-      <PlatformModal
-        isOpen={showPlatformModal}
+      <PlatformForm
+        isOpen={showPlatformForm}
         onClose={() => {
-          setShowPlatformModal(false)
-          setEditingPlatform(null)
+          setShowPlatformForm(false);
+          setEditingPlatform(null);
         }}
         platform={editingPlatform}
-        onSave={handleSavePlatform}
-        onDelete={handleDeletePlatform}
       />
 
-      {/* Modal de detalle de plataforma con holdings */}
-      <PlatformDetailModal
-        isOpen={showPlatformDetail}
-        onClose={() => {
-          setShowPlatformDetail(false)
-          setSelectedPlatform(null)
-        }}
-        platform={selectedPlatform}
-        onAddHolding={handleAddHolding}
-        onUpdateHolding={handleUpdateHolding}
-        onDeleteHolding={handleDeleteHolding}
-        onUpdateBalance={handleUpdateBalance}
-        displayCurrency={displayCurrency}
-        convertCurrency={convertCurrency}
-      />
-
-      {/* Modal de actualización rápida de balance */}
-      <UpdateInvestmentModal
-        isOpen={showUpdateModal}
-        onClose={() => {
-          setShowUpdateModal(false)
-          setSelectedPlatform(null)
-        }}
-        investment={selectedPlatform}
-        onUpdate={handleUpdatePlatformBalance}
-      />
-
-      {/* Modal de evolución con gráficos */}
-      <PlatformEvolutionModal
-        isOpen={showEvolutionModal}
-        onClose={() => {
-          setShowEvolutionModal(false)
-          setSelectedPlatform(null)
-        }}
-        platform={selectedPlatform}
-        displayCurrency={displayCurrency}
-        convertCurrency={convertCurrency}
-      />
-
-      {/* Modal de historial completo */}
       <BalanceHistoryModal
         isOpen={showHistoryModal}
         onClose={() => {
-          setShowHistoryModal(false)
-          setSelectedPlatform(null)
+          setShowHistoryModal(false);
+          setSelectedPlatform(null);
         }}
         platform={selectedPlatform}
-        onUpdateHistory={updateBalanceHistory}
-        onAddEntry={addBalanceEntry}
-        onDeleteEntry={deleteBalanceEntry}
       />
+
+      {/* ✅ M34: Modal de gráfico de evolución */}
+      {showEvolutionChart && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6 rounded-t-2xl">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-white">
+                    {selectedPlatform ? `Evolución de ${selectedPlatform.name}` : 'Evolución del Portafolio'}
+                  </h3>
+                  <p className="text-purple-100 text-sm mt-1">
+                    {selectedPlatform 
+                      ? `${selectedPlatform.balanceHistory?.length || 0} registros`
+                      : `${activePlatforms.length} plataformas activas`
+                    }
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEvolutionChart(false);
+                    setSelectedPlatform(null);
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                >
+                  <i className="fas fa-times text-2xl"></i>
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <PortfolioEvolutionChart
+                platforms={selectedPlatform ? [selectedPlatform] : activePlatforms}
+                displayCurrency={displayCurrency}
+                convertCurrency={convertCurrency}
+                showTotal={!selectedPlatform}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }

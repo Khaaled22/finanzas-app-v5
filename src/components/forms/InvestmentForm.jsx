@@ -1,3 +1,5 @@
+// src/components/forms/InvestmentForm.jsx
+// ✅ M32: Agregado tipo APV a la lista de tipos de inversión
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
@@ -8,7 +10,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
     type: investment?.type || 'Stock',
     symbol: investment?.symbol || '',
     name: investment?.name || '',
-    platform: investment?.platform || '', // M7: Campo plataforma
+    platform: investment?.platform || '',
     quantity: investment?.quantity || '',
     purchasePrice: investment?.purchasePrice || '',
     currentPrice: investment?.currentPrice || '',
@@ -18,7 +20,6 @@ export default function InvestmentForm({ onClose, investment = null }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Validaciones
     if (!formData.symbol.trim()) {
       alert('El símbolo es obligatorio')
       return
@@ -56,10 +57,8 @@ export default function InvestmentForm({ onClose, investment = null }) {
     }
     
     if (investment) {
-      // Modo edición
       updateInvestment(investment.id, investmentData)
     } else {
-      // Modo creación
       addInvestment(investmentData)
     }
     
@@ -110,7 +109,19 @@ export default function InvestmentForm({ onClose, investment = null }) {
               <option value="ETF">📊 ETF</option>
               <option value="Crypto">₿ Criptomoneda</option>
               <option value="Fondo Mutuo">💼 Fondo Mutuo</option>
+              {/* ✅ M32: Nuevo tipo APV */}
+              <option value="APV">🏦 APV (Ahorro Previsional)</option>
+              <option value="Depósito a Plazo">💰 Depósito a Plazo</option>
+              <option value="Bono">📜 Bono</option>
             </select>
+            
+            {/* ✅ M32: Info sobre APV */}
+            {formData.type === 'APV' && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                <i className="fas fa-info-circle mr-2"></i>
+                Las inversiones tipo APV suman puntos en tu Índice de Tranquilidad Financiera.
+              </div>
+            )}
           </div>
 
           {/* Símbolo y Cantidad */}
@@ -123,7 +134,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
                 type="text"
                 value={formData.symbol}
                 onChange={(e) => handleChange('symbol', e.target.value)}
-                placeholder="AAPL, BTC, MSFT..."
+                placeholder={formData.type === 'APV' ? 'APV-001' : 'AAPL, BTC, MSFT...'}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent uppercase"
                 required
               />
@@ -139,7 +150,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
                 min="0"
                 value={formData.quantity}
                 onChange={(e) => handleChange('quantity', e.target.value)}
-                placeholder="10"
+                placeholder={formData.type === 'APV' ? '1' : '10'}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
@@ -155,13 +166,13 @@ export default function InvestmentForm({ onClose, investment = null }) {
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Apple Inc., Bitcoin, Microsoft..."
+              placeholder={formData.type === 'APV' ? 'APV Régimen A - Habitat' : 'Apple Inc., Bitcoin, Microsoft...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
             />
           </div>
 
-          {/* M7: Campo Plataforma/Broker */}
+          {/* Plataforma/Broker */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Plataforma/Broker *
@@ -170,13 +181,16 @@ export default function InvestmentForm({ onClose, investment = null }) {
               type="text"
               value={formData.platform}
               onChange={(e) => handleChange('platform', e.target.value)}
-              placeholder="Interactive Brokers, Binance, eToro, Fintual..."
+              placeholder={formData.type === 'APV' ? 'AFP Habitat, AFP Cuprum...' : 'Interactive Brokers, Binance, Fintual...'}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
             />
             <p className="text-xs text-gray-500 mt-1">
               <i className="fas fa-info-circle mr-1"></i>
-              Ej: Interactive Brokers, Binance, eToro, Robinhood, Fintual, Renta4
+              {formData.type === 'APV' 
+                ? 'Ej: AFP Habitat, AFP Cuprum, Principal, Fintual APV'
+                : 'Ej: Interactive Brokers, Binance, eToro, Robinhood, Fintual, Renta4'
+              }
             </p>
           </div>
 
@@ -184,7 +198,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Precio de Compra *
+                {formData.type === 'APV' ? 'Valor Cuota Inicial *' : 'Precio de Compra *'}
               </label>
               <input
                 type="number"
@@ -192,7 +206,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
                 min="0"
                 value={formData.purchasePrice}
                 onChange={(e) => handleChange('purchasePrice', e.target.value)}
-                placeholder="150.50"
+                placeholder={formData.type === 'APV' ? '50000' : '150.50'}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
@@ -200,7 +214,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Precio Actual {investment ? '*' : '(opcional)'}
+                {formData.type === 'APV' ? 'Valor Cuota Actual' : 'Precio Actual'} {investment ? '*' : '(opcional)'}
               </label>
               <input
                 type="number"
@@ -208,7 +222,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
                 min="0"
                 value={formData.currentPrice}
                 onChange={(e) => handleChange('currentPrice', e.target.value)}
-                placeholder={formData.purchasePrice || "175.30"}
+                placeholder={formData.purchasePrice || (formData.type === 'APV' ? '52000' : '175.30')}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required={!!investment}
               />
@@ -234,6 +248,8 @@ export default function InvestmentForm({ onClose, investment = null }) {
               <option value="USD">USD $ (Dólar)</option>
               <option value="EUR">EUR € (Euro)</option>
               <option value="CLP">CLP $ (Peso Chileno)</option>
+              {/* ✅ M32: UF para APV chileno */}
+              <option value="UF">UF (Unidad de Fomento)</option>
             </select>
           </div>
 
@@ -270,7 +286,7 @@ export default function InvestmentForm({ onClose, investment = null }) {
             </div>
           )}
 
-          {/* Información adicional si es edición */}
+          {/* Info adicional si es edición */}
           {investment && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-800 mb-2 flex items-center">

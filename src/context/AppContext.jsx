@@ -1,13 +1,13 @@
 // src/context/AppContext.jsx
 // ✅ M26: Contexto raíz que compone todos los sub-contextos
-// ✅ Mantiene useApp() backward compatible
+// ✅ M33: Agregadas nuevas funciones de InvestmentsContext
 import React, { createContext, useContext, useState, useMemo } from 'react';
 
 // Sub-contextos
 import { TransactionsProvider, useTransactions } from './TransactionsContext';
 import { ExchangeRatesProvider, useExchangeRates } from './ExchangeRatesContext';
 import { BudgetProvider, useBudget } from './BudgetContext';
-import { InvestmentsProvider, useInvestments } from './InvestmentsContext';
+import { InvestmentsProvider, useInvestments, PLATFORM_GOALS, PLATFORM_SUBTYPES } from './InvestmentsContext';
 import { DebtsProvider, useDebts } from './DebtsContext';
 
 // Engine para cálculos
@@ -171,22 +171,38 @@ function AppContextComposer({ children }) {
     setInvestments: investmentsCtx.setInvestments,
     savingsGoals: investmentsCtx.savingsGoals,
     setSavingsGoals: investmentsCtx.setSavingsGoals,
+    // Funciones básicas
     addInvestment: investmentsCtx.addInvestment,
     updateInvestment: investmentsCtx.updateInvestment,
     deleteInvestment: investmentsCtx.deleteInvestment,
+    // Plataformas
     savePlatform: investmentsCtx.savePlatform,
+    // ✅ M33: Nuevas funciones de plataformas
+    deletePlatform: investmentsCtx.deletePlatform,
+    archivePlatform: investmentsCtx.archivePlatform,
+    restorePlatform: investmentsCtx.restorePlatform,
+    updatePlatformBalance: investmentsCtx.updatePlatformBalance,
+    calculatePlatformROI: investmentsCtx.calculatePlatformROI,
+    // Holdings (legacy - para compatibilidad)
     addHoldingToPlatform: investmentsCtx.addHoldingToPlatform,
     updateHoldingInPlatform: investmentsCtx.updateHoldingInPlatform,
     deleteHoldingFromPlatform: investmentsCtx.deleteHoldingFromPlatform,
+    // Balance History
     addBalanceHistory: investmentsCtx.addBalanceHistory,
     updateBalanceHistory: investmentsCtx.updateBalanceHistory,
     addBalanceEntry: investmentsCtx.addBalanceEntry,
+    // ✅ M33: Nueva función
+    updateBalanceEntry: investmentsCtx.updateBalanceEntry,
     deleteBalanceEntry: investmentsCtx.deleteBalanceEntry,
+    // Ahorros
     addSavingsGoal: investmentsCtx.addSavingsGoal,
     updateSavingsGoal: investmentsCtx.updateSavingsGoal,
     deleteSavingsGoal: investmentsCtx.deleteSavingsGoal,
     registerSavingsContribution: investmentsCtx.registerSavingsContribution,
     updateLinkedSavingsGoals: investmentsCtx.updateLinkedSavingsGoals,
+    // ✅ M33: Constantes de tipos
+    PLATFORM_GOALS,
+    PLATFORM_SUBTYPES,
     
     // === Deudas (de DebtsContext) ===
     debts: debtsCtx.debts,
@@ -262,5 +278,5 @@ function BudgetProviderWrapper({ children, displayCurrency }) {
 export { useTransactions } from './TransactionsContext';
 export { useExchangeRates } from './ExchangeRatesContext';
 export { useBudget } from './BudgetContext';
-export { useInvestments } from './InvestmentsContext';
+export { useInvestments, PLATFORM_GOALS, PLATFORM_SUBTYPES } from './InvestmentsContext';
 export { useDebts } from './DebtsContext';
