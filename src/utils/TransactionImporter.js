@@ -1,12 +1,37 @@
-// ✅ M22 FINAL: src/utils/TransactionImporter.js
-// Búsqueda flexible: Con emojis Y sin emojis (normalizado)
+// ✅ M35: src/utils/TransactionImporter.js
+// Genera mapping dinámico desde categorías del context
 
 import * as XLSX from 'xlsx';
-import categoryMapping from '../config/category-mapping-M16.json';
 
 export class TransactionImporter {
-  constructor() {
-    this.categoryMapping = categoryMapping;
+  constructor(categories = []) {
+    this.categories = categories;
+    this.categoryMapping = this.generateDynamicMapping(categories);
+  }
+
+  generateDynamicMapping(categories) {
+    const mapping = {};
+    
+    categories.forEach(cat => {
+      const type = cat.type === 'income' ? 'Income' : 'Expense';
+      
+      // Key con el grupo y nombre tal cual están
+      const key = `${cat.group}|${cat.name}|${type}`;
+      mapping[key] = cat.id;
+      
+      // Key normalizada (sin emojis)
+      const groupNoEmoji = this.removeEmojis(cat.group);
+      const nameNoEmoji = this.removeEmojis(cat.name);
+      const keyNorm = `${groupNoEmoji}|${nameNoEmoji}|${type}`;
+      mapping[keyNorm] = cat.id;
+    });
+    
+    return mapping;
+  }
+
+  setCategories(categories) {
+    this.categories = categories;
+    this.categoryMapping = this.generateDynamicMapping(categories);
   }
 
   async readExcelFile(file) {
@@ -20,7 +45,6 @@ export class TransactionImporter {
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          
           resolve(jsonData);
         } catch (error) {
           reject(new Error(`Error leyendo Excel: ${error.message}`));
@@ -32,20 +56,22 @@ export class TransactionImporter {
     });
   }
 
-  // ✅ M22: Función para remover emojis de strings
   removeEmojis(str) {
     if (!str) return '';
-    // Regex que captura todos los emojis Unicode
     return str
-      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')  // Emojis básicos
-      .replace(/[\u{2600}-\u{26FF}]/gu, '')    // Símbolos misceláneos
-      .replace(/[\u{2700}-\u{27BF}]/gu, '')    // Dingbats
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+      .replace(/[\u{2600}-\u{26FF}]/gu, '')
+      .replace(/[\u{2700}-\u{27BF}]/gu, '')
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+      .replace(/[\u{1F000}-\u{1F02F}]/gu, '')
+      .replace(/[\u{1F0A0}-\u{1F0FF}]/gu, '')
+      .replace(/[\u{200D}]/gu, '')
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
-  // ✅ M22: Búsqueda flexible con fallback
   getCategoryId(category, subcategory, type) {
-    // Intento 1: Búsqueda exacta (con emojis)
+    // Intento 1: Búsqueda exacta
     const key = `${category}|${subcategory}|${type}`;
     let categoryId = this.categoryMapping[key];
     
@@ -54,12 +80,18 @@ export class TransactionImporter {
       return categoryId;
     }
     
-    // Intento 2: Búsqueda sin emojis (normalizada)
+    // Intento 2: Búsqueda normalizada
     const normalizedCategory = this.removeEmojis(category);
     const normalizedSubcategory = this.removeEmojis(subcategory);
     const normalizedKey = `${normalizedCategory}|${normalizedSubcategory}|${type}`;
     
-    // Buscar en el mapping comparando sin emojis
+    categoryId = this.categoryMapping[normalizedKey];
+    if (categoryId) {
+      console.log(`✅ Match normalizado: ${normalizedKey} → ${categoryId}`);
+      return categoryId;
+    }
+    
+    // Intento 3: Buscar comparando sin emojis
     for (const [mappingKey, mappingId] of Object.entries(this.categoryMapping)) {
       const [mapCat, mapSubcat, mapType] = mappingKey.split('|');
       const normalizedMapCat = this.removeEmojis(mapCat);
@@ -68,13 +100,32 @@ export class TransactionImporter {
       if (normalizedMapCat === normalizedCategory && 
           normalizedMapSubcat === normalizedSubcategory && 
           mapType === type) {
-        console.log(`✅ Match normalizado: ${key} → ${mappingKey} → ${mappingId}`);
+        console.log(`✅ Match fuzzy: ${key} → ${mappingKey} → ${mappingId}`);
         return mappingId;
       }
     }
     
+    // Intento 4: Búsqueda por nombre similar
+    if (this.categories.length > 0) {
+      const typeFilter = type === 'Income' ? 'income' : 'expense';
+      const found = this.categories.find(cat => {
+        const catNameNorm = this.removeEmojis(cat.name).toLowerCase();
+        const catGroupNorm = this.removeEmojis(cat.group).toLowerCase();
+        const subNorm = normalizedSubcategory.toLowerCase();
+        const catNorm = normalizedCategory.toLowerCase();
+        
+        return cat.type === typeFilter &&
+               catNameNorm === subNorm && 
+               catGroupNorm === catNorm;
+      });
+      
+      if (found) {
+        console.log(`✅ Match por categoría: ${key} → ${found.id}`);
+        return found.id;
+      }
+    }
+    
     console.warn(`❌ No mapping found for: ${key}`);
-    console.warn(`❌ Also tried normalized: ${normalizedKey}`);
     return null;
   }
 
@@ -92,7 +143,7 @@ export class TransactionImporter {
     
     const categoryId = this.getCategoryId(row.Category, row.Subcategory, row.Type);
     if (!categoryId) {
-      errors.push(`Fila ${index + 2}: No se encontró mapeo para ${row.Category} → ${row.Subcategory}`);
+      errors.push(`Fila ${index + 2}: No se encontró categoría "${row.Category}" → "${row.Subcategory}" (${row.Type})`);
     }
     
     const validCurrencies = ['EUR', 'CLP', 'USD', 'UF'];
@@ -101,7 +152,7 @@ export class TransactionImporter {
     }
     
     if (row.Type && !['Income', 'Expense'].includes(row.Type)) {
-      errors.push(`Fila ${index + 2}: Tipo inválido: ${row.Type} (debe ser Income o Expense)`);
+      errors.push(`Fila ${index + 2}: Tipo inválido: ${row.Type}`);
     }
     
     return errors;
@@ -114,7 +165,6 @@ export class TransactionImporter {
       throw new Error(`No mapping for: ${row.Category} → ${row.Subcategory} (${row.Type})`);
     }
     
-    // Convertir fecha Excel a ISO string
     let dateISO;
     if (row.Date instanceof Date) {
       dateISO = row.Date.toISOString();
@@ -126,16 +176,13 @@ export class TransactionImporter {
       dateISO = date.toISOString();
     }
     
-    // ✅ M22: Description priority: Excel Description > Subcategory > Fallback
     let description = '';
     if (row.Description && typeof row.Description === 'string' && row.Description.trim()) {
       description = row.Description.trim();
     } else if (row.Subcategory) {
-      // Solo usar Subcategory sin Category
-      description = row.Subcategory;
+      description = this.removeEmojis(row.Subcategory) || row.Subcategory;
     } else {
-      // Fallback (raro caso)
-      description = `${row.Category} - ${row.Subcategory}`;
+      description = 'Sin descripción';
     }
     
     return {
@@ -145,15 +192,10 @@ export class TransactionImporter {
       amount: Math.abs(parseFloat(row.Amount)),
       currency: row.Currency,
       description: description,
-      
-      // ✅ M21: Extended fields
       paymentMethod: row.PaymentMethod || 'Tarjeta',
       notes: row.Notes || '',
-      
-      // ✅ M21: Import metadata
       imported: true,
       importedAt: new Date().toISOString(),
-      
       user: row.User || 'Usuario 1'
     };
   }
@@ -223,22 +265,13 @@ export class TransactionImporter {
       byType: {},
       byCurrency: {},
       byMonth: {},
-      dateRange: {
-        oldest: null,
-        newest: null
-      },
-      totalAmount: {
-        EUR: 0,
-        CLP: 0,
-        USD: 0,
-        UF: 0
-      }
+      dateRange: { oldest: null, newest: null },
+      totalAmount: { EUR: 0, CLP: 0, USD: 0, UF: 0 }
     };
     
     transactions.forEach(trans => {
       const type = trans.categoryId.includes('income') ? 'Income' : 'Expense';
       stats.byType[type] = (stats.byType[type] || 0) + 1;
-      
       stats.byCurrency[trans.currency] = (stats.byCurrency[trans.currency] || 0) + 1;
       
       const month = trans.date.substring(0, 7);
@@ -257,18 +290,10 @@ export class TransactionImporter {
     
     return stats;
   }
-
-  filterByDateRange(transactions, startDate, endDate) {
-    return transactions.filter(trans => {
-      const transDate = new Date(trans.date);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-      
-      if (start && transDate < start) return false;
-      if (end && transDate > end) return false;
-      return true;
-    });
-  }
 }
 
-export default new TransactionImporter();
+export const createTransactionImporter = (categories) => {
+  return new TransactionImporter(categories);
+};
+
+export default new TransactionImporter([]);

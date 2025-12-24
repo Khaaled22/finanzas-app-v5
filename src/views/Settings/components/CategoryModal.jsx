@@ -1,24 +1,103 @@
 // src/views/Settings/components/CategoryModal.jsx
-// ✅ M20: CORREGIDO - Aclara que budget es plantilla base
+// ✅ M35: Selector de emojis en dropdown + grupos sin emojis
 import React, { useState, useEffect } from 'react';
 
+// ✅ M35: Lista de emojis comunes para categorías
+const EMOJI_OPTIONS = [
+  // Income
+  { emoji: '💼', label: 'Trabajo' },
+  { emoji: '💰', label: 'Dinero' },
+  { emoji: '💵', label: 'Efectivo' },
+  { emoji: '💶', label: 'Euro' },
+  // Housing
+  { emoji: '🏠', label: 'Casa' },
+  { emoji: '💡', label: 'Electricidad' },
+  { emoji: '🚰', label: 'Agua' },
+  { emoji: '🔥', label: 'Gas' },
+  { emoji: '🌐', label: 'Internet' },
+  { emoji: '📱', label: 'Teléfono' },
+  { emoji: '📺', label: 'TV' },
+  { emoji: '🏦', label: 'Banco' },
+  { emoji: '🗂️', label: 'Admin' },
+  // Health
+  { emoji: '🩺', label: 'Salud' },
+  { emoji: '👩‍⚕️', label: 'Doctor' },
+  { emoji: '💊', label: 'Medicinas' },
+  { emoji: '🥼', label: 'Suplementos' },
+  { emoji: '🏋️', label: 'Gym' },
+  { emoji: '💇', label: 'Belleza' },
+  // Food
+  { emoji: '🛒', label: 'Supermercado' },
+  { emoji: '🍽️', label: 'Restaurante' },
+  { emoji: '☕', label: 'Café' },
+  { emoji: '🍻', label: 'Bar' },
+  { emoji: '🍔', label: 'Fast Food' },
+  { emoji: '🚚', label: 'Delivery' },
+  { emoji: '🍿', label: 'Snacks' },
+  // Transport
+  { emoji: '🚆', label: 'Tren' },
+  { emoji: '🚲', label: 'Bici' },
+  { emoji: '🚌', label: 'Bus' },
+  { emoji: '🔧', label: 'Mantención' },
+  { emoji: '🚗', label: 'Auto' },
+  // Entertainment
+  { emoji: '🎨', label: 'Ocio' },
+  { emoji: '🎬', label: 'Cine' },
+  { emoji: '🎟️', label: 'Eventos' },
+  { emoji: '🎉', label: 'Fiesta' },
+  { emoji: '🍸', label: 'Cocktails' },
+  // Subscriptions
+  { emoji: '📺', label: 'Streaming' },
+  { emoji: '🎵', label: 'Música' },
+  { emoji: '🎞️', label: 'Video' },
+  { emoji: '☁️', label: 'Cloud' },
+  { emoji: '🤖', label: 'AI' },
+  { emoji: '📑', label: 'Servicios' },
+  // Shopping
+  { emoji: '👕', label: 'Ropa' },
+  { emoji: '🛋️', label: 'Hogar' },
+  { emoji: '🍳', label: 'Cocina' },
+  { emoji: '🌿', label: 'Jardín' },
+  { emoji: '🛍️', label: 'Compras' },
+  // Gifts
+  { emoji: '🎂', label: 'Cumpleaños' },
+  { emoji: '🎄', label: 'Navidad' },
+  { emoji: '💍', label: 'Boda' },
+  { emoji: '🎁', label: 'Regalo' },
+  // Travel
+  { emoji: '✈️', label: 'Vuelos' },
+  { emoji: '🏨', label: 'Hotel' },
+  { emoji: '🚖', label: 'Taxi' },
+  { emoji: '🍱', label: 'Comida viaje' },
+  { emoji: '🏞️', label: 'Actividades' },
+  { emoji: '🗺️', label: 'Souvenirs' },
+  // Loans
+  { emoji: '🎓', label: 'Educación' },
+  { emoji: '🏢', label: 'Depto' },
+  { emoji: '👩‍👦', label: 'Familia' },
+  { emoji: '🤝', label: 'Apoyo' },
+  { emoji: '👨‍👧', label: 'Papá' },
+  // Other
+  { emoji: '📌', label: 'General' },
+  { emoji: '❓', label: 'Otro' },
+];
+
 export default function CategoryModal({ isOpen, onClose, category = null, existingCategories = [] }) {
-  // Grupos disponibles
+  // ✅ M35: Grupos SIN emojis para que coincidan con CSV
   const GRUPOS = [
-    '💼 Income',
-    '💳 Loans & Debts',
-    '🏠 Housing & Utilities',
-    '🩺 Insurance & Health',
-    '🍽️ Food & Drinks',
-    '🚗 Transport',
-    '🎬 Entertainment',
-    '📱 Subscriptions & Apps',
-    '🛍️ Personal Shopping',
-    '🎁 Gifts & Donations',
-    '✈️ Travel',
-    '💳 Loans',
-    '❓ Other Expenses',
-    '💰 Savings & Investments'
+    'Income',
+    'Loans & Debts',
+    'Housing & Utilities',
+    'Insurance & Health',
+    'Food & Drinks',
+    'Transport',
+    'Entertainment',
+    'Subscriptions & Apps',
+    'Personal Shopping',
+    'Gifts & Donations',
+    'Travel',
+    'Savings & Investments',
+    'Other Expenses'
   ];
 
   const MONEDAS = ['EUR', 'CLP', 'USD', 'UF'];
@@ -29,20 +108,19 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
     { value: 'investment', label: 'Inversión (Investment)' }
   ];
 
-  // Estado del formulario
   const [formData, setFormData] = useState({
     name: '',
     group: GRUPOS[0],
     budget: 0,
     currency: 'EUR',
-    icon: '📁',
+    icon: '📌',
     type: 'expense'
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // Cargar datos si es edición
   useEffect(() => {
     if (category) {
       setFormData({
@@ -50,32 +128,29 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
         group: category.group || GRUPOS[0],
         budget: category.budget || 0,
         currency: category.currency || 'EUR',
-        icon: category.icon || '📁',
+        icon: category.icon || '📌',
         type: category.type || 'expense'
       });
     } else {
-      // Reset si es nuevo
       setFormData({
         name: '',
         group: GRUPOS[0],
         budget: 0,
         currency: 'EUR',
-        icon: '📁',
+        icon: '📌',
         type: 'expense'
       });
     }
     setErrors({});
+    setShowEmojiPicker(false);
   }, [category, isOpen]);
 
-  // Validar formulario
   const validate = () => {
     const newErrors = {};
 
-    // Validar nombre
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
     } else {
-      // Verificar duplicados (excepto si es el mismo al editar)
       const duplicate = existingCategories.find(
         cat => cat.name.toLowerCase() === formData.name.trim().toLowerCase() &&
                (!category || cat.id !== category.id)
@@ -85,17 +160,14 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
       }
     }
 
-    // Validar grupo
     if (!formData.group) {
       newErrors.group = 'Selecciona un grupo';
     }
 
-    // Validar presupuesto
     if (formData.budget < 0) {
       newErrors.budget = 'El presupuesto no puede ser negativo';
     }
 
-    // Validar icon
     if (!formData.icon.trim()) {
       newErrors.icon = 'El ícono es requerido';
     }
@@ -104,26 +176,26 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
     return Object.keys(newErrors).length === 0;
   };
 
-  // Manejar cambios en inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: name === 'budget' ? parseFloat(value) || 0 : value
     }));
-    // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Manejar submit
+  const handleEmojiSelect = (emoji) => {
+    setFormData(prev => ({ ...prev, icon: emoji }));
+    setShowEmojiPicker(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
@@ -134,13 +206,11 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
         budget: parseFloat(formData.budget) || 0
       };
 
-      // Si es edición, incluir ID y spent
       if (category) {
         categoryData.id = category.id;
-        categoryData.spent = category.spent || 0; // Mantener spent existente
+        categoryData.spent = category.spent || 0;
       }
 
-      // Llamar callback con los datos
       onClose(categoryData);
       
     } catch (error) {
@@ -151,17 +221,17 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
     }
   };
 
-  // Manejar cierre
   const handleClose = () => {
     setFormData({
       name: '',
       group: GRUPOS[0],
       budget: 0,
       currency: 'EUR',
-      icon: '📁',
+      icon: '📌',
       type: 'expense'
     });
     setErrors({});
+    setShowEmojiPicker(false);
     onClose(null);
   };
 
@@ -177,10 +247,7 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
               <i className={`fas ${category ? 'fa-edit' : 'fa-plus-circle'} mr-3`}></i>
               {category ? 'Editar Categoría' : 'Nueva Categoría'}
             </h2>
-            <button
-              onClick={handleClose}
-              className="text-white hover:text-gray-200 transition-colors"
-            >
+            <button onClick={handleClose} className="text-white hover:text-gray-200 transition-colors">
               <i className="fas fa-times text-2xl"></i>
             </button>
           </div>
@@ -188,7 +255,6 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Error general */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <i className="fas fa-exclamation-circle mr-2"></i>
@@ -206,7 +272,7 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Ej: 💼 Khaled Salary"
+              placeholder="Ej: Khaled Salary, Groceries, Rent"
               className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
                 errors.name 
                   ? 'border-red-300 focus:ring-red-500' 
@@ -219,9 +285,6 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                 {errors.name}
               </p>
             )}
-            <p className="text-gray-500 text-xs mt-1">
-              Puedes incluir emojis directamente en el nombre
-            </p>
           </div>
 
           {/* Grupo */}
@@ -243,17 +306,10 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                 <option key={grupo} value={grupo}>{grupo}</option>
               ))}
             </select>
-            {errors.group && (
-              <p className="text-red-600 text-sm mt-1">
-                <i className="fas fa-exclamation-circle mr-1"></i>
-                {errors.group}
-              </p>
-            )}
           </div>
 
           {/* Grid: Presupuesto y Moneda */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Presupuesto */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Presupuesto Base (Plantilla)
@@ -271,18 +327,11 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                     : 'border-gray-300 focus:ring-purple-500'
                 }`}
               />
-              {errors.budget && (
-                <p className="text-red-600 text-sm mt-1">
-                  <i className="fas fa-exclamation-circle mr-1"></i>
-                  {errors.budget}
-                </p>
-              )}
               <p className="text-xs text-gray-500 mt-1">
                 Se usará para inicializar nuevos meses sin historial
               </p>
             </div>
 
-            {/* Moneda */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Moneda
@@ -302,33 +351,55 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
 
           {/* Grid: Ícono y Tipo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Ícono */}
-            <div>
+            {/* ✅ M35: Selector de Emoji con dropdown */}
+            <div className="relative">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Ícono (emoji)
               </label>
-              <input
-                type="text"
-                name="icon"
-                value={formData.icon}
-                onChange={handleChange}
-                placeholder="📁"
-                maxLength="5"
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                  errors.icon 
-                    ? 'border-red-300 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-purple-500'
-                }`}
-              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-left flex items-center justify-between"
+                >
+                  <span className="text-2xl">{formData.icon}</span>
+                  <i className={`fas fa-chevron-${showEmojiPicker ? 'up' : 'down'} text-gray-400`}></i>
+                </button>
+                <input
+                  type="text"
+                  name="icon"
+                  value={formData.icon}
+                  onChange={handleChange}
+                  maxLength="5"
+                  className="w-20 px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-center text-xl"
+                  placeholder="📌"
+                />
+              </div>
+              
+              {/* Emoji Picker Dropdown */}
+              {showEmojiPicker && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-6 gap-1 p-2">
+                    {EMOJI_OPTIONS.map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleEmojiSelect(item.emoji)}
+                        className="p-2 hover:bg-purple-100 rounded text-xl transition-colors"
+                        title={item.label}
+                      >
+                        {item.emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {errors.icon && (
                 <p className="text-red-600 text-sm mt-1">
                   <i className="fas fa-exclamation-circle mr-1"></i>
                   {errors.icon}
                 </p>
               )}
-              <p className="text-gray-500 text-xs mt-1">
-                Un emoji que represente la categoría
-              </p>
             </div>
 
             {/* Tipo */}
@@ -349,44 +420,12 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
             </div>
           </div>
 
-          {/* ✅ M20: Info sobre presupuesto base vs mensual */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
-            <p className="text-sm text-blue-900 font-semibold mb-2">
-              <i className="fas fa-info-circle mr-2"></i>
-              ℹ️ Sobre el Presupuesto Base:
-            </p>
-            <ul className="text-xs text-blue-800 space-y-1 ml-6">
-              <li>
-                <strong>Es una plantilla:</strong> Este valor se usa solo para inicializar 
-                nuevos meses que no tienen historial previo.
-              </li>
-              <li>
-                <strong>Herencia automática:</strong> Cuando cambias de mes, el presupuesto 
-                se copia automáticamente del mes anterior.
-              </li>
-              <li>
-                <strong>Presupuesto real por mes:</strong> El presupuesto que realmente usas 
-                cada mes se gestiona en la vista de <strong>Presupuesto</strong>.
-              </li>
-              <li>
-                <strong>No afecta meses existentes:</strong> Cambiar este valor NO modifica 
-                los presupuestos que ya están asignados en otros meses.
-              </li>
-            </ul>
-          </div>
-
-          {/* Info sobre tipos */}
+          {/* Info box */}
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
             <p className="text-sm text-purple-800">
-              <i className="fas fa-tag mr-2"></i>
-              <strong>Tipos de categoría:</strong>
+              <i className="fas fa-info-circle mr-2"></i>
+              <strong>Tip:</strong> El nombre de la categoría debe coincidir exactamente con tu Excel al importar transacciones.
             </p>
-            <ul className="text-xs text-purple-700 mt-2 space-y-1 ml-6">
-              <li><strong>Income:</strong> Ingresos (salarios, bonos, etc.)</li>
-              <li><strong>Expense:</strong> Gastos normales (comida, transporte, etc.)</li>
-              <li><strong>Savings:</strong> Ahorros líquidos (fondo emergencia, etc.)</li>
-              <li><strong>Investment:</strong> Inversiones (Fintual, Trade Republic, etc.)</li>
-            </ul>
           </div>
 
           {/* Botones */}
