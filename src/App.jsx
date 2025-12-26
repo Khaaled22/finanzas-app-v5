@@ -1,5 +1,6 @@
 // src/App.jsx
 // ✅ M31: Integración con Supabase Auth
+// ✅ M36 Fase 7: Quick Add Button
 import React, { useState } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/AuthForms';
@@ -19,6 +20,9 @@ import SettingsView from './views/Settings/SettingsView';
 
 // Importación PWA (M10)
 import InstallPWA from './components/common/InstallPWA';
+
+// ✅ M36 Fase 7: Quick Add Button
+import QuickAddButton from './components/common/QuickAddButton';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -65,7 +69,7 @@ function AppContent() {
           <div className="container mx-auto px-4 text-center text-gray-600">
             <p className="text-sm">
               <i className="fas fa-rocket mr-2"></i>
-              Finanzas PRO v5.5 - M31 Supabase ✅
+              Finanzas PRO v5.6 - M36 Quick Add ✅
             </p>
             <p className="text-xs text-gray-400 mt-1">
               Cloud Sync + Multi-device
@@ -76,10 +80,13 @@ function AppContent() {
         {/* M10: Componente para instalar la PWA */}
         <InstallPWA />
 
+        {/* ✅ M36 Fase 7: Botón flotante para agregar transacción */}
+        <QuickAddButton />
+
         {/* Indicador visual de guardado automático */}
         <div 
           id="save-indicator"
-          className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50"
+          className="fixed bottom-4 left-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50"
         >
           <i className="fas fa-check mr-2"></i>
           Guardado

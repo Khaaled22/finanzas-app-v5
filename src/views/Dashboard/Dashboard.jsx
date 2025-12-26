@@ -1,5 +1,12 @@
 // src/views/Dashboard/Dashboard.jsx
-// ✅ M33: Dashboard mejorado con formateo de números y proyección de gasto
+// ✅ M36: Dashboard mejorado con métricas separadas por flowKind
+// ✅ M36 Fase 6: Sección de Cash/Banco prominente
+// - Disponible Operativo (principal)
+// - Invertido este mes
+// - Pagado a deudas
+// - Ingresos reales
+// - Cash/Banco vs Inversiones separados
+
 import { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAnalytics } from '../../hooks/useAnalytics';
@@ -19,10 +26,36 @@ export default function Dashboard() {
     selectedBudgetMonth,
     setSelectedBudgetMonth,
     categoriesWithMonthlyBudget,
-    convertCurrency
+    convertCurrency,
+    isOperatingExpense,
+    ynabConfig
   } = useApp();
   
   const { nautaIndex, netWorth, savingsRate, emergencyFundMonths } = useAnalytics();
+
+  // ✅ M36 Fase 6: Separar Cash/Banco de Inversiones
+  const { cashPlatforms, investmentPlatforms, totalCash, totalInvestmentsValue } = useMemo(() => {
+    const cash = investments.filter(inv => 
+      !inv.isArchived && (inv.isCash || inv.goal === 'cash')
+    );
+    const invs = investments.filter(inv => 
+      !inv.isArchived && !inv.isCash && inv.goal !== 'cash'
+    );
+    
+    const cashTotal = cash.reduce((sum, inv) => 
+      sum + convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency), 0
+    );
+    const invsTotal = invs.reduce((sum, inv) => 
+      sum + convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency), 0
+    );
+    
+    return {
+      cashPlatforms: cash,
+      investmentPlatforms: invs,
+      totalCash: cashTotal,
+      totalInvestmentsValue: invsTotal
+    };
+  }, [investments, convertCurrency, displayCurrency]);
 
   // Generar lista de meses disponibles
   const availableMonths = useMemo(() => {
@@ -39,6 +72,19 @@ export default function Dashboard() {
     return months;
   }, []);
 
+  // ✅ M36: Detectar si es mes futuro (PLAN) o actual/pasado (REAL)
+  const monthStatus = useMemo(() => {
+    const now = new Date();
+    const [selectedYear, selectedMonth] = selectedBudgetMonth.split('-').map(Number);
+    const selectedDate = new Date(selectedYear, selectedMonth - 1, 1);
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    if (selectedDate > currentMonthStart) {
+      return { isPlan: true, label: 'PLAN', color: 'bg-amber-100 text-amber-800' };
+    }
+    return { isPlan: false, label: 'REAL', color: 'bg-green-100 text-green-800' };
+  }, [selectedBudgetMonth]);
+
   // Proyección del mes con estado
   const monthProjection = useMemo(() => {
     const now = new Date();
@@ -49,13 +95,11 @@ export default function Dashboard() {
     const currentDay = isCurrentMonth ? now.getDate() : daysInMonth;
     const percentDaysPassed = (currentDay / daysInMonth) * 100;
     
-    // Calcular presupuesto total (de categorías de gasto)
-    const totalBudget = categoriesWithMonthlyBudget
-      .filter(cat => cat.type === 'Gasto' || !cat.type)
-      .reduce((sum, cat) => sum + (cat.budgetInDisplayCurrency || 0), 0);
+    // ✅ M36: Usar presupuesto operativo (gastos + deuda, sin inversión)
+    const totalBudget = totals.operationalBudgeted || 0;
     
-    // Calcular gasto real
-    const totalSpent = totals.spent || 0;
+    // ✅ M36: Gastado = solo gastos operativos
+    const totalSpent = totals.operatingSpent || 0;
     const percentSpent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
     
     // Proyección
@@ -90,7 +134,7 @@ export default function Dashboard() {
       }
     }
     
-    const remainingBudget = Math.max(0, totalBudget - totalSpent);
+    const remainingBudget = Math.max(0, totalBudget - totalSpent - (totals.debtPaid || 0));
     const remainingDays = Math.max(0, daysInMonth - currentDay);
     const dailyBudget = remainingDays > 0 ? remainingBudget / remainingDays : 0;
     
@@ -109,48 +153,57 @@ export default function Dashboard() {
       statusMessage,
       isCurrentMonth
     };
-  }, [totals.spent, selectedBudgetMonth, categoriesWithMonthlyBudget]);
+  }, [totals, selectedBudgetMonth]);
 
-  // Calcular totales de inversiones
+  // Calcular totales de inversiones (stock) - ahora usa totalInvestmentsValue
   const investmentsTotals = useMemo(() => {
-    const totalValue = investments.reduce((sum, inv) => {
-      const balance = inv.currentBalance || 0;
-      return sum + convertCurrency(balance, inv.currency, displayCurrency);
-    }, 0);
-    
-    return { totalValue };
-  }, [investments, displayCurrency, convertCurrency]);
+    return { totalValue: totalInvestmentsValue };
+  }, [totalInvestmentsValue]);
 
-  // Calcular deuda total
+  // Calcular deuda total (stock)
   const debtTotal = useMemo(() => {
     return debts.reduce((sum, debt) => 
       sum + convertCurrency(debt.currentBalance || 0, debt.currency, displayCurrency), 0
     );
   }, [debts, displayCurrency, convertCurrency]);
 
+  // ✅ M36: Calcular "Sin Asignar" YNAB style
+  const unassigned = useMemo(() => {
+    const income = monthStatus.isPlan 
+      ? (ynabConfig?.monthlyIncome || 0)
+      : (totals.incomeReal || 0);
+    
+    const totalAssigned = totals.budgeted || 0;
+    
+    return income - totalAssigned;
+  }, [totals, ynabConfig, monthStatus.isPlan]);
+
   // Datos para gráfico de barras
   const budgetChartData = useMemo(() => ({
-    labels: ['Presupuestado', 'Gastado', 'Disponible'],
+    labels: ['Presupuesto Op.', 'Gastado', 'Pagado Deuda', 'Disponible'],
     datasets: [{
       label: 'Monto',
       data: [
-        monthProjection.totalBudget, 
-        monthProjection.totalSpent, 
-        monthProjection.remainingBudget
+        totals.operationalBudgeted || 0, 
+        totals.operatingSpent || 0, 
+        totals.debtPaid || 0,
+        totals.availableOperational || 0
       ],
       backgroundColor: [
         'rgba(59, 130, 246, 0.6)',
         'rgba(239, 68, 68, 0.6)',
+        'rgba(249, 115, 22, 0.6)',
         'rgba(34, 197, 94, 0.6)'
       ],
       borderColor: [
         'rgb(59, 130, 246)',
         'rgb(239, 68, 68)',
+        'rgb(249, 115, 22)',
         'rgb(34, 197, 94)'
       ],
       borderWidth: 2
     }]
-  }), [monthProjection]);
+  }), [totals]);
 
   // Datos para gráfico de proyección
   const projectionChartData = useMemo(() => {
@@ -200,9 +253,10 @@ export default function Dashboard() {
     };
   }, [monthProjection]);
 
-  // Datos para gráfico de categorías
+  // Datos para gráfico de categorías (solo gastos operativos)
   const categoryChartData = useMemo(() => {
-    const categoriesWithSpent = categoriesWithMonthlyBudget.filter(c => c.spentInDisplayCurrency > 0);
+    const categoriesWithSpent = categoriesWithMonthlyBudget
+      .filter(c => isOperatingExpense(c) && c.spentInDisplayCurrency > 0);
     
     if (categoriesWithSpent.length === 0) {
       return {
@@ -231,7 +285,36 @@ export default function Dashboard() {
         borderWidth: 2
       }]
     };
-  }, [categoriesWithMonthlyBudget]);
+  }, [categoriesWithMonthlyBudget, isOperatingExpense]);
+
+  // ✅ M36 Fase 6: Datos para gráfico de patrimonio
+  const wealthDistributionData = useMemo(() => {
+    // Si ambos son 0, no mostrar datos engañosos
+    const hasData = totalCash > 0 || totalInvestmentsValue > 0;
+    
+    if (!hasData) {
+      return {
+        labels: ['Sin datos'],
+        datasets: [{
+          data: [1],
+          backgroundColor: ['rgba(209, 213, 219, 0.5)'],
+          borderWidth: 0
+        }]
+      };
+    }
+    
+    return {
+      labels: ['Cash/Banco', 'Inversiones'],
+      datasets: [{
+        data: [totalCash, totalInvestmentsValue],
+        backgroundColor: [
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(59, 130, 246, 0.8)'
+        ],
+        borderWidth: 0
+      }]
+    };
+  }, [totalCash, totalInvestmentsValue]);
 
   // Formatear nombre del mes seleccionado
   const selectedMonthName = useMemo(() => {
@@ -286,7 +369,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Selector de Mes */}
+      {/* Selector de Mes + Badge REAL/PLAN */}
       <div className="bg-white rounded-xl shadow-md p-4">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -305,6 +388,11 @@ export default function Dashboard() {
                 </option>
               ))}
             </select>
+            
+            {/* ✅ M36: Badge REAL/PLAN */}
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${monthStatus.color}`}>
+              {monthStatus.label}
+            </span>
           </div>
           
           {monthProjection.isCurrentMonth && (
@@ -315,46 +403,168 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Tarjetas KPI principales */}
+      {/* ✅ M36: NUEVAS Tarjetas KPI principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card Principal: Disponible Operativo */}
         <MetricCard
-          title="Presupuestado"
-          value={formatNumber(monthProjection.totalBudget)}
+          title="Disponible Operativo"
+          value={formatNumber(totals.availableOperational || 0)}
           currency={displayCurrency}
-          subtitle={monthProjection.totalBudget === 0 ? 'Sin presupuesto' : selectedMonthName}
-          icon="fa-calculator"
-          color="blue"
+          subtitle={`${formatNumber(monthProjection.dailyBudget)}/día restante`}
+          icon="fa-wallet"
+          color={totals.availableOperational >= 0 ? 'green' : 'red'}
+          highlight={true}
         />
         
+        {/* Gastado (solo operativo) */}
         <MetricCard
           title="Gastado"
-          value={formatNumber(monthProjection.totalSpent)}
+          value={formatNumber(totals.operatingSpent || 0)}
           currency={displayCurrency}
-          subtitle={monthProjection.totalBudget > 0 ? `${formatPercent(monthProjection.percentSpent)} del presupuesto` : ''}
+          subtitle={`${formatPercent(monthProjection.percentSpent)} del presupuesto`}
           icon="fa-receipt"
           color="red"
         />
         
+        {/* Invertido este mes */}
         <MetricCard
-          title="Disponible"
-          value={formatNumber(monthProjection.remainingBudget)}
+          title="Invertido"
+          value={formatNumber(totals.investmentContributed || 0)}
           currency={displayCurrency}
-          subtitle={monthProjection.totalBudget === 0 ? 'Sin presupuesto' : `${formatNumber(monthProjection.dailyBudget)}/día`}
-          icon="fa-piggy-bank"
-          color={monthProjection.remainingBudget >= 0 ? 'green' : 'red'}
+          subtitle={`de ${formatNumber(totals.investmentBudgeted || 0)} planificado`}
+          icon="fa-chart-line"
+          color="purple"
         />
         
+        {/* Patrimonio Neto */}
         <MetricCard
           title="Patrimonio Neto"
           value={formatNumber(netWorth)}
           currency={displayCurrency}
           subtitle="Activos - Pasivos"
-          icon="fa-chart-line"
-          color="purple"
+          icon="fa-landmark"
+          color="blue"
         />
       </div>
 
-      {/* Mini KPIs secundarios */}
+      {/* ✅ M36: Fila secundaria con Sin Asignar y pagos de deuda */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MiniKPI 
+          label="Ingresos del Mes" 
+          value={formatNumber(monthStatus.isPlan ? (ynabConfig?.monthlyIncome || 0) : (totals.incomeReal || 0))} 
+          suffix={displayCurrency}
+          icon="fa-arrow-down"
+          status="good"
+        />
+        <MiniKPI 
+          label="Sin Asignar" 
+          value={formatNumber(unassigned)} 
+          suffix={displayCurrency}
+          icon="fa-question-circle"
+          status={unassigned >= 0 ? 'good' : 'danger'}
+        />
+        <MiniKPI 
+          label="Pagado a Deudas" 
+          value={formatNumber(totals.debtPaid || 0)} 
+          suffix={displayCurrency}
+          icon="fa-credit-card"
+          status={totals.debtPaid > 0 ? 'good' : 'neutral'}
+        />
+        <MiniKPI 
+          label="Deuda Restante" 
+          value={formatCompact(debtTotal, displayCurrency)} 
+          icon="fa-balance-scale"
+          status={debtTotal === 0 ? 'good' : debtTotal < 50000 ? 'warning' : 'danger'}
+        />
+      </div>
+
+      {/* ✅ M36 Fase 6: Nueva fila Cash/Banco vs Inversiones */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Cash/Banco */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-800">
+              <i className="fas fa-university mr-2 text-emerald-600"></i>
+              Cash / Banco
+            </h3>
+            <span className="text-xl font-bold text-emerald-600">{formatNumber(totalCash)} {displayCurrency}</span>
+          </div>
+          
+          {cashPlatforms.length === 0 ? (
+            <div className="text-center py-6 text-gray-500">
+              <i className="fas fa-piggy-bank text-3xl mb-2 text-gray-300"></i>
+              <p className="text-sm">Sin cuentas bancarias</p>
+              <p className="text-xs mt-1">Inversiones → Agregar → Cash/Banco</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cashPlatforms.slice(0, 4).map(account => (
+                <div 
+                  key={account.id}
+                  className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-100"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🏦</span>
+                    <div>
+                      <h4 className="font-medium text-gray-800 text-sm">{account.name}</h4>
+                      <p className="text-xs text-gray-500">{account.institution || account.currency}</p>
+                    </div>
+                  </div>
+                  <span className="font-bold text-emerald-700 text-sm">
+                    {formatNumber(account.currentBalance)} {account.currency}
+                  </span>
+                </div>
+              ))}
+              {cashPlatforms.length > 4 && (
+                <p className="text-center text-xs text-gray-500">+{cashPlatforms.length - 4} más</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Inversiones */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-800">
+              <i className="fas fa-chart-line mr-2 text-blue-600"></i>
+              Inversiones
+            </h3>
+            <span className="text-xl font-bold text-blue-600">{formatNumber(totalInvestmentsValue)} {displayCurrency}</span>
+          </div>
+          
+          {investmentPlatforms.length === 0 ? (
+            <div className="text-center py-6 text-gray-500">
+              <i className="fas fa-chart-pie text-3xl mb-2 text-gray-300"></i>
+              <p className="text-sm">Sin inversiones registradas</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {investmentPlatforms.slice(0, 4).map(inv => (
+                <div 
+                  key={inv.id}
+                  className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">📈</span>
+                    <div>
+                      <h4 className="font-medium text-gray-800 text-sm">{inv.name}</h4>
+                      <p className="text-xs text-gray-500">{inv.goal}</p>
+                    </div>
+                  </div>
+                  <span className="font-bold text-blue-700 text-sm">
+                    {formatNumber(inv.currentBalance)} {inv.currency}
+                  </span>
+                </div>
+              ))}
+              {investmentPlatforms.length > 4 && (
+                <p className="text-center text-xs text-gray-500">+{investmentPlatforms.length - 4} más</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mini KPIs de salud financiera */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MiniKPI 
           label="Tasa de Ahorro" 
@@ -369,16 +579,16 @@ export default function Dashboard() {
           status={emergencyFundMonths >= 6 ? 'good' : emergencyFundMonths >= 3 ? 'warning' : 'danger'}
         />
         <MiniKPI 
-          label="Deuda Total" 
-          value={formatCompact(debtTotal, displayCurrency)} 
-          icon="fa-credit-card"
-          status={debtTotal === 0 ? 'good' : debtTotal < 10000 ? 'warning' : 'danger'}
+          label="Total Cash + Inv." 
+          value={formatCompact(totalCash + totalInvestmentsValue, displayCurrency)} 
+          icon="fa-coins"
+          status={totalCash + totalInvestmentsValue > 0 ? 'good' : 'warning'}
         />
         <MiniKPI 
-          label="Inversiones" 
-          value={formatCompact(investmentsTotals.totalValue, displayCurrency)} 
-          icon="fa-chart-pie"
-          status={investmentsTotals.totalValue > 0 ? 'good' : 'warning'}
+          label="% Invertido del Ingreso" 
+          value={totals.incomeReal > 0 ? formatPercent((totals.investmentContributed / totals.incomeReal) * 100) : '0%'} 
+          icon="fa-percentage"
+          status={totals.investmentContributed > 0 ? 'good' : 'neutral'}
         />
       </div>
 
@@ -388,7 +598,7 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <i className="fas fa-chart-bar mr-2 text-blue-600"></i>
-            Resumen del Mes
+            Resumen Operativo
             <span className="ml-2 text-sm font-normal text-gray-500">({selectedMonthName})</span>
           </h3>
           <div className="chart-container">
@@ -438,178 +648,137 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Gráfico Doughnut */}
-      <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-          <i className="fas fa-chart-pie mr-2 text-purple-600"></i>
-          Distribución de Gastos por Grupo
-          <span className="ml-2 text-sm font-normal text-gray-500">({selectedMonthName})</span>
-        </h3>
-        <div className="chart-container">
-          <DoughnutChart 
-            data={categoryChartData} 
-            height={350} 
-            groupByCategory={true}
-            topN={10}
-          />
+      {/* Gráficos Doughnut lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Distribución de Gastos Operativos */}
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i className="fas fa-chart-pie mr-2 text-red-600"></i>
+            Gastos Operativos
+            <span className="ml-2 text-sm font-normal text-gray-500">({selectedMonthName})</span>
+          </h3>
+          <div className="chart-container h-64">
+            <DoughnutChart 
+              data={categoryChartData}
+              height={250}
+              topN={9}
+              legendPosition="right"
+            />
+          </div>
+        </div>
+
+        {/* ✅ M36 Fase 6: Distribución del Patrimonio */}
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i className="fas fa-gem mr-2 text-emerald-600"></i>
+            Distribución del Patrimonio
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="chart-container h-48">
+              <DoughnutChart 
+                data={wealthDistributionData} 
+                height={180}
+                showLegend={false}
+                topN={3}
+              />
+            </div>
+            <div className="space-y-3 flex flex-col justify-center">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Cash/Banco</span>
+                </div>
+                <span className="font-semibold text-emerald-600">{formatNumber(totalCash)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Inversiones</span>
+                </div>
+                <span className="font-semibold text-blue-600">{formatNumber(totalInvestmentsValue)}</span>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Deuda</span>
+                  <span className="font-semibold text-red-600">-{formatNumber(debtTotal)}</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t-2 border-gray-300">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-700">Patrimonio</span>
+                  <span className={`font-bold text-lg ${netWorth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatNumber(netWorth)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Panel de Logros */}
       <AchievementsPanel />
-
-      {/* Resumen Financiero Rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard
-          title="Deudas"
-          icon="fa-credit-card"
-          iconColor="text-red-600"
-          iconBg="bg-red-100"
-          items={debts.slice(0, 3)}
-          emptyMessage="Sin deudas activas"
-          renderItem={(debt) => (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-700">{debt.name}</span>
-              <span className="text-sm font-semibold text-red-600">
-                {formatNumber(debt.currentBalance)} {debt.currency}
-              </span>
-            </div>
-          )}
-        />
-
-        <SummaryCard
-          title="Objetivos de Ahorro"
-          icon="fa-bullseye"
-          iconColor="text-green-600"
-          iconBg="bg-green-100"
-          items={savingsGoals.slice(0, 3)}
-          emptyMessage="Sin objetivos creados"
-          renderItem={(goal) => {
-            const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
-            return (
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm text-gray-700">{goal.name}</span>
-                  <span className="text-xs font-semibold text-green-600">
-                    {formatPercent(progress)}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="h-1.5 rounded-full bg-green-500"
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            );
-          }}
-        />
-
-        <SummaryCard
-          title="Inversiones"
-          icon="fa-chart-line"
-          iconColor="text-purple-600"
-          iconBg="bg-purple-100"
-          items={investments.filter(inv => !inv.isArchived).slice(0, 3)}
-          emptyMessage="Sin inversiones registradas"
-          renderItem={(inv) => {
-            const history = inv.balanceHistory || [];
-            let changePercent = 0;
-            
-            if (history.length >= 2) {
-              const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
-              const oldest = sorted[0].balance;
-              const current = inv.currentBalance || 0;
-              changePercent = oldest > 0 ? ((current - oldest) / oldest * 100) : 0;
-            }
-            
-            return (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-700">{inv.name}</span>
-                <span className={`text-sm font-semibold ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {changePercent >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
-                </span>
-              </div>
-            );
-          }}
-        />
-      </div>
     </div>
   );
 }
 
-function MetricCard({ title, value, currency, icon, color, subtitle }) {
+// =====================================================
+// COMPONENTES AUXILIARES
+// =====================================================
+
+function MetricCard({ title, value, currency, subtitle, icon, color, highlight = false }) {
   const colorClasses = {
-    blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-500' },
-    red: { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-500' },
-    green: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-500' },
-    purple: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-500' },
-    orange: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-500' }
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-green-500 to-green-600',
+    red: 'from-red-500 to-red-600',
+    purple: 'from-purple-500 to-purple-600',
+    orange: 'from-orange-500 to-orange-600'
   };
-
-  const colors = colorClasses[color] || colorClasses.blue;
-
+  
+  const bgClass = highlight 
+    ? `bg-gradient-to-br ${colorClasses[color]} text-white` 
+    : 'bg-white';
+  const textClass = highlight ? 'text-white' : 'text-gray-800';
+  const subtitleClass = highlight ? 'text-white/80' : 'text-gray-500';
+  
   return (
-    <div className={`bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-l-4 ${colors.border}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-gray-600 text-sm font-medium mb-1">{title}</p>
-          <p className={`text-3xl font-bold ${colors.text}`}>{value}</p>
-          <p className="text-xs text-gray-500 mt-1">{currency}</p>
-          {subtitle && <p className="text-xs text-gray-600 mt-1">{subtitle}</p>}
-        </div>
-        <div className={`${colors.bg} p-4 rounded-full`}>
-          <i className={`fas ${icon} text-2xl ${colors.text}`}></i>
+    <div className={`${bgClass} rounded-xl shadow-lg p-6 hover:shadow-xl transition-all ${highlight ? 'ring-2 ring-offset-2 ring-green-300' : ''}`}>
+      <div className="flex items-center justify-between mb-4">
+        <span className={`text-sm font-medium ${highlight ? 'text-white/90' : 'text-gray-600'}`}>
+          {title}
+        </span>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${highlight ? 'bg-white/20' : `bg-${color}-100`}`}>
+          <i className={`fas ${icon} ${highlight ? 'text-white' : `text-${color}-600`}`}></i>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MiniKPI({ label, value, icon, status }) {
-  const statusConfig = {
-    good: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', icon: 'text-green-600' },
-    warning: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', icon: 'text-yellow-600' },
-    danger: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'text-red-600' }
-  };
-
-  const config = statusConfig[status];
-
-  return (
-    <div className={`${config.bg} border-2 ${config.border} rounded-lg p-4 text-center hover:shadow-md transition-shadow`}>
-      <i className={`fas ${icon} text-2xl ${config.icon} mb-2`}></i>
-      <p className="text-xs text-gray-600 mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${config.text}`}>{value}</p>
-    </div>
-  );
-}
-
-function SummaryCard({ title, icon, iconColor, iconBg, items, emptyMessage, renderItem }) {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-      <div className="flex items-center mb-4">
-        <div className={`${iconBg} p-3 rounded-lg mr-3`}>
-          <i className={`fas ${icon} ${iconColor} text-xl`}></i>
-        </div>
-        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-      </div>
-      
-      {items.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-4">{emptyMessage}</p>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item, index) => (
-            <div key={item.id || index}>
-              {renderItem(item)}
-            </div>
-          ))}
-          {items.length > 3 && (
-            <p className="text-xs text-gray-500 text-center pt-2">
-              +{items.length - 3} más
-            </p>
-          )}
-        </div>
+      <p className={`text-3xl font-bold ${textClass}`}>
+        {value}
+        <span className="text-lg ml-1 font-normal opacity-70">{currency}</span>
+      </p>
+      {subtitle && (
+        <p className={`text-sm mt-2 ${subtitleClass}`}>{subtitle}</p>
       )}
+    </div>
+  );
+}
+
+function MiniKPI({ label, value, suffix = '', icon, status }) {
+  const statusColors = {
+    good: 'bg-green-50 border-green-200 text-green-700',
+    warning: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+    danger: 'bg-red-50 border-red-200 text-red-700',
+    neutral: 'bg-gray-50 border-gray-200 text-gray-700'
+  };
+  
+  return (
+    <div className={`p-4 rounded-lg border-2 ${statusColors[status]}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <i className={`fas ${icon} text-sm opacity-70`}></i>
+        <span className="text-xs font-medium opacity-80">{label}</span>
+      </div>
+      <p className="text-lg font-bold">
+        {value} {suffix && <span className="text-sm font-normal">{suffix}</span>}
+      </p>
     </div>
   );
 }

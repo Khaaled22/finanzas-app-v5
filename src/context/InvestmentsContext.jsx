@@ -1,30 +1,36 @@
 // src/context/InvestmentsContext.jsx
 // ✅ M33: Simplificado - Solo plataformas con balance global (sin holdings/activos)
+// ✅ M36 Fase 6: Soporte mejorado para Cash/Banco como plataforma
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 
 const InvestmentsContext = createContext();
 
-// ✅ M33: Tipos de objetivo para plataformas
+// ✅ M36 Fase 6: Tipos de objetivo actualizados con Cash/Banco prominente
 export const PLATFORM_GOALS = [
+  { id: 'cash', name: 'Cash/Banco', icon: '🏦', description: 'Cuentas bancarias y efectivo', color: 'emerald', isCash: true },
   { id: 'fi_step1', name: 'FI Step 1', icon: '💰', description: 'Liquidez inmediata', color: 'blue' },
   { id: 'emergency', name: 'Fondo Emergencia', icon: '🛟', description: 'Reserva de emergencia', color: 'green' },
   { id: 'down_payment', name: 'Pie/Down Payment', icon: '🏠', description: 'Ahorro para compra grande', color: 'purple' },
   { id: 'real_state', name: 'Real State', icon: '🏢', description: 'Inversión inmobiliaria', color: 'orange' },
   { id: 'retirement', name: 'Jubilación', icon: '👴', description: 'Ahorro previsional (APV)', color: 'indigo' },
   { id: 'growth', name: 'Crecimiento', icon: '📈', description: 'Inversión a largo plazo', color: 'cyan' },
-  { id: 'cash', name: 'Cash/Efectivo', icon: '💵', description: 'Dinero disponible', color: 'gray' },
   { id: 'other', name: 'Otro', icon: '📦', description: 'Otra inversión', color: 'slate' }
 ];
 
-// ✅ M33: Subtipos de plataforma
+// ✅ M36 Fase 6: Subtipos actualizados con más opciones bancarias
 export const PLATFORM_SUBTYPES = [
+  // Cash/Banco
+  { id: 'cuenta_corriente', name: 'Cuenta Corriente', icon: '🏦', forCash: true },
+  { id: 'cuenta_ahorro', name: 'Cuenta de Ahorro', icon: '💳', forCash: true },
+  { id: 'cuenta_vista', name: 'Cuenta Vista', icon: '👁️', forCash: true },
+  { id: 'efectivo', name: 'Efectivo', icon: '💵', forCash: true },
+  { id: 'deposito', name: 'Depósito a Plazo', icon: '📅', forCash: true },
+  // Inversiones
   { id: 'fondos_mutuos', name: 'Fondos Mutuos', icon: '📊' },
   { id: 'etf', name: 'ETF', icon: '📈' },
   { id: 'acciones', name: 'Acciones', icon: '📉' },
   { id: 'money_market', name: 'Money Market', icon: '💵' },
-  { id: 'deposito', name: 'Depósito a Plazo', icon: '🏦' },
-  { id: 'cuenta', name: 'Cuenta Corriente/Ahorro', icon: '💳' },
   { id: 'crypto', name: 'Crypto', icon: '₿' },
   { id: 'real_state', name: 'Real State', icon: '🏢' },
   { id: 'apv', name: 'APV', icon: '👴' },
@@ -87,11 +93,16 @@ export function InvestmentsProvider({ children }) {
   // ===================== PLATAFORMAS =====================
 
   /**
-   * ✅ M33: Crear/actualizar plataforma (único método)
+   * ✅ M33 + M36 Fase 6: Crear/actualizar plataforma
    */
   const savePlatform = useCallback((platformData) => {
     const isNew = !platformData.id;
     const platformId = platformData.id || `platform_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
+    
+    // ✅ M36 Fase 6: Detectar si es plataforma de cash
+    const isCashPlatform = platformData.goal === 'cash' || 
+                          ['cuenta_corriente', 'cuenta_ahorro', 'cuenta_vista', 'efectivo'].includes(platformData.subtype);
     
     const platform = {
       id: platformId,
@@ -99,63 +110,53 @@ export function InvestmentsProvider({ children }) {
       goal: platformData.goal || 'other',
       subtype: platformData.subtype || 'otro',
       currency: platformData.currency || 'EUR',
-      isLiquid: platformData.isLiquid !== false, // Default true
       currentBalance: parseFloat(platformData.currentBalance) || 0,
+      totalDeposited: parseFloat(platformData.totalDeposited) || parseFloat(platformData.currentBalance) || 0,
+      isLiquid: platformData.isLiquid !== false,
       notes: platformData.notes || '',
-      balanceHistory: platformData.balanceHistory || [],
+      country: platformData.country || '',
+      institution: platformData.institution || '',
+      accountNumber: platformData.accountNumber || '', // ✅ M36 Fase 6: Para cuentas bancarias
+      // ✅ M36 Fase 6: Marcar si es cash
+      isCash: isCashPlatform,
+      // Historial
+      balanceHistory: platformData.balanceHistory || [{
+        id: `bh_${Date.now()}`,
+        date: now.split('T')[0],
+        balance: parseFloat(platformData.currentBalance) || 0,
+        note: isNew ? 'Balance inicial' : 'Actualización',
+        type: isNew ? 'initial' : 'update',
+        createdAt: now
+      }],
       isArchived: platformData.isArchived || false,
-      createdAt: platformData.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: platformData.createdAt || now,
+      updatedAt: now
     };
 
-    // Si es nueva y tiene balance inicial, agregar al historial
-    if (isNew && platform.currentBalance > 0 && platform.balanceHistory.length === 0) {
-      platform.balanceHistory.push({
-        id: `balance_${Date.now()}`,
-        date: new Date().toISOString().split('T')[0],
-        balance: platform.currentBalance,
-        note: 'Balance inicial',
-        timestamp: new Date().toISOString()
-      });
-    }
-
     setInvestments(prev => {
-      if (platformData.id) {
-        // Actualizar existente
-        return prev.map(inv => inv.id === platformId ? { ...inv, ...platform } : inv);
-      } else {
-        // Crear nueva
+      if (isNew) {
         return [...prev, platform];
       }
+      return prev.map(inv => inv.id === platformId ? { ...inv, ...platform } : inv);
     });
 
-    updateLinkedSavingsGoals(platformId, platform.currentBalance);
-    return platformId;
-  }, [updateLinkedSavingsGoals]);
+    return platform;
+  }, []);
 
-  /**
-   * ✅ M33: Eliminar plataforma
-   */
   const deletePlatform = useCallback((platformId) => {
     setInvestments(prev => prev.filter(inv => inv.id !== platformId));
     return true;
   }, []);
 
-  /**
-   * ✅ M33: Archivar plataforma (en vez de eliminar)
-   */
   const archivePlatform = useCallback((platformId) => {
     setInvestments(prev => prev.map(inv => 
       inv.id === platformId 
-        ? { ...inv, isArchived: true, currentBalance: 0, updatedAt: new Date().toISOString() }
+        ? { ...inv, isArchived: true, updatedAt: new Date().toISOString() }
         : inv
     ));
     return true;
   }, []);
 
-  /**
-   * ✅ M33: Restaurar plataforma archivada
-   */
   const restorePlatform = useCallback((platformId) => {
     setInvestments(prev => prev.map(inv => 
       inv.id === platformId 
@@ -166,178 +167,156 @@ export function InvestmentsProvider({ children }) {
   }, []);
 
   /**
-   * ✅ M33: Actualizar balance de plataforma
+   * ✅ Actualizar balance de plataforma
    */
   const updatePlatformBalance = useCallback((platformId, newBalance, note = '') => {
+    const now = new Date().toISOString();
+    
     setInvestments(prev => prev.map(inv => {
       if (inv.id !== platformId) return inv;
-      
+
       const balanceEntry = {
-        id: `balance_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        date: new Date().toISOString().split('T')[0],
-        balance: parseFloat(newBalance) || 0,
-        note: note || 'Actualización manual',
-        timestamp: new Date().toISOString()
+        id: `bh_${Date.now()}`,
+        date: now.split('T')[0],
+        balance: parseFloat(newBalance),
+        note: note || 'Actualización de balance',
+        type: 'manual',
+        createdAt: now
       };
-      
-      return {
+
+      const updatedPlatform = {
         ...inv,
-        currentBalance: parseFloat(newBalance) || 0,
+        currentBalance: parseFloat(newBalance),
         balanceHistory: [...(inv.balanceHistory || []), balanceEntry],
-        updatedAt: new Date().toISOString()
+        updatedAt: now
       };
+
+      return updatedPlatform;
     }));
-    
-    updateLinkedSavingsGoals(platformId, parseFloat(newBalance) || 0);
+
+    updateLinkedSavingsGoals(platformId, parseFloat(newBalance));
     return true;
   }, [updateLinkedSavingsGoals]);
 
-  // ===================== HISTORIAL DE BALANCE =====================
-
   /**
-   * ✅ M33: Agregar entrada al historial manualmente
-   */
-  const addBalanceEntry = useCallback((platformId, entry) => {
-    setInvestments(prev => {
-      const platform = prev.find(inv => inv.id === platformId);
-      if (!platform) return prev;
-
-      const newEntry = {
-        id: `balance_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        date: entry.date || new Date().toISOString().split('T')[0],
-        balance: parseFloat(entry.balance) || 0,
-        note: entry.note || '',
-        timestamp: new Date().toISOString()
-      };
-
-      // Ordenar historial por fecha
-      const newHistory = [...(platform.balanceHistory || []), newEntry]
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      // Si la nueva entrada es la más reciente, actualizar currentBalance
-      const latestEntry = newHistory[newHistory.length - 1];
-      const isLatest = latestEntry.id === newEntry.id;
-
-      return prev.map(inv => 
-        inv.id === platformId 
-          ? { 
-              ...inv, 
-              balanceHistory: newHistory,
-              currentBalance: isLatest ? newEntry.balance : inv.currentBalance,
-              updatedAt: new Date().toISOString() 
-            }
-          : inv
-      );
-    });
-    return true;
-  }, []);
-
-  /**
-   * ✅ M33: Actualizar entrada del historial
-   */
-  const updateBalanceEntry = useCallback((platformId, entryId, updates) => {
-    setInvestments(prev => prev.map(inv => {
-      if (inv.id !== platformId) return inv;
-
-      const newHistory = (inv.balanceHistory || []).map(entry => 
-        entry.id === entryId 
-          ? { ...entry, ...updates, updatedAt: new Date().toISOString() }
-          : entry
-      ).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      // Actualizar currentBalance con el último del historial
-      const latestEntry = newHistory[newHistory.length - 1];
-
-      return {
-        ...inv,
-        balanceHistory: newHistory,
-        currentBalance: latestEntry ? latestEntry.balance : inv.currentBalance,
-        updatedAt: new Date().toISOString()
-      };
-    }));
-    return true;
-  }, []);
-
-  /**
-   * ✅ M33: Eliminar entrada del historial
-   */
-  const deleteBalanceEntry = useCallback((platformId, entryId) => {
-    setInvestments(prev => prev.map(inv => {
-      if (inv.id !== platformId) return inv;
-
-      const newHistory = (inv.balanceHistory || []).filter(entry => entry.id !== entryId);
-      const latestEntry = newHistory[newHistory.length - 1];
-
-      return {
-        ...inv,
-        balanceHistory: newHistory,
-        currentBalance: latestEntry ? latestEntry.balance : 0,
-        updatedAt: new Date().toISOString()
-      };
-    }));
-    return true;
-  }, []);
-
-  /**
-   * ✅ M33: Reemplazar historial completo
-   */
-  const updateBalanceHistory = useCallback((platformId, newHistory) => {
-    setInvestments(prev => prev.map(inv => {
-      if (inv.id !== platformId) return inv;
-
-      const sortedHistory = [...newHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
-      const latestEntry = sortedHistory[sortedHistory.length - 1];
-
-      return {
-        ...inv,
-        balanceHistory: sortedHistory,
-        currentBalance: latestEntry ? latestEntry.balance : 0,
-        updatedAt: new Date().toISOString()
-      };
-    }));
-    return true;
-  }, []);
-
-  // ===================== CÁLCULOS =====================
-
-  /**
-   * ✅ M33: Calcular ROI mensual (vs mes anterior)
+   * ✅ Calcular ROI de plataforma
    */
   const calculatePlatformROI = useCallback((platform) => {
-    const history = platform.balanceHistory || [];
-    if (history.length < 2) return { roi: 0, change: 0, hasPreviousMonth: false };
-
-    // Ordenar por fecha
-    const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (!platform) return { roi: 0, roiPercent: 0 };
     
-    // Obtener mes actual y anterior
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const previousMonth = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
-
-    // Buscar balance del mes anterior
-    const prevMonthEntry = sorted.filter(e => e.date.startsWith(previousMonth)).pop();
-    const currentBalance = platform.currentBalance;
-
-    if (!prevMonthEntry) {
-      // Si no hay mes anterior, comparar con primera entrada
-      const firstEntry = sorted[0];
-      if (firstEntry) {
-        const change = currentBalance - firstEntry.balance;
-        const roi = firstEntry.balance > 0 ? (change / firstEntry.balance) * 100 : 0;
-        return { roi, change, hasPreviousMonth: false, compareDate: firstEntry.date };
-      }
-      return { roi: 0, change: 0, hasPreviousMonth: false };
-    }
-
-    const change = currentBalance - prevMonthEntry.balance;
-    const roi = prevMonthEntry.balance > 0 ? (change / prevMonthEntry.balance) * 100 : 0;
+    const current = platform.currentBalance || 0;
+    const deposited = platform.totalDeposited || current;
     
-    return { roi, change, hasPreviousMonth: true, compareDate: prevMonthEntry.date };
+    if (deposited === 0) return { roi: 0, roiPercent: 0 };
+    
+    const roi = current - deposited;
+    const roiPercent = (roi / deposited) * 100;
+    
+    return { roi, roiPercent };
   }, []);
 
-  // ===================== AHORROS =====================
+  // ===================== BALANCE HISTORY =====================
+
+  const addBalanceHistory = useCallback((platformId, entry) => {
+    const now = new Date().toISOString();
+    
+    setInvestments(prev => prev.map(inv => {
+      if (inv.id !== platformId) return inv;
+
+      const newEntry = {
+        id: `bh_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        date: entry.date || now.split('T')[0],
+        balance: parseFloat(entry.balance),
+        note: entry.note || '',
+        type: entry.type || 'manual',
+        createdAt: now
+      };
+
+      return {
+        ...inv,
+        currentBalance: parseFloat(entry.balance),
+        balanceHistory: [...(inv.balanceHistory || []), newEntry].sort((a, b) => 
+          new Date(a.date) - new Date(b.date)
+        ),
+        updatedAt: now
+      };
+    }));
+
+    return true;
+  }, []);
+
+  const updateBalanceHistory = useCallback((platformId, entryId, updates) => {
+    const now = new Date().toISOString();
+    
+    setInvestments(prev => prev.map(inv => {
+      if (inv.id !== platformId) return inv;
+
+      const updatedHistory = (inv.balanceHistory || []).map(entry =>
+        entry.id === entryId ? { ...entry, ...updates, updatedAt: now } : entry
+      ).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const mostRecent = updatedHistory[updatedHistory.length - 1];
+
+      return {
+        ...inv,
+        balanceHistory: updatedHistory,
+        currentBalance: mostRecent?.balance || inv.currentBalance,
+        updatedAt: now
+      };
+    }));
+
+    return true;
+  }, []);
+
+  // Alias para compatibilidad
+  const addBalanceEntry = addBalanceHistory;
+  const updateBalanceEntry = updateBalanceHistory;
+
+  const deleteBalanceEntry = useCallback((platformId, entryId) => {
+    const now = new Date().toISOString();
+    
+    setInvestments(prev => prev.map(inv => {
+      if (inv.id !== platformId) return inv;
+
+      const entry = inv.balanceHistory?.find(e => e.id === entryId);
+      if (!entry || entry.type === 'initial') return inv;
+
+      const updatedHistory = (inv.balanceHistory || [])
+        .filter(e => e.id !== entryId)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const mostRecent = updatedHistory[updatedHistory.length - 1];
+
+      return {
+        ...inv,
+        balanceHistory: updatedHistory,
+        currentBalance: mostRecent?.balance || 0,
+        updatedAt: now
+      };
+    }));
+
+    return true;
+  }, []);
+
+  // ===================== HOLDINGS (Legacy) =====================
+
+  const addHoldingToPlatform = useCallback((platformId, holding) => {
+    // No-op en M33+ pero mantenido para compatibilidad
+    console.warn('addHoldingToPlatform: Holdings deshabilitados en M33+');
+    return false;
+  }, []);
+
+  const updateHoldingInPlatform = useCallback((platformId, holdingId, updates) => {
+    console.warn('updateHoldingInPlatform: Holdings deshabilitados en M33+');
+    return false;
+  }, []);
+
+  const deleteHoldingFromPlatform = useCallback((platformId, holdingId) => {
+    console.warn('deleteHoldingFromPlatform: Holdings deshabilitados en M33+');
+    return false;
+  }, []);
+
+  // ===================== SAVINGS GOALS =====================
 
   const addSavingsGoal = useCallback((goal) => {
     const newGoal = {
@@ -346,21 +325,20 @@ export function InvestmentsProvider({ children }) {
       targetAmount: parseFloat(goal.targetAmount) || 0,
       currentAmount: parseFloat(goal.currentAmount) || 0,
       currency: goal.currency || 'EUR',
-      deadline: goal.deadline || null,
-      notes: goal.notes || '',
-      contributionHistory: [],
+      targetDate: goal.targetDate || null,
       linkedPlatform: goal.linkedPlatform || null,
       linkedPlatforms: goal.linkedPlatforms || [],
-      isEmergencyFund: goal.isEmergencyFund || false,
+      notes: goal.notes || '',
+      icon: goal.icon || '🎯',
       createdAt: new Date().toISOString()
     };
 
     setSavingsGoals(prev => [...prev, newGoal]);
-    return newGoal.id;
+    return newGoal;
   }, []);
 
   const updateSavingsGoal = useCallback((goalId, updates) => {
-    setSavingsGoals(prev => prev.map(goal => 
+    setSavingsGoals(prev => prev.map(goal =>
       goal.id === goalId 
         ? { ...goal, ...updates, updatedAt: new Date().toISOString() }
         : goal
@@ -373,59 +351,83 @@ export function InvestmentsProvider({ children }) {
     return true;
   }, []);
 
-  const registerSavingsContribution = useCallback((goalId, amount, date = new Date().toISOString().split('T')[0]) => {
-    setSavingsGoals(prev => {
-      const goal = prev.find(g => g.id === goalId);
-      if (!goal) return prev;
+  const registerSavingsContribution = useCallback((goalId, amount, note = '') => {
+    const now = new Date().toISOString();
+    
+    setSavingsGoals(prev => prev.map(goal => {
+      if (goal.id !== goalId) return goal;
 
       const contribution = {
         id: `contrib_${Date.now()}`,
         amount: parseFloat(amount),
-        date: date,
-        timestamp: new Date().toISOString()
+        date: now.split('T')[0],
+        note,
+        timestamp: now
       };
 
-      const newAmount = goal.currentAmount + parseFloat(amount);
+      return {
+        ...goal,
+        currentAmount: (goal.currentAmount || 0) + parseFloat(amount),
+        contributions: [...(goal.contributions || []), contribution],
+        updatedAt: now
+      };
+    }));
 
-      return prev.map(g => 
-        g.id === goalId 
-          ? { 
-              ...g, 
-              currentAmount: newAmount,
-              contributionHistory: [...(g.contributionHistory || []), contribution],
-              updatedAt: new Date().toISOString()
-            }
-          : g
-      );
-    });
     return true;
   }, []);
 
-  // ===================== COMPATIBILIDAD =====================
-  
-  // Mantener funciones antiguas para compatibilidad
+  // ===================== LEGACY FUNCTIONS =====================
+
   const addInvestment = savePlatform;
   const updateInvestment = useCallback((id, updates) => {
-    setInvestments(prev => prev.map(inv => 
-      inv.id === id ? { ...inv, ...updates, updatedAt: new Date().toISOString() } : inv
-    ));
-  }, []);
+    return savePlatform({ id, ...updates });
+  }, [savePlatform]);
   const deleteInvestment = deletePlatform;
 
-  // ===================== VALOR =====================
+  // ===================== M36 FASE 6: HELPERS PARA CASH =====================
+
+  /**
+   * ✅ M36 Fase 6: Obtener solo plataformas de cash/banco
+   */
+  const cashPlatforms = useMemo(() => {
+    return investments.filter(inv => 
+      !inv.isArchived && (inv.isCash || inv.goal === 'cash')
+    );
+  }, [investments]);
+
+  /**
+   * ✅ M36 Fase 6: Obtener solo plataformas de inversión (no cash)
+   */
+  const investmentPlatforms = useMemo(() => {
+    return investments.filter(inv => 
+      !inv.isArchived && !inv.isCash && inv.goal !== 'cash'
+    );
+  }, [investments]);
+
+  /**
+   * ✅ M36 Fase 6: Total en cash/banco
+   */
+  const totalCash = useMemo(() => {
+    return cashPlatforms.reduce((sum, inv) => sum + (inv.currentBalance || 0), 0);
+  }, [cashPlatforms]);
+
+  /**
+   * ✅ M36 Fase 6: Total en inversiones (sin cash)
+   */
+  const totalInvestmentsValue = useMemo(() => {
+    return investmentPlatforms.reduce((sum, inv) => sum + (inv.currentBalance || 0), 0);
+  }, [investmentPlatforms]);
+
+  // ===================== VALUE =====================
 
   const value = useMemo(() => ({
-    // Estados
+    // Estado
     investments,
     setInvestments,
     savingsGoals,
     setSavingsGoals,
     
-    // Constantes
-    PLATFORM_GOALS,
-    PLATFORM_SUBTYPES,
-    
-    // Funciones Plataformas
+    // Plataformas
     savePlatform,
     deletePlatform,
     archivePlatform,
@@ -433,23 +435,35 @@ export function InvestmentsProvider({ children }) {
     updatePlatformBalance,
     calculatePlatformROI,
     
-    // Funciones Historial
+    // Balance History
+    addBalanceHistory,
+    updateBalanceHistory,
     addBalanceEntry,
     updateBalanceEntry,
     deleteBalanceEntry,
-    updateBalanceHistory,
     
-    // Funciones Ahorros
+    // Holdings (legacy)
+    addHoldingToPlatform,
+    updateHoldingInPlatform,
+    deleteHoldingFromPlatform,
+    
+    // Savings Goals
     addSavingsGoal,
     updateSavingsGoal,
     deleteSavingsGoal,
     registerSavingsContribution,
     updateLinkedSavingsGoals,
     
-    // Compatibilidad
+    // Legacy aliases
     addInvestment,
     updateInvestment,
-    deleteInvestment
+    deleteInvestment,
+    
+    // ✅ M36 Fase 6: Helpers de Cash/Banco
+    cashPlatforms,
+    investmentPlatforms,
+    totalCash,
+    totalInvestmentsValue
   }), [
     investments,
     savingsGoals,
@@ -459,10 +473,14 @@ export function InvestmentsProvider({ children }) {
     restorePlatform,
     updatePlatformBalance,
     calculatePlatformROI,
+    addBalanceHistory,
+    updateBalanceHistory,
     addBalanceEntry,
     updateBalanceEntry,
     deleteBalanceEntry,
-    updateBalanceHistory,
+    addHoldingToPlatform,
+    updateHoldingInPlatform,
+    deleteHoldingFromPlatform,
     addSavingsGoal,
     updateSavingsGoal,
     deleteSavingsGoal,
@@ -470,7 +488,11 @@ export function InvestmentsProvider({ children }) {
     updateLinkedSavingsGoals,
     addInvestment,
     updateInvestment,
-    deleteInvestment
+    deleteInvestment,
+    cashPlatforms,
+    investmentPlatforms,
+    totalCash,
+    totalInvestmentsValue
   ]);
 
   return (

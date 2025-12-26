@@ -1,5 +1,6 @@
 // src/hooks/useProjection.js
-// ✅ M19.3: EXTENDIDO con escenarios y eventos programados (mantiene compatibilidad con M18.5)
+// ✅ M36 Fase 5: EXTENDIDO con inversión flexible
+// ✅ M19.3: Mantiene escenarios y eventos programados
 import { useMemo, useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProjectionEngine } from '../domain/engines/ProjectionEngine';
@@ -8,17 +9,19 @@ export function useProjection() {
   const { 
     categories, 
     debts, 
+    investments,
     ynabConfig, 
     convertCurrency, 
     displayCurrency 
   } = useApp();
 
-  // ✅ M19.3: NUEVO - Estado para escenario y eventos programados
+  // Estado para escenario
   const [scenario, setScenario] = useState(() => {
     const saved = localStorage.getItem('projection_scenario');
     return saved || 'realistic';
   });
 
+  // Estado para eventos programados
   const [scheduledEvents, setScheduledEvents] = useState(() => {
     const saved = localStorage.getItem('projection_scheduledEvents');
     try {
@@ -28,17 +31,35 @@ export function useProjection() {
     }
   });
 
-  // ✅ M19.3: NUEVO - Guardar escenario cuando cambia
+  // ✅ M36 Fase 5: Estado para modo de inversión
+  const [investmentMode, setInvestmentMode] = useState(() => {
+    const saved = localStorage.getItem('projection_investmentMode');
+    return saved || 'fixed'; // 'fixed' | 'flexible' | 'none'
+  });
+
+  const [flexibleInvestmentPercent, setFlexibleInvestmentPercent] = useState(() => {
+    const saved = localStorage.getItem('projection_flexiblePercent');
+    return saved ? parseInt(saved, 10) : 20;
+  });
+
+  // Persistir configuración
   useEffect(() => {
     localStorage.setItem('projection_scenario', scenario);
   }, [scenario]);
 
-  // ✅ M19.3: NUEVO - Guardar eventos cuando cambian
   useEffect(() => {
     localStorage.setItem('projection_scheduledEvents', JSON.stringify(scheduledEvents));
   }, [scheduledEvents]);
+
+  useEffect(() => {
+    localStorage.setItem('projection_investmentMode', investmentMode);
+  }, [investmentMode]);
+
+  useEffect(() => {
+    localStorage.setItem('projection_flexiblePercent', flexibleInvestmentPercent.toString());
+  }, [flexibleInvestmentPercent]);
   
-  // ✅ M18.5 + M19.3: Proyección del escenario actual (EXTENDIDA)
+  // Proyección del escenario actual
   const cashflowProjection = useMemo(() => {
     return ProjectionEngine.projectCashflow(
       categories, 
@@ -46,15 +67,22 @@ export function useProjection() {
       ynabConfig,
       convertCurrency,
       displayCurrency,
-      { scenario, scheduledEvents } // ✅ M19.3: Agregar opciones
+      { 
+        scenario, 
+        scheduledEvents,
+        investmentMode,
+        flexibleInvestmentPercent,
+        investments
+      }
     );
-  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency, scenario, scheduledEvents]);
+  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency, 
+      scenario, scheduledEvents, investmentMode, flexibleInvestmentPercent, investments]);
   
   const projectionStats = useMemo(() => {
     return ProjectionEngine.getProjectionStats(cashflowProjection);
   }, [cashflowProjection]);
 
-  // ✅ M19.3: NUEVO - Comparación de escenarios
+  // Comparación de escenarios
   const scenarioComparison = useMemo(() => {
     return ProjectionEngine.compareScenarios(
       categories,
@@ -62,11 +90,26 @@ export function useProjection() {
       ynabConfig,
       convertCurrency,
       displayCurrency,
+      scheduledEvents,
+      { investmentMode, flexibleInvestmentPercent, investments }
+    );
+  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency, 
+      scheduledEvents, investmentMode, flexibleInvestmentPercent, investments]);
+
+  // ✅ M36 Fase 5: Comparación de modos de inversión
+  const investmentModeComparison = useMemo(() => {
+    return ProjectionEngine.compareInvestmentModes(
+      categories,
+      debts,
+      ynabConfig,
+      convertCurrency,
+      displayCurrency,
+      investments,
       scheduledEvents
     );
-  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency, scheduledEvents]);
+  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency, investments, scheduledEvents]);
 
-  // ✅ M19.3: NUEVO - Funciones para manejar eventos programados
+  // Funciones para manejar eventos programados
   const addScheduledEvent = (event) => {
     const newEvent = {
       ...event,
@@ -108,18 +151,27 @@ export function useProjection() {
   };
   
   return {
-    // ✅ M18.5: MANTIENE compatibilidad
+    // Proyección principal
     cashflowProjection,
     projectionStats,
     
-    // ✅ M19.3: NUEVAS funcionalidades
+    // Escenarios
     scenario,
     setScenario,
     scenarioComparison,
+    
+    // Eventos programados
     scheduledEvents,
     addScheduledEvent,
     updateScheduledEvent,
     deleteScheduledEvent,
-    toggleScheduledEvent
+    toggleScheduledEvent,
+    
+    // ✅ M36 Fase 5: Inversión flexible
+    investmentMode,
+    setInvestmentMode,
+    flexibleInvestmentPercent,
+    setFlexibleInvestmentPercent,
+    investmentModeComparison
   };
 }

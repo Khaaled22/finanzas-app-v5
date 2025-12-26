@@ -1,5 +1,6 @@
 // src/components/charts/DoughnutChart.jsx
 // ✅ M19.1: Mejorado para agrupar por grupos de categorías y mostrar porcentajes
+// ✅ M36: UX/UI mejorada - leyenda compacta, colores distintivos, agrupación
 import { Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,177 +15,275 @@ ChartJS.register(
   Legend
 );
 
+// ✅ M36: Paleta de colores distintivos (evita colores similares)
+const DISTINCT_COLORS = [
+  'rgba(59, 130, 246, 0.8)',   // Blue
+  'rgba(239, 68, 68, 0.8)',    // Red
+  'rgba(34, 197, 94, 0.8)',    // Green
+  'rgba(168, 85, 247, 0.8)',   // Purple
+  'rgba(249, 115, 22, 0.8)',   // Orange
+  'rgba(236, 72, 153, 0.8)',   // Pink
+  'rgba(20, 184, 166, 0.8)',   // Teal
+  'rgba(234, 179, 8, 0.8)',    // Yellow
+  'rgba(99, 102, 241, 0.8)',   // Indigo
+  'rgba(6, 182, 212, 0.8)',    // Cyan
+  'rgba(244, 63, 94, 0.8)',    // Rose
+  'rgba(132, 204, 22, 0.8)',   // Lime
+];
+
+const DISTINCT_BORDERS = [
+  'rgba(59, 130, 246, 1)',
+  'rgba(239, 68, 68, 1)',
+  'rgba(34, 197, 94, 1)',
+  'rgba(168, 85, 247, 1)',
+  'rgba(249, 115, 22, 1)',
+  'rgba(236, 72, 153, 1)',
+  'rgba(20, 184, 166, 1)',
+  'rgba(234, 179, 8, 1)',
+  'rgba(99, 102, 241, 1)',
+  'rgba(6, 182, 212, 1)',
+  'rgba(244, 63, 94, 1)',
+  'rgba(132, 204, 22, 1)',
+];
+
 /**
  * DoughnutChart mejorado con agrupación y porcentajes
- * @param {object} data - Datos del gráfico en formato Chart.js
- * @param {object} options - Opciones adicionales de Chart.js
- * @param {number} height - Altura del gráfico en píxeles
- * @param {boolean} groupByCategory - Si es true, agrupa por grupos en lugar de categorías individuales
- * @param {number} topN - Número de items principales a mostrar (resto va a "Otros")
  */
 export default function DoughnutChart({ 
   data, 
   options = {}, 
   height = 300, 
   groupByCategory = false,
-  topN = 10 
+  topN = 8,  // ✅ M36: Reducido a 8 para mejor visualización
+  showLegend = true,
+  legendPosition = 'bottom' // ✅ M36: Default a bottom para mejor UX
 }) {
   
-  // ✅ M19.1: Si groupByCategory está activo, reorganizar los datos
+  // ✅ M36: Validar datos antes de procesar
+  if (!data || !data.datasets || data.datasets.length === 0) {
+    return (
+      <div 
+        style={{ height: `${height}px` }} 
+        className="flex items-center justify-center text-gray-400"
+      >
+        <span>Sin datos para mostrar</span>
+      </div>
+    );
+  }
+
+  const dataset = data.datasets[0] || {};
+  const labels = data.labels || [];
+  const values = dataset.data || [];
+  
+  const hasValidData = values.length > 0 && values.some(v => v > 0);
+  
+  if (!hasValidData) {
+    return (
+      <div 
+        style={{ height: `${height}px` }} 
+        className="flex items-center justify-center text-gray-400"
+      >
+        <span>Sin datos para mostrar</span>
+      </div>
+    );
+  }
+
   let processedData = data;
   
-  if (groupByCategory && data.labels && data.datasets && data.datasets[0]) {
-    const labels = data.labels;
-    const values = data.datasets[0].data;
-    const originalColors = data.datasets[0].backgroundColor || [];
-    const originalBorderColors = data.datasets[0].borderColor || [];
-    
-    // Crear mapa de grupo -> valor total
+  // ✅ M36: Siempre procesar para limitar a topN y usar colores distintivos
+  // Crear array de items con label, value
+  let items = labels.map((label, i) => ({
+    label: label || 'Sin categoría',
+    value: values[i] || 0
+  })).filter(item => item.value > 0);
+  
+  // Ordenar por valor descendente
+  items.sort((a, b) => b.value - a.value);
+  
+  // Si groupByCategory, agrupar primero
+  if (groupByCategory) {
     const groupMap = new Map();
     
-    labels.forEach((label, index) => {
-      const value = values[index] || 0;
+    items.forEach(item => {
+      let group = item.label;
       
-      // Extraer el grupo (asumiendo formato "emoji Grupo - Subcategoría" o "emoji Grupo")
-      // Ejemplos: "🏠 Vivienda - Alquiler" → "🏠 Vivienda"
-      //           "🍔 Alimentación" → "🍔 Alimentación"
-      let group = label;
-      
-      // Si tiene " - ", tomar solo la parte antes del guión
-      if (label.includes(' - ')) {
-        group = label.split(' - ')[0].trim();
+      // Extraer grupo si tiene " - "
+      if (typeof item.label === 'string' && item.label.includes(' - ')) {
+        group = item.label.split(' - ')[0].trim();
       }
-      // Si tiene múltiples palabras después del emoji, tomar las primeras palabras como grupo
-      // Esto maneja casos como "🎓 CAE" donde el emoji + palabra es el grupo
       
       if (groupMap.has(group)) {
-        groupMap.set(group, groupMap.get(group) + value);
+        groupMap.set(group, groupMap.get(group) + item.value);
       } else {
-        groupMap.set(group, value);
+        groupMap.set(group, item.value);
       }
     });
     
-    // Convertir a array y ordenar por valor descendente
-    let groupArray = Array.from(groupMap.entries())
-      .map(([group, value]) => ({ group, value }))
-      .filter(item => item.value > 0) // Solo grupos con gastos
+    items = Array.from(groupMap.entries())
+      .map(([label, value]) => ({ label, value }))
       .sort((a, b) => b.value - a.value);
-    
-    // ✅ M19.1: Tomar top N y agrupar el resto como "Otros"
-    let finalGroups = [];
-    let finalValues = [];
-    
-    if (groupArray.length > topN) {
-      // Tomar los top N
-      const topGroups = groupArray.slice(0, topN);
-      const othersGroups = groupArray.slice(topN);
-      
-      // Sumar los valores de "Otros"
-      const othersTotal = othersGroups.reduce((sum, item) => sum + item.value, 0);
-      
-      finalGroups = [...topGroups.map(g => g.group), '📦 Otros'];
-      finalValues = [...topGroups.map(g => g.value), othersTotal];
-    } else {
-      finalGroups = groupArray.map(g => g.group);
-      finalValues = groupArray.map(g => g.value);
-    }
-    
-    // Generar colores para los grupos
-    const colors = finalGroups.map((_, i) => 
-      i === finalGroups.length - 1 && finalGroups[i] === '📦 Otros'
-        ? 'rgba(156, 163, 175, 0.7)' // Color gris para "Otros"
-        : `hsla(${i * 360 / (finalGroups.length - (finalGroups[finalGroups.length - 1] === '📦 Otros' ? 1 : 0))}, 70%, 60%, 0.8)`
-    );
-    
-    const borderColors = finalGroups.map((_, i) => 
-      i === finalGroups.length - 1 && finalGroups[i] === '📦 Otros'
-        ? 'rgba(156, 163, 175, 1)'
-        : `hsla(${i * 360 / (finalGroups.length - (finalGroups[finalGroups.length - 1] === '📦 Otros' ? 1 : 0))}, 70%, 50%, 1)`
-    );
-    
-    processedData = {
-      labels: finalGroups,
-      datasets: [{
-        ...data.datasets[0],
-        data: finalValues,
-        backgroundColor: colors,
-        borderColor: borderColors,
-        borderWidth: 2
-      }]
-    };
   }
+  
+  // ✅ M36: Limitar a topN y agrupar resto como "Otros"
+  let finalLabels = [];
+  let finalValues = [];
+  
+  if (items.length > topN) {
+    const topItems = items.slice(0, topN);
+    const otherItems = items.slice(topN);
+    const othersTotal = otherItems.reduce((sum, item) => sum + item.value, 0);
+    
+    finalLabels = [...topItems.map(i => i.label), '📦 Otros'];
+    finalValues = [...topItems.map(i => i.value), othersTotal];
+  } else {
+    finalLabels = items.map(i => i.label);
+    finalValues = items.map(i => i.value);
+  }
+  
+  // ✅ M36: Usar paleta de colores distintivos
+  const numItems = finalLabels.length;
+  const colors = finalLabels.map((label, i) => {
+    if (label === '📦 Otros') {
+      return 'rgba(156, 163, 175, 0.7)'; // Gris para "Otros"
+    }
+    return DISTINCT_COLORS[i % DISTINCT_COLORS.length];
+  });
+  
+  const borderColors = finalLabels.map((label, i) => {
+    if (label === '📦 Otros') {
+      return 'rgba(156, 163, 175, 1)';
+    }
+    return DISTINCT_BORDERS[i % DISTINCT_BORDERS.length];
+  });
+  
+  processedData = {
+    labels: finalLabels,
+    datasets: [{
+      ...dataset,
+      data: finalValues,
+      backgroundColor: colors,
+      borderColor: borderColors,
+      borderWidth: 2
+    }]
+  };
+  
+  // ✅ M36: Calcular total para porcentajes
+  const total = finalValues.reduce((a, b) => a + b, 0);
   
   const defaultOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    cutout: '55%', // ✅ M36: Donut más delgado para mejor estética
     plugins: {
       legend: {
-        display: true,
-        position: 'right',
+        display: showLegend,
+        position: legendPosition,
         labels: {
-          boxWidth: 15,
-          padding: 10,
+          boxWidth: 12,
+          padding: 8,
           font: {
             size: 11
           },
-          // ✅ M19.1: Agregar porcentaje a las etiquetas de la leyenda
+          usePointStyle: true,
+          pointStyle: 'circle',
+          // ✅ M36: Leyenda compacta con porcentaje
           generateLabels: (chart) => {
-            const data = chart.data;
-            if (data.labels.length && data.datasets.length) {
-              const dataset = data.datasets[0];
-              const total = dataset.data.reduce((a, b) => a + b, 0);
-              
-              return data.labels.map((label, i) => {
-                const value = dataset.data[i];
-                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                
-                return {
-                  text: `${label} (${percentage}%)`,
-                  fillStyle: dataset.backgroundColor[i],
-                  strokeStyle: dataset.borderColor[i],
-                  lineWidth: dataset.borderWidth,
-                  hidden: false,
-                  index: i
-                };
-              });
+            const chartData = chart.data;
+            if (!chartData || !chartData.labels || !chartData.datasets?.length) {
+              return [];
             }
-            return [];
+            
+            const ds = chartData.datasets[0];
+            if (!ds?.data) return [];
+            
+            const chartTotal = ds.data.reduce((a, b) => (a || 0) + (b || 0), 0);
+            const bgColors = ds.backgroundColor || [];
+            
+            return chartData.labels.map((label, i) => {
+              const value = ds.data[i] || 0;
+              const percentage = chartTotal > 0 ? ((value / chartTotal) * 100).toFixed(0) : 0;
+              
+              // ✅ M36: Nombre más corto + porcentaje
+              let shortLabel = label || 'N/A';
+              if (shortLabel.length > 18) {
+                shortLabel = shortLabel.substring(0, 16) + '...';
+              }
+              
+              const fillColor = Array.isArray(bgColors) 
+                ? (bgColors[i] || 'rgba(156, 163, 175, 0.7)') 
+                : bgColors;
+              
+              return {
+                text: `${shortLabel} (${percentage}%)`,
+                fillStyle: fillColor,
+                strokeStyle: fillColor,
+                lineWidth: 0,
+                hidden: false,
+                index: i
+              };
+            });
           }
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
         padding: 12,
+        cornerRadius: 8,
         titleFont: {
-          size: 14,
+          size: 13,
           weight: 'bold'
         },
         bodyFont: {
-          size: 13
+          size: 12
         },
         callbacks: {
+          title: (items) => {
+            return items[0]?.label || '';
+          },
           label: (context) => {
-            const label = context.label || '';
             const value = context.parsed || 0;
-            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            const dataArray = context.dataset?.data || [];
+            const tooltipTotal = dataArray.reduce((a, b) => (a || 0) + (b || 0), 0);
+            const percentage = tooltipTotal > 0 ? ((value / tooltipTotal) * 100).toFixed(1) : 0;
             
-            // Formatear el valor con separadores de miles
             const formattedValue = value.toLocaleString('es-ES', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             });
             
-            return `${label}: ${formattedValue} (${percentage}%)`;
+            return ` ${formattedValue} (${percentage}%)`;
           }
         }
       }
     }
   };
 
+  // ✅ M36: Merge options preservando nuestro generateLabels
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    plugins: {
+      ...defaultOptions.plugins,
+      ...(options.plugins || {}),
+      legend: {
+        ...defaultOptions.plugins.legend,
+        ...(options.plugins?.legend || {}),
+        labels: {
+          ...defaultOptions.plugins.legend.labels,
+          ...(options.plugins?.legend?.labels || {}),
+          generateLabels: defaultOptions.plugins.legend.labels.generateLabels
+        }
+      },
+      tooltip: {
+        ...defaultOptions.plugins.tooltip,
+        ...(options.plugins?.tooltip || {})
+      }
+    }
+  };
+
   return (
     <div style={{ height: `${height}px`, position: 'relative' }}>
-      <Doughnut data={processedData} options={{ ...defaultOptions, ...options }} />
+      <Doughnut data={processedData} options={mergedOptions} />
     </div>
   );
 }

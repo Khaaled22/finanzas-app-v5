@@ -1,5 +1,6 @@
 // src/views/Transactions/TransactionsView.jsx
 // ✅ M32: Fix modal (isOpen) + Header con resumen del mes + Formato números
+// ✅ M36 Fase 7: Filtros con investment
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import TransactionForm from '../../components/forms/TransactionForm';
@@ -12,24 +13,49 @@ export default function TransactionsView() {
   
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [filters, setFilters] = useState({ search: '', month: new Date().toISOString().slice(0, 7) }); // ✅ Mes actual por defecto
+  // ✅ M36 Fase 7: Filtros simplificados
+  const [filters, setFilters] = useState({ 
+    search: '', 
+    month: new Date().toISOString().slice(0, 7),
+    categoryId: '',
+    type: 'all'
+  });
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
 
+  // ✅ M36 Fase 7: Filtrado con soporte para investment
   const filteredTransactions = useMemo(() => {
     return transactions
       .filter(trans => {
+        // Búsqueda de texto
         const matchesSearch = !filters.search || 
           trans.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
-          trans.notes?.toLowerCase().includes(filters.search.toLowerCase());
+          trans.notes?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          categories.find(c => c.id === trans.categoryId)?.name?.toLowerCase().includes(filters.search.toLowerCase());
         
+        // Mes
         const matchesMonth = !filters.month || 
           trans.date?.slice(0, 7) === filters.month;
         
-        return matchesSearch && matchesMonth;
+        // Categoría específica
+        const matchesCategory = !filters.categoryId || 
+          trans.categoryId === filters.categoryId;
+        
+        // ✅ M36: Tipo (income/expense/investment)
+        const cat = categories.find(c => c.id === trans.categoryId);
+        const isInvestment = cat?.group?.toLowerCase().includes('invers') || 
+          cat?.name?.toLowerCase().includes('invers') ||
+          cat?.name?.toLowerCase().includes('apv') ||
+          cat?.name?.toLowerCase().includes('ahorro');
+        const matchesType = !filters.type || filters.type === 'all' ||
+          (filters.type === 'income' && cat?.type === 'income') ||
+          (filters.type === 'investment' && isInvestment) ||
+          (filters.type === 'expense' && cat?.type !== 'income' && !isInvestment);
+        
+        return matchesSearch && matchesMonth && matchesCategory && matchesType;
       })
       .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [transactions, filters]);
+  }, [transactions, filters, categories]);
 
   const availableMonths = useMemo(() => {
     const months = new Set();
@@ -144,20 +170,20 @@ export default function TransactionsView() {
           </button>
           <button
             onClick={() => setShowAddTransaction(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
           >
             <i className="fas fa-plus mr-2"></i>
-            Nueva
+            <span className="hidden sm:inline">Nueva</span>
           </button>
         </div>
       </div>
 
-      {/* Diagnóstico de tasas */}
-      {showDiagnostic && <RateDiagnostic onClose={() => setShowDiagnostic(false)} />}
+      {/* Diagnóstico de Tasas */}
+      {showDiagnostic && <RateDiagnostic />}
 
-      {/* ✅ M32: Resumen del Mes */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
+      {/* ✅ M32: Resumen del mes - 4 columnas */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="grid grid-cols-4 divide-x">
           {/* Ingresos */}
           <div className="p-4 text-center hover:bg-green-50 transition-colors">
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -230,11 +256,13 @@ export default function TransactionsView() {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* ✅ M36 Fase 7: Filtros mejorados */}
       <TransactionFilters
         filters={filters}
         setFilters={setFilters}
         availableMonths={availableMonths}
+        categories={categories}
+        resultCount={filteredTransactions.length}
       />
 
       {/* Lista de transacciones */}
@@ -292,7 +320,7 @@ export default function TransactionsView() {
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <span>{category.name}</span>
                         <span>•</span>
-                        <span>{trans.date}</span>
+                        <span>{trans.date?.slice(0, 10)}</span>
                         {trans.imported && (
                           <>
                             <span>•</span>

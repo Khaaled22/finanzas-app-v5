@@ -1,156 +1,124 @@
 // src/views/Settings/components/CategoryModal.jsx
-// ✅ M35: Selector de emojis en dropdown + grupos sin emojis
+// ✅ M36: Agregado selector de flowKind con auto-inferencia
 import React, { useState, useEffect } from 'react';
 
-// ✅ M35: Lista de emojis comunes para categorías
-const EMOJI_OPTIONS = [
-  // Income
-  { emoji: '💼', label: 'Trabajo' },
-  { emoji: '💰', label: 'Dinero' },
-  { emoji: '💵', label: 'Efectivo' },
-  { emoji: '💶', label: 'Euro' },
-  // Housing
-  { emoji: '🏠', label: 'Casa' },
-  { emoji: '💡', label: 'Electricidad' },
-  { emoji: '🚰', label: 'Agua' },
-  { emoji: '🔥', label: 'Gas' },
-  { emoji: '🌐', label: 'Internet' },
-  { emoji: '📱', label: 'Teléfono' },
-  { emoji: '📺', label: 'TV' },
-  { emoji: '🏦', label: 'Banco' },
-  { emoji: '🗂️', label: 'Admin' },
-  // Health
-  { emoji: '🩺', label: 'Salud' },
-  { emoji: '👩‍⚕️', label: 'Doctor' },
-  { emoji: '💊', label: 'Medicinas' },
-  { emoji: '🥼', label: 'Suplementos' },
-  { emoji: '🏋️', label: 'Gym' },
-  { emoji: '💇', label: 'Belleza' },
-  // Food
-  { emoji: '🛒', label: 'Supermercado' },
-  { emoji: '🍽️', label: 'Restaurante' },
-  { emoji: '☕', label: 'Café' },
-  { emoji: '🍻', label: 'Bar' },
-  { emoji: '🍔', label: 'Fast Food' },
-  { emoji: '🚚', label: 'Delivery' },
-  { emoji: '🍿', label: 'Snacks' },
-  // Transport
-  { emoji: '🚆', label: 'Tren' },
-  { emoji: '🚲', label: 'Bici' },
-  { emoji: '🚌', label: 'Bus' },
-  { emoji: '🔧', label: 'Mantención' },
-  { emoji: '🚗', label: 'Auto' },
-  // Entertainment
-  { emoji: '🎨', label: 'Ocio' },
-  { emoji: '🎬', label: 'Cine' },
-  { emoji: '🎟️', label: 'Eventos' },
-  { emoji: '🎉', label: 'Fiesta' },
-  { emoji: '🍸', label: 'Cocktails' },
-  // Subscriptions
-  { emoji: '📺', label: 'Streaming' },
-  { emoji: '🎵', label: 'Música' },
-  { emoji: '🎞️', label: 'Video' },
-  { emoji: '☁️', label: 'Cloud' },
-  { emoji: '🤖', label: 'AI' },
-  { emoji: '📑', label: 'Servicios' },
-  // Shopping
-  { emoji: '👕', label: 'Ropa' },
-  { emoji: '🛋️', label: 'Hogar' },
-  { emoji: '🍳', label: 'Cocina' },
-  { emoji: '🌿', label: 'Jardín' },
-  { emoji: '🛍️', label: 'Compras' },
-  // Gifts
-  { emoji: '🎂', label: 'Cumpleaños' },
-  { emoji: '🎄', label: 'Navidad' },
-  { emoji: '💍', label: 'Boda' },
-  { emoji: '🎁', label: 'Regalo' },
-  // Travel
-  { emoji: '✈️', label: 'Vuelos' },
-  { emoji: '🏨', label: 'Hotel' },
-  { emoji: '🚖', label: 'Taxi' },
-  { emoji: '🍱', label: 'Comida viaje' },
-  { emoji: '🏞️', label: 'Actividades' },
-  { emoji: '🗺️', label: 'Souvenirs' },
-  // Loans
-  { emoji: '🎓', label: 'Educación' },
-  { emoji: '🏢', label: 'Depto' },
-  { emoji: '👩‍👦', label: 'Familia' },
-  { emoji: '🤝', label: 'Apoyo' },
-  { emoji: '👨‍👧', label: 'Papá' },
-  // Other
-  { emoji: '📌', label: 'General' },
-  { emoji: '❓', label: 'Otro' },
+// ✅ M36: Constantes de FlowKind
+const FLOW_KINDS = [
+  { value: 'INCOME', label: '💰 Ingreso', description: 'Salarios, bonos, ingresos extras', color: 'green' },
+  { value: 'OPERATING_EXPENSE', label: '🛒 Gasto Operativo', description: 'Gastos del día a día', color: 'red' },
+  { value: 'DEBT_PAYMENT', label: '💳 Pago de Deuda', description: 'Hipoteca, préstamos, CAE', color: 'orange' },
+  { value: 'INVESTMENT_CONTRIBUTION', label: '📈 Aporte a Inversión', description: 'Aportes a plataformas de inversión', color: 'purple' }
 ];
 
 export default function CategoryModal({ isOpen, onClose, category = null, existingCategories = [] }) {
-  // ✅ M35: Grupos SIN emojis para que coincidan con CSV
+  // Grupos disponibles
   const GRUPOS = [
-    'Income',
-    'Loans & Debts',
-    'Housing & Utilities',
-    'Insurance & Health',
-    'Food & Drinks',
-    'Transport',
-    'Entertainment',
-    'Subscriptions & Apps',
-    'Personal Shopping',
-    'Gifts & Donations',
-    'Travel',
-    'Savings & Investments',
-    'Other Expenses'
+    '💼 Income',
+    '💳 Loans & Debts',
+    '🏠 Housing & Utilities',
+    '🩺 Insurance & Health',
+    '🍽️ Food & Drinks',
+    '🚗 Transport',
+    '🎬 Entertainment',
+    '📱 Subscriptions & Apps',
+    '🛍️ Personal Shopping',
+    '🎁 Gifts & Donations',
+    '✈️ Travel',
+    '❓ Other Expenses',
+    '💰 Savings & Investments'
   ];
 
   const MONEDAS = ['EUR', 'CLP', 'USD', 'UF'];
+  
+  // ✅ M36: Tipos legacy (para compatibilidad)
   const TIPOS = [
-    { value: 'income', label: 'Ingreso (Income)' },
-    { value: 'expense', label: 'Gasto (Expense)' },
-    { value: 'savings', label: 'Ahorro (Savings)' },
-    { value: 'investment', label: 'Inversión (Investment)' }
+    { value: 'income', label: 'Ingreso', flowKind: 'INCOME' },
+    { value: 'expense', label: 'Gasto', flowKind: 'OPERATING_EXPENSE' },
+    { value: 'investment', label: 'Inversión', flowKind: 'INVESTMENT_CONTRIBUTION' }
   ];
 
+  // Estado del formulario
   const [formData, setFormData] = useState({
     name: '',
     group: GRUPOS[0],
     budget: 0,
     currency: 'EUR',
-    icon: '📌',
-    type: 'expense'
+    icon: '📁',
+    type: 'expense',
+    flowKind: 'OPERATING_EXPENSE' // ✅ M36: Nuevo campo
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showFlowKindHelp, setShowFlowKindHelp] = useState(false);
 
+  // ✅ M36: Inferir flowKind desde type y group
+  const inferFlowKind = (type, group, name) => {
+    if (type === 'income') return 'INCOME';
+    if (type === 'investment') return 'INVESTMENT_CONTRIBUTION';
+    
+    // Inferir de group/name para deudas
+    const groupLower = (group || '').toLowerCase();
+    const nameLower = (name || '').toLowerCase();
+    
+    if (groupLower.includes('debt') || groupLower.includes('loan') || 
+        groupLower.includes('deuda') || groupLower.includes('préstamo') ||
+        nameLower.includes('hipoteca') || nameLower.includes('mortgage') ||
+        nameLower.includes('cae') || nameLower.includes('crédito')) {
+      return 'DEBT_PAYMENT';
+    }
+    
+    return 'OPERATING_EXPENSE';
+  };
+
+  // Cargar datos si es edición
   useEffect(() => {
     if (category) {
+      // ✅ M36: Si no tiene flowKind, inferirlo
+      const flowKind = category.flowKind || inferFlowKind(category.type, category.group, category.name);
+      
       setFormData({
         name: category.name || '',
         group: category.group || GRUPOS[0],
         budget: category.budget || 0,
         currency: category.currency || 'EUR',
-        icon: category.icon || '📌',
-        type: category.type || 'expense'
+        icon: category.icon || '📁',
+        type: category.type || 'expense',
+        flowKind: flowKind
       });
     } else {
+      // Reset si es nuevo
       setFormData({
         name: '',
         group: GRUPOS[0],
         budget: 0,
         currency: 'EUR',
-        icon: '📌',
-        type: 'expense'
+        icon: '📁',
+        type: 'expense',
+        flowKind: 'OPERATING_EXPENSE'
       });
     }
     setErrors({});
-    setShowEmojiPicker(false);
   }, [category, isOpen]);
 
+  // ✅ M36: Auto-actualizar flowKind cuando cambia type o group
+  useEffect(() => {
+    const inferred = inferFlowKind(formData.type, formData.group, formData.name);
+    // Solo auto-actualizar si el usuario no ha cambiado manualmente
+    if (!category || !category.flowKind) {
+      setFormData(prev => ({ ...prev, flowKind: inferred }));
+    }
+  }, [formData.type, formData.group]);
+
+  // Validar formulario
   const validate = () => {
     const newErrors = {};
 
+    // Validar nombre
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
     } else {
+      // Verificar duplicados (excepto si es el mismo al editar)
       const duplicate = existingCategories.find(
         cat => cat.name.toLowerCase() === formData.name.trim().toLowerCase() &&
                (!category || cat.id !== category.id)
@@ -160,14 +128,17 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
       }
     }
 
+    // Validar grupo
     if (!formData.group) {
       newErrors.group = 'Selecciona un grupo';
     }
 
+    // Validar presupuesto
     if (formData.budget < 0) {
       newErrors.budget = 'El presupuesto no puede ser negativo';
     }
 
+    // Validar icon
     if (!formData.icon.trim()) {
       newErrors.icon = 'El ícono es requerido';
     }
@@ -176,26 +147,26 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
     return Object.keys(newErrors).length === 0;
   };
 
+  // Manejar cambios en inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: name === 'budget' ? parseFloat(value) || 0 : value
     }));
+    // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleEmojiSelect = (emoji) => {
-    setFormData(prev => ({ ...prev, icon: emoji }));
-    setShowEmojiPicker(false);
-  };
-
+  // Manejar submit
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -203,14 +174,17 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
       const categoryData = {
         ...formData,
         name: formData.name.trim(),
-        budget: parseFloat(formData.budget) || 0
+        budget: parseFloat(formData.budget) || 0,
+        flowKind: formData.flowKind // ✅ M36: Incluir flowKind
       };
 
+      // Si es edición, incluir ID y spent
       if (category) {
         categoryData.id = category.id;
         categoryData.spent = category.spent || 0;
       }
 
+      // Llamar callback con los datos
       onClose(categoryData);
       
     } catch (error) {
@@ -221,19 +195,23 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
     }
   };
 
+  // Manejar cierre
   const handleClose = () => {
     setFormData({
       name: '',
       group: GRUPOS[0],
       budget: 0,
       currency: 'EUR',
-      icon: '📌',
-      type: 'expense'
+      icon: '📁',
+      type: 'expense',
+      flowKind: 'OPERATING_EXPENSE'
     });
     setErrors({});
-    setShowEmojiPicker(false);
     onClose(null);
   };
+
+  // ✅ M36: Obtener info del flowKind actual
+  const currentFlowKindInfo = FLOW_KINDS.find(fk => fk.value === formData.flowKind) || FLOW_KINDS[1];
 
   if (!isOpen) return null;
 
@@ -247,7 +225,10 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
               <i className={`fas ${category ? 'fa-edit' : 'fa-plus-circle'} mr-3`}></i>
               {category ? 'Editar Categoría' : 'Nueva Categoría'}
             </h2>
-            <button onClick={handleClose} className="text-white hover:text-gray-200 transition-colors">
+            <button
+              onClick={handleClose}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
               <i className="fas fa-times text-2xl"></i>
             </button>
           </div>
@@ -255,6 +236,7 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Error general */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               <i className="fas fa-exclamation-circle mr-2"></i>
@@ -272,7 +254,7 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Ej: Khaled Salary, Groceries, Rent"
+              placeholder="Ej: 💼 Khaled Salary"
               className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
                 errors.name 
                   ? 'border-red-300 focus:ring-red-500' 
@@ -285,6 +267,9 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                 {errors.name}
               </p>
             )}
+            <p className="text-gray-500 text-xs mt-1">
+              Puedes incluir emojis directamente en el nombre
+            </p>
           </div>
 
           {/* Grupo */}
@@ -306,10 +291,68 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                 <option key={grupo} value={grupo}>{grupo}</option>
               ))}
             </select>
+            {errors.group && (
+              <p className="text-red-600 text-sm mt-1">
+                <i className="fas fa-exclamation-circle mr-1"></i>
+                {errors.group}
+              </p>
+            )}
+          </div>
+
+          {/* ✅ M36: Selector de FlowKind (NUEVO) */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Tipo de Flujo (FlowKind) *
+              <button
+                type="button"
+                onClick={() => setShowFlowKindHelp(!showFlowKindHelp)}
+                className="ml-2 text-blue-500 hover:text-blue-700"
+              >
+                <i className="fas fa-question-circle"></i>
+              </button>
+            </label>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {FLOW_KINDS.map(fk => (
+                <button
+                  key={fk.value}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, flowKind: fk.value }))}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    formData.flowKind === fk.value
+                      ? fk.value === 'INCOME' ? 'border-green-500 bg-green-50' :
+                        fk.value === 'OPERATING_EXPENSE' ? 'border-red-500 bg-red-50' :
+                        fk.value === 'DEBT_PAYMENT' ? 'border-orange-500 bg-orange-50' :
+                        'border-purple-500 bg-purple-50'
+                      : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  <p className="font-semibold text-sm">{fk.label}</p>
+                  <p className="text-xs text-gray-500 mt-1">{fk.description}</p>
+                </button>
+              ))}
+            </div>
+
+            {/* Help expandible */}
+            {showFlowKindHelp && (
+              <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                <p className="font-semibold text-blue-800 mb-2">¿Qué es FlowKind?</p>
+                <ul className="text-blue-700 space-y-1 text-xs">
+                  <li><strong>💰 Ingreso:</strong> Dinero que entra (salarios, bonos, ventas)</li>
+                  <li><strong>🛒 Gasto Operativo:</strong> Gastos del día a día que reducen tu disponible</li>
+                  <li><strong>💳 Pago de Deuda:</strong> Pagos a préstamos/hipoteca (afecta tu disponible operativo)</li>
+                  <li><strong>📈 Aporte a Inversión:</strong> Dinero que mueves a inversiones (no afecta disponible operativo)</li>
+                </ul>
+                <p className="text-blue-600 text-xs mt-2 italic">
+                  El Dashboard usa FlowKind para calcular tu "Disponible Operativo" correctamente.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Grid: Presupuesto y Moneda */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Presupuesto */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Presupuesto Base (Plantilla)
@@ -327,11 +370,18 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                     : 'border-gray-300 focus:ring-purple-500'
                 }`}
               />
+              {errors.budget && (
+                <p className="text-red-600 text-sm mt-1">
+                  <i className="fas fa-exclamation-circle mr-1"></i>
+                  {errors.budget}
+                </p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 Se usará para inicializar nuevos meses sin historial
               </p>
             </div>
 
+            {/* Moneda */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Moneda
@@ -349,51 +399,26 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
             </div>
           </div>
 
-          {/* Grid: Ícono y Tipo */}
+          {/* Grid: Ícono y Tipo Legacy */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* ✅ M35: Selector de Emoji con dropdown */}
-            <div className="relative">
+            {/* Ícono */}
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Ícono (emoji)
               </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-left flex items-center justify-between"
-                >
-                  <span className="text-2xl">{formData.icon}</span>
-                  <i className={`fas fa-chevron-${showEmojiPicker ? 'up' : 'down'} text-gray-400`}></i>
-                </button>
-                <input
-                  type="text"
-                  name="icon"
-                  value={formData.icon}
-                  onChange={handleChange}
-                  maxLength="5"
-                  className="w-20 px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-center text-xl"
-                  placeholder="📌"
-                />
-              </div>
-              
-              {/* Emoji Picker Dropdown */}
-              {showEmojiPicker && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  <div className="grid grid-cols-6 gap-1 p-2">
-                    {EMOJI_OPTIONS.map((item, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleEmojiSelect(item.emoji)}
-                        className="p-2 hover:bg-purple-100 rounded text-xl transition-colors"
-                        title={item.label}
-                      >
-                        {item.emoji}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <input
+                type="text"
+                name="icon"
+                value={formData.icon}
+                onChange={handleChange}
+                placeholder="📁"
+                maxLength="5"
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                  errors.icon 
+                    ? 'border-red-300 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-purple-500'
+                }`}
+              />
               {errors.icon && (
                 <p className="text-red-600 text-sm mt-1">
                   <i className="fas fa-exclamation-circle mr-1"></i>
@@ -402,10 +427,10 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
               )}
             </div>
 
-            {/* Tipo */}
+            {/* Tipo (legacy - hidden pero mantenido para compatibilidad) */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Tipo de categoría
+                Tipo (legacy)
               </label>
               <select
                 name="type"
@@ -417,15 +442,32 @@ export default function CategoryModal({ isOpen, onClose, category = null, existi
                   <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Mantenido para compatibilidad. FlowKind es el campo principal.
+              </p>
             </div>
           </div>
 
-          {/* Info box */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <p className="text-sm text-purple-800">
+          {/* Info sobre presupuesto base vs mensual */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4">
+            <p className="text-sm text-blue-900 font-semibold mb-2">
               <i className="fas fa-info-circle mr-2"></i>
-              <strong>Tip:</strong> El nombre de la categoría debe coincidir exactamente con tu Excel al importar transacciones.
+              ℹ️ Sobre el Presupuesto Base:
             </p>
+            <ul className="text-xs text-blue-800 space-y-1 ml-6">
+              <li>
+                <strong>Es una plantilla:</strong> Este valor se usa solo para inicializar 
+                nuevos meses que no tienen historial previo.
+              </li>
+              <li>
+                <strong>Herencia automática:</strong> Cuando cambias de mes, el presupuesto 
+                se copia automáticamente del mes anterior.
+              </li>
+              <li>
+                <strong>Presupuesto real por mes:</strong> El presupuesto que realmente usas 
+                cada mes se gestiona en la vista de <strong>Presupuesto</strong>.
+              </li>
+            </ul>
           </div>
 
           {/* Botones */}

@@ -1,10 +1,75 @@
 // src/context/BudgetContext.jsx
-// ✅ M26: Sub-contexto para gestión de presupuestos mensuales
+// ✅ M36: Sub-contexto para gestión de presupuestos mensuales
+// - Migración automática de flowKind
+// - Helpers de clasificación integrados
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_CATEGORIES, INITIAL_MONTHLY_BUDGETS } from '../config/initialData';
 
 const BudgetContext = createContext();
+
+// =====================================================
+// ✅ M36: HELPERS DE FLOWKIND
+// =====================================================
+
+/**
+ * Infiere el flowKind de una categoría basándose en type y group
+ */
+const inferFlowKind = (category) => {
+  // Si ya tiene flowKind, retornarlo
+  if (category.flowKind) return category.flowKind;
+  
+  const { type, group, name } = category;
+  
+  // Por type
+  if (type === 'income') return 'INCOME';
+  if (type === 'investment') return 'INVESTMENT_CONTRIBUTION';
+  
+  // Por group/name para detectar deudas
+  const groupLower = (group || '').toLowerCase();
+  const nameLower = (name || '').toLowerCase();
+  
+  if (groupLower.includes('debt') || groupLower.includes('loan') || 
+      groupLower.includes('deuda') || groupLower.includes('préstamo') ||
+      nameLower.includes('hipoteca') || nameLower.includes('mortgage') ||
+      nameLower.includes('cae') || nameLower.includes('crédito') ||
+      nameLower.includes('cuota')) {
+    return 'DEBT_PAYMENT';
+  }
+  
+  // Default
+  return 'OPERATING_EXPENSE';
+};
+
+/**
+ * Migra categorías para agregar flowKind si no existe
+ */
+const migrateCategoriesToFlowKind = (categories) => {
+  let migrated = false;
+  
+  const updatedCategories = categories.map(cat => {
+    if (!cat.flowKind) {
+      migrated = true;
+      return {
+        ...cat,
+        flowKind: inferFlowKind(cat)
+      };
+    }
+    return cat;
+  });
+  
+  if (migrated) {
+    console.log('[M36] Migración de flowKind completada para', 
+      updatedCategories.filter(c => c.flowKind).length, 'categorías');
+  }
+  
+  return updatedCategories;
+};
+
+// =====================================================
+// HOOK
+// =====================================================
 
 export const useBudget = () => {
   const context = useContext(BudgetContext);
@@ -14,6 +79,10 @@ export const useBudget = () => {
   return context;
 };
 
+// =====================================================
+// PROVIDER
+// =====================================================
+
 export function BudgetProvider({ 
   children, 
   transactions, 
@@ -22,9 +91,11 @@ export function BudgetProvider({
   displayCurrency,
   getTransactionsByCategoryAndMonth 
 }) {
-  const [categories, setCategories] = useState(() => 
-    StorageManager.load('categories_v5', INITIAL_CATEGORIES)
-  );
+  // ✅ M36: Cargar y migrar categorías con flowKind
+  const [categories, setCategories] = useState(() => {
+    const loaded = StorageManager.load('categories_v5', INITIAL_CATEGORIES);
+    return migrateCategoriesToFlowKind(loaded);
+  });
 
   const [monthlyBudgets, setMonthlyBudgets] = useState(() => 
     StorageManager.load('monthlyBudgets_v5', INITIAL_MONTHLY_BUDGETS)
@@ -52,7 +123,10 @@ export function BudgetProvider({
     StorageManager.save('ynabConfig_v5', ynabConfig); 
   }, [ynabConfig]);
 
-  // ✅ Helpers
+  // =====================================================
+  // HELPERS DE MES
+  // =====================================================
+
   const getPreviousMonth = useCallback((month) => {
     const [year, monthNum] = month.split('-').map(Number);
     const date = new Date(year, monthNum - 1, 1);
@@ -75,7 +149,10 @@ export function BudgetProvider({
     return null;
   }, [monthlyBudgets]);
 
-  // ✅ Inicializar categoría para un mes
+  // =====================================================
+  // FUNCIONES DE PRESUPUESTO
+  // =====================================================
+
   const initializeCategoryForMonth = useCallback((categoryId, month) => {
     if (monthlyBudgets[month]?.[categoryId]) return;
     
@@ -101,7 +178,6 @@ export function BudgetProvider({
     }));
   }, [monthlyBudgets, categories, getPreviousMonth]);
 
-  // ✅ Obtener presupuesto de categoría para mes
   const getCategoryBudgetForMonth = useCallback((categoryId, month) => {
     const monthBudget = monthlyBudgets[month];
     
@@ -113,12 +189,10 @@ export function BudgetProvider({
     return monthlyBudgets[month]?.[categoryId]?.budget || 0;
   }, [monthlyBudgets, initializeCategoryForMonth]);
 
-  // ✅ M25: Obtener gastado usando índice (optimizado)
   const getCategorySpentForMonth = useCallback((categoryId, month) => {
     const category = categories.find(cat => cat.id === categoryId);
     const targetCurrency = category?.currency || displayCurrency;
     
-    // Usar índice si está disponible
     const monthTransactions = getTransactionsByCategoryAndMonth 
       ? getTransactionsByCategoryAndMonth(categoryId, month)
       : transactions.filter(tx => tx.categoryId === categoryId && tx.date?.slice(0, 7) === month);
@@ -130,7 +204,10 @@ export function BudgetProvider({
     }, 0);
   }, [categories, displayCurrency, transactions, convertCurrencyAtDate, getTransactionsByCategoryAndMonth]);
 
-  // ✅ Categorías con budget mensual calculado
+  // =====================================================
+  // CATEGORÍAS CON PRESUPUESTO MENSUAL
+  // =====================================================
+
   const categoriesWithMonthlyBudget = useMemo(() => {
     return categories.map(cat => {
       const budgetInOriginal = getCategoryBudgetForMonth(cat.id, selectedBudgetMonth);
@@ -141,6 +218,8 @@ export function BudgetProvider({
       
       return {
         ...cat,
+        // ✅ M36: Asegurar que flowKind esté presente
+        flowKind: cat.flowKind || inferFlowKind(cat),
         budget: budgetConverted,
         spent: spentConverted,
         budgetOriginal: budgetInOriginal,
@@ -149,9 +228,12 @@ export function BudgetProvider({
         spentInDisplayCurrency: spentConverted
       };
     });
-  }, [categories, selectedBudgetMonth, monthlyBudgets, displayCurrency, transactions]);
+  }, [categories, selectedBudgetMonth, monthlyBudgets, displayCurrency, transactions, getCategoryBudgetForMonth, getCategorySpentForMonth, convertCurrency]);
 
-  // ✅ Actualizar presupuesto mensual
+  // =====================================================
+  // ACTUALIZAR PRESUPUESTO
+  // =====================================================
+
   const updateMonthlyBudget = useCallback((categoryId, budget, month) => {
     setMonthlyBudgets(prev => ({
       ...prev,
@@ -166,7 +248,6 @@ export function BudgetProvider({
     return true;
   }, []);
 
-  // ✅ Copiar presupuestos del mes anterior
   const copyBudgetFromPreviousMonth = useCallback((targetMonth) => {
     const recentMonth = findMostRecentMonthWithBudgets(targetMonth);
     
@@ -217,7 +298,6 @@ export function BudgetProvider({
     };
   }, [findMostRecentMonthWithBudgets, monthlyBudgets, categories]);
 
-  // ✅ Limpiar presupuestos
   const clearMonthlyBudgets = useCallback((targetMonth = null) => {
     if (targetMonth) {
       setMonthlyBudgets(prev => {
@@ -231,7 +311,6 @@ export function BudgetProvider({
     return true;
   }, []);
 
-  // ✅ Transferir entre categorías
   const transferBetweenCategories = useCallback((fromCategoryId, toCategoryId, amount) => {
     const month = selectedBudgetMonth;
     
@@ -261,9 +340,18 @@ export function BudgetProvider({
     };
   }, [selectedBudgetMonth, categories, getCategoryBudgetForMonth, updateMonthlyBudget]);
 
-  // ✅ CRUD Categorías
+  // =====================================================
+  // CRUD CATEGORÍAS
+  // =====================================================
+
   const updateCategory = useCallback((categoryId, updates) => {
     const { budget, spent, ...metadataUpdates } = updates;
+    
+    // ✅ M36: Si se actualiza type pero no flowKind, inferirlo
+    if (metadataUpdates.type && !metadataUpdates.flowKind) {
+      const tempCat = { ...metadataUpdates };
+      metadataUpdates.flowKind = inferFlowKind(tempCat);
+    }
     
     setCategories(prev => 
       prev.map(cat => 
@@ -305,6 +393,7 @@ export function BudgetProvider({
     return { success: true, message: 'Categoría eliminada', transactionCount: 0 };
   }, [categories, transactions]);
 
+  // ✅ M36: Import actualizado para incluir flowKind
   const importCategories = useCallback((categoriesArray) => {
     if (!Array.isArray(categoriesArray) || categoriesArray.length === 0) {
       return { success: false, imported: 0, skipped: 0, errors: ['Array vacío'] };
@@ -326,6 +415,9 @@ export function BudgetProvider({
         return;
       }
 
+      const type = ['income', 'expense', 'savings', 'investment'].includes(cat.type?.toLowerCase()) 
+        ? cat.type.toLowerCase() : 'expense';
+
       const newCategory = {
         id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: cat.name.trim(),
@@ -335,8 +427,9 @@ export function BudgetProvider({
         currency: ['EUR', 'CLP', 'USD', 'UF'].includes(cat.currency?.toUpperCase()) 
           ? cat.currency.toUpperCase() : 'EUR',
         icon: cat.icon || '📁',
-        type: ['income', 'expense', 'savings', 'investment'].includes(cat.type?.toLowerCase()) 
-          ? cat.type.toLowerCase() : 'expense'
+        type: type,
+        // ✅ M36: Agregar flowKind (puede venir del import o inferirse)
+        flowKind: cat.flowKind || inferFlowKind({ type, group: cat.group, name: cat.name })
       };
 
       newCategories.push(newCategory);
@@ -350,6 +443,19 @@ export function BudgetProvider({
 
     return results;
   }, [categories]);
+
+  // =====================================================
+  // ✅ M36: FUNCIÓN PARA MIGRAR TODAS LAS CATEGORÍAS
+  // =====================================================
+  
+  const migrateAllCategoriesToFlowKind = useCallback(() => {
+    setCategories(prev => migrateCategoriesToFlowKind(prev));
+    return { success: true, message: 'Migración completada' };
+  }, []);
+
+  // =====================================================
+  // VALUE
+  // =====================================================
 
   const value = useMemo(() => ({
     // Estados
@@ -373,7 +479,11 @@ export function BudgetProvider({
     transferBetweenCategories,
     updateCategory,
     deleteCategory,
-    importCategories
+    importCategories,
+    
+    // ✅ M36: Nuevas funciones
+    migrateAllCategoriesToFlowKind,
+    inferFlowKind
   }), [
     categories,
     monthlyBudgets,
@@ -389,7 +499,8 @@ export function BudgetProvider({
     transferBetweenCategories,
     updateCategory,
     deleteCategory,
-    importCategories
+    importCategories,
+    migrateAllCategoriesToFlowKind
   ]);
 
   return (
@@ -398,3 +509,6 @@ export function BudgetProvider({
     </BudgetContext.Provider>
   );
 }
+
+// ✅ M36: Exportar helper para uso externo
+export { inferFlowKind };
