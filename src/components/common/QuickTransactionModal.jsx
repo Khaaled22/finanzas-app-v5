@@ -137,12 +137,6 @@ export default function QuickTransactionModal({ isOpen, onClose }) {
       newErrors.categoryId = 'Selecciona categoría';
     }
 
-    const selectedDate = new Date(formData.date);
-    const today = new Date();
-    if (selectedDate > today) {
-      newErrors.date = 'No puede ser futura';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -444,7 +438,6 @@ export default function QuickTransactionModal({ isOpen, onClose }) {
                 type="date"
                 value={formData.date}
                 onChange={(e) => handleChange('date', e.target.value)}
-                max={new Date().toISOString().slice(0, 10)}
                 className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
                   errors.date 
                     ? 'border-red-300 focus:ring-red-500' 

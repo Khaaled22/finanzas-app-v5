@@ -26,7 +26,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
         amount: transaction.amount,
         currency: transaction.currency,
         categoryId: transaction.categoryId,
-        paymentMethod: transaction.paymentMethod || 'Tarjeta'  // ✅ M21: Default explícito
+        paymentMethod: transaction.paymentMethod || 'Tarjeta'
       });
     } else {
       setFormData({
@@ -41,7 +41,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     setErrors({});
   }, [transaction, categories, isOpen]);
 
-  // ✅ Agrupar categorías por grupo
+  // Agrupar categorías por grupo
   const groupedCategories = categories.reduce((acc, cat) => {
     if (!acc[cat.group]) {
       acc[cat.group] = [];
@@ -50,11 +50,11 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     return acc;
   }, {});
 
-  // ✅ Detectar si la categoría seleccionada es income
+  // Detectar si la categoría seleccionada es income
   const selectedCategory = categories.find(cat => cat.id === formData.categoryId);
   const isIncome = selectedCategory?.type === 'income';
 
-  // ✅ M19.2.1: Calcular conversión usando tasa histórica
+  // M19.2.1: Calcular conversión usando tasa histórica
   const previewConversion = () => {
     if (!formData.amount || isNaN(parseFloat(formData.amount))) return null;
     if (!formData.currency || !displayCurrency) return null;
@@ -85,12 +85,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
       newErrors.amount = 'El monto debe ser mayor a 0';
     }
 
-    // Validar fecha
-    const selectedDate = new Date(formData.date);
-    const today = new Date();
-    if (selectedDate > today) {
-      newErrors.date = 'La fecha no puede ser futura';
-    }
+    // ✅ M36: Fecha futura permitida (para gastos programados)
 
     // Validar categoría
     if (!formData.categoryId) {
@@ -121,7 +116,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     onClose();
   };
 
-  // ✅ M18.6 - Auto-detectar moneda al cambiar categoría
+  // M18.6 - Auto-detectar moneda al cambiar categoría
   const handleChange = (field, value) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
@@ -156,14 +151,13 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
             <i className="fas fa-calendar mr-2 text-blue-600"></i>
-            Fecha del gasto *
+            Fecha *
           </label>
           <input
             id="date"
             type="date"
             value={formData.date}
             onChange={(e) => handleChange('date', e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
             className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
               errors.date 
                 ? 'border-red-300 focus:ring-red-500' 
@@ -258,7 +252,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </div>
         </div>
 
-        {/* ✅ Categoría AGRUPADA con auto-detección de moneda */}
+        {/* Categoría AGRUPADA con auto-detección de moneda */}
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
             <i className="fas fa-folder mr-2 text-blue-600"></i>
@@ -312,7 +306,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </select>
         </div>
 
-        {/* ✅ M19.2.1: Vista previa con CONVERSIÓN HISTÓRICA */}
+        {/* M19.2.1: Vista previa con CONVERSIÓN HISTÓRICA */}
         {formData.description && formData.amount && !isNaN(parseFloat(formData.amount)) && selectedCategory && (
           <div className={`${isIncome ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-4`}>
             <p className={`text-sm ${isIncome ? 'text-green-800' : 'text-blue-800'} font-medium mb-1`}>
@@ -329,7 +323,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
               {isIncome ? '+' : '-'}{parseFloat(formData.amount).toFixed(2)} {formData.currency}
             </p>
             
-            {/* ✅ M19.2.1: Mostrar conversión con tasa histórica */}
+            {/* M19.2.1: Mostrar conversión con tasa histórica */}
             {converted !== null && (
               <div className="mt-2 pt-2 border-t border-gray-300">
                 <p className="text-xs text-gray-600 mb-1">

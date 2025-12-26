@@ -179,7 +179,7 @@ export default function TransactionsView() {
       </div>
 
       {/* Diagnóstico de Tasas */}
-      {showDiagnostic && <RateDiagnostic />}
+      {showDiagnostic && <RateDiagnostic onClose={() => setShowDiagnostic(false)} />}
 
       {/* ✅ M32: Resumen del mes - 4 columnas */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
