@@ -1,9 +1,8 @@
 // src/context/ExchangeRatesContext.jsx
 // ✅ M26: Sub-contexto para gestión de tasas de cambio
 // ✅ M37: Sincronización con Supabase (cron diario)
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
-import { supabase } from '../supabase/client';
 
 const ExchangeRatesContext = createContext();
 
@@ -11,6 +10,17 @@ const DEFAULT_RATES = {
   EUR_CLP: 1050,
   EUR_USD: 1.09,
   CLP_UF: 36000
+};
+
+// ✅ M37: Obtener cliente Supabase de forma segura (import dinámico)
+const getSupabaseClient = async () => {
+  try {
+    const { supabase } = await import('../modules/supabase/client');
+    return supabase;
+  } catch (e) {
+    console.log('⚠️ Supabase client no disponible');
+    return null;
+  }
 };
 
 export const useExchangeRates = () => {
@@ -64,6 +74,8 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     error: null
   });
 
+  const hasSyncedRef = useRef(false);
+
   // Auto-save to localStorage
   useEffect(() => { 
     StorageManager.save('exchangeRates_v5', exchangeRates); 
@@ -73,16 +85,19 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     StorageManager.save('autoUpdateConfig_v5', autoUpdateConfig);
   }, [autoUpdateConfig]);
 
-  // ✅ M37: Sincronizar con Supabase al cargar la app
+  // ✅ M37: Sincronizar con Supabase
   const syncFromSupabase = useCallback(async () => {
-    if (!supabase) {
-      console.log('⚠️ Supabase no configurado, usando localStorage');
-      return { success: false, message: 'Supabase no configurado' };
-    }
-
     setSyncStatus(prev => ({ ...prev, syncing: true, error: null }));
 
     try {
+      const supabase = await getSupabaseClient();
+      
+      if (!supabase) {
+        console.log('⚠️ Supabase no configurado, usando localStorage');
+        setSyncStatus({ lastSync: null, syncing: false, error: null });
+        return { success: false, message: 'Supabase no configurado' };
+      }
+
       console.log('🔄 Sincronizando tasas desde Supabase...');
 
       // Obtener todas las tasas de Supabase
@@ -161,12 +176,13 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     }
   }, []);
 
-  // ✅ M37: Sincronizar al montar el componente
+  // ✅ M37: Sincronizar al montar el componente (una sola vez)
   useEffect(() => {
-    if (autoUpdateConfig.enabled) {
+    if (autoUpdateConfig.enabled && !hasSyncedRef.current) {
+      hasSyncedRef.current = true;
       syncFromSupabase();
     }
-  }, []); // Solo al montar
+  }, [autoUpdateConfig.enabled, syncFromSupabase]);
 
   // ✅ M37: Sincronizar al volver a la app (visibility change)
   useEffect(() => {
@@ -338,27 +354,30 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     });
 
     // ✅ M37: También guardar en Supabase si es actualización manual
-    if (source === 'manual' && supabase) {
+    if (source === 'manual') {
       try {
-        const today = new Date().toISOString().slice(0, 10);
-        
-        const { error } = await supabase
-          .from('exchange_rates')
-          .upsert({
-            date: today,
-            base_currency: 'EUR',
-            eur_clp: newRates.EUR_CLP,
-            eur_usd: newRates.EUR_USD,
-            clp_uf: newRates.CLP_UF || newRates.UF_CLP,
-            source: 'manual'
-          }, {
-            onConflict: 'date,base_currency'
-          });
+        const supabase = await getSupabaseClient();
+        if (supabase) {
+          const today = new Date().toISOString().slice(0, 10);
+          
+          const { error } = await supabase
+            .from('exchange_rates')
+            .upsert({
+              date: today,
+              base_currency: 'EUR',
+              eur_clp: newRates.EUR_CLP,
+              eur_usd: newRates.EUR_USD,
+              clp_uf: newRates.CLP_UF || newRates.UF_CLP,
+              source: 'manual'
+            }, {
+              onConflict: 'date,base_currency'
+            });
 
-        if (error) {
-          console.error('Error guardando en Supabase:', error);
-        } else {
-          console.log('✅ Tasa guardada en Supabase');
+          if (error) {
+            console.error('Error guardando en Supabase:', error);
+          } else {
+            console.log('✅ Tasa guardada en Supabase');
+          }
         }
       } catch (err) {
         console.error('Error guardando en Supabase:', err);
