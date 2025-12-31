@@ -1,7 +1,9 @@
 // src/context/ExchangeRatesContext.jsx
 // ✅ M26: Sub-contexto para gestión de tasas de cambio
+// ✅ M37: Sincronización con Supabase (cron diario)
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
+import { supabase } from '../supabase/client';
 
 const ExchangeRatesContext = createContext();
 
@@ -50,13 +52,19 @@ export function ExchangeRatesProvider({ children, currentUser }) {
 
   const [autoUpdateConfig, setAutoUpdateConfig] = useState(() =>
     StorageManager.load('autoUpdateConfig_v5', {
-      enabled: false,
+      enabled: true, // ✅ M37: Habilitado por defecto
       intervalHours: 24,
       lastCheck: null
     })
   );
 
-  // Auto-save
+  const [syncStatus, setSyncStatus] = useState({
+    lastSync: null,
+    syncing: false,
+    error: null
+  });
+
+  // Auto-save to localStorage
   useEffect(() => { 
     StorageManager.save('exchangeRates_v5', exchangeRates); 
   }, [exchangeRates]);
@@ -64,6 +72,120 @@ export function ExchangeRatesProvider({ children, currentUser }) {
   useEffect(() => {
     StorageManager.save('autoUpdateConfig_v5', autoUpdateConfig);
   }, [autoUpdateConfig]);
+
+  // ✅ M37: Sincronizar con Supabase al cargar la app
+  const syncFromSupabase = useCallback(async () => {
+    if (!supabase) {
+      console.log('⚠️ Supabase no configurado, usando localStorage');
+      return { success: false, message: 'Supabase no configurado' };
+    }
+
+    setSyncStatus(prev => ({ ...prev, syncing: true, error: null }));
+
+    try {
+      console.log('🔄 Sincronizando tasas desde Supabase...');
+
+      // Obtener todas las tasas de Supabase
+      const { data, error } = await supabase
+        .from('exchange_rates')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        console.log('⚠️ No hay tasas en Supabase');
+        setSyncStatus({ lastSync: new Date().toISOString(), syncing: false, error: null });
+        return { success: true, message: 'No hay datos nuevos' };
+      }
+
+      // Construir historial desde Supabase
+      const history = {};
+      data.forEach(rate => {
+        history[rate.date] = {
+          EUR_CLP: parseFloat(rate.eur_clp) || null,
+          EUR_USD: parseFloat(rate.eur_usd) || null,
+          UF_CLP: parseFloat(rate.clp_uf) || null,
+          CLP_UF: parseFloat(rate.clp_uf) || null,
+          USD_CLP: rate.eur_clp && rate.eur_usd 
+            ? parseFloat(rate.eur_clp) / parseFloat(rate.eur_usd) 
+            : null,
+          source: rate.source || 'supabase',
+          timestamp: rate.created_at
+        };
+      });
+
+      // La tasa más reciente es la actual
+      const latestRate = data[0];
+      const current = {
+        EUR_CLP: parseFloat(latestRate.eur_clp) || DEFAULT_RATES.EUR_CLP,
+        EUR_USD: parseFloat(latestRate.eur_usd) || DEFAULT_RATES.EUR_USD,
+        CLP_UF: parseFloat(latestRate.clp_uf) || DEFAULT_RATES.CLP_UF
+      };
+
+      // Merge con historial local existente
+      setExchangeRates(prev => ({
+        current,
+        history: { ...prev.history, ...history },
+        lastUpdated: new Date().toISOString(),
+        source: 'supabase-sync'
+      }));
+
+      // También actualizar localStorage del historial
+      const localHistory = JSON.parse(localStorage.getItem('exchangeRatesHistory') || '{}');
+      const mergedHistory = { ...localHistory, ...history };
+      localStorage.setItem('exchangeRatesHistory', JSON.stringify(mergedHistory));
+
+      console.log(`✅ Sincronizadas ${data.length} tasas desde Supabase`);
+      
+      setSyncStatus({ 
+        lastSync: new Date().toISOString(), 
+        syncing: false, 
+        error: null 
+      });
+
+      return { 
+        success: true, 
+        count: data.length,
+        message: `${data.length} tasas sincronizadas` 
+      };
+
+    } catch (error) {
+      console.error('❌ Error sincronizando con Supabase:', error);
+      setSyncStatus({ 
+        lastSync: null, 
+        syncing: false, 
+        error: error.message 
+      });
+      return { success: false, message: error.message };
+    }
+  }, []);
+
+  // ✅ M37: Sincronizar al montar el componente
+  useEffect(() => {
+    if (autoUpdateConfig.enabled) {
+      syncFromSupabase();
+    }
+  }, []); // Solo al montar
+
+  // ✅ M37: Sincronizar al volver a la app (visibility change)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && autoUpdateConfig.enabled) {
+        // Solo sincronizar si han pasado más de 1 hora desde la última sync
+        const lastSync = syncStatus.lastSync ? new Date(syncStatus.lastSync) : null;
+        const now = new Date();
+        const hoursSinceSync = lastSync ? (now - lastSync) / (1000 * 60 * 60) : Infinity;
+        
+        if (hoursSinceSync >= 1) {
+          syncFromSupabase();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [autoUpdateConfig.enabled, syncStatus.lastSync, syncFromSupabase]);
 
   // ✅ Obtener tasa para una fecha
   const getRateForDate = useCallback((date) => {
@@ -174,7 +296,7 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     }
   }, [exchangeRates]);
 
-  // ✅ Actualizar tasas
+  // ✅ Actualizar tasas (manual o desde API)
   const updateExchangeRates = useCallback(async (newRates, source = 'manual') => {
     setExchangeRates(prev => {
       const update = {
@@ -192,29 +314,57 @@ export function ExchangeRatesProvider({ children, currentUser }) {
         updateHistory: [...(prev.updateHistory || []), update].slice(-10)
       };
 
-      if (source === 'api-auto') {
-        const today = new Date().toISOString().slice(0, 10);
-        const historyData = JSON.parse(localStorage.getItem('exchangeRatesHistory') || '{}');
+      // Guardar en historial local
+      const today = new Date().toISOString().slice(0, 10);
+      const historyData = JSON.parse(localStorage.getItem('exchangeRatesHistory') || '{}');
+      
+      if (!historyData[today] || source === 'manual') {
+        historyData[today] = {
+          EUR_CLP: newRates.EUR_CLP || prev.current.EUR_CLP,
+          UF_CLP: newRates.UF_CLP || newRates.CLP_UF || prev.current.CLP_UF,
+          USD_CLP: newRates.USD_CLP,
+          EUR_USD: newRates.EUR_USD || prev.current.EUR_USD,
+          source: source,
+          timestamp: new Date().toISOString()
+        };
         
-        if (!historyData[today]) {
-          historyData[today] = {
-            EUR_CLP: newRates.EUR_CLP || prev.current.EUR_CLP,
-            UF_CLP: newRates.UF_CLP || newRates.CLP_UF || prev.current.CLP_UF,
-            USD_CLP: newRates.USD_CLP,
-            EUR_USD: newRates.EUR_USD || prev.current.EUR_USD,
-            source: 'api-auto',
-            timestamp: new Date().toISOString()
-          };
-          
-          localStorage.setItem('exchangeRatesHistory', JSON.stringify(historyData));
-        }
-
-        if (!updated.history) updated.history = {};
-        updated.history[today] = historyData[today];
+        localStorage.setItem('exchangeRatesHistory', JSON.stringify(historyData));
       }
+
+      if (!updated.history) updated.history = {};
+      updated.history[today] = historyData[today];
 
       return updated;
     });
+
+    // ✅ M37: También guardar en Supabase si es actualización manual
+    if (source === 'manual' && supabase) {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        
+        const { error } = await supabase
+          .from('exchange_rates')
+          .upsert({
+            date: today,
+            base_currency: 'EUR',
+            eur_clp: newRates.EUR_CLP,
+            eur_usd: newRates.EUR_USD,
+            clp_uf: newRates.CLP_UF || newRates.UF_CLP,
+            source: 'manual'
+          }, {
+            onConflict: 'date,base_currency'
+          });
+
+        if (error) {
+          console.error('Error guardando en Supabase:', error);
+        } else {
+          console.log('✅ Tasa guardada en Supabase');
+        }
+      } catch (err) {
+        console.error('Error guardando en Supabase:', err);
+      }
+    }
+
     return true;
   }, [currentUser]);
 
@@ -252,11 +402,23 @@ export function ExchangeRatesProvider({ children, currentUser }) {
 
   const fetchExchangeRates = useCallback(async () => {
     try {
+      // ✅ M37: Intentar obtener de Supabase primero
+      const syncResult = await syncFromSupabase();
+      
+      if (syncResult.success) {
+        return {
+          success: true,
+          rates: exchangeRates.current,
+          source: 'supabase',
+          message: syncResult.message
+        };
+      }
+      
       return {
         success: true,
         rates: exchangeRates.current,
         source: 'cached',
-        message: 'Tasas actuales'
+        message: 'Tasas actuales (cache)'
       };
     } catch (error) {
       return {
@@ -266,7 +428,7 @@ export function ExchangeRatesProvider({ children, currentUser }) {
         message: error.message
       };
     }
-  }, [exchangeRates.current]);
+  }, [exchangeRates.current, syncFromSupabase]);
 
   const setAutoUpdateEnabled = useCallback((enabled) => {
     setAutoUpdateConfig(prev => ({ ...prev, enabled }));
@@ -287,7 +449,10 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     convertCurrencyAtDate,
     updateExchangeRates,
     importHistoricalRates,
-    fetchExchangeRates
+    fetchExchangeRates,
+    // ✅ M37: Nuevas funciones de sync
+    syncFromSupabase,
+    syncStatus
   }), [
     exchangeRates,
     autoUpdateConfig,
@@ -298,7 +463,9 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     importHistoricalRates,
     fetchExchangeRates,
     setAutoUpdateEnabled,
-    setUpdateInterval
+    setUpdateInterval,
+    syncFromSupabase,
+    syncStatus
   ]);
 
   return (
