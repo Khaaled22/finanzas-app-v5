@@ -7,17 +7,29 @@ import { INITIAL_TRANSACTIONS } from '../config/initialData';
 const TransactionsContext = createContext();
 
 // =====================================================
-// SUPABASE HELPER
+// SUPABASE SINGLETON (evita múltiples instancias)
 // =====================================================
 
+let supabaseInstance = null;
+let supabasePromise = null;
+
 const getSupabase = async () => {
-  try {
-    const { supabase } = await import('../modules/supabase/client');
-    return supabase;
-  } catch (e) {
-    console.log('⚠️ Supabase no disponible');
-    return null;
-  }
+  if (supabaseInstance) return supabaseInstance;
+  
+  if (supabasePromise) return supabasePromise;
+  
+  supabasePromise = (async () => {
+    try {
+      const { supabase } = await import('../modules/supabase/client');
+      supabaseInstance = supabase;
+      return supabase;
+    } catch (e) {
+      console.log('⚠️ Supabase no disponible');
+      return null;
+    }
+  })();
+  
+  return supabasePromise;
 };
 
 const getUserId = async (supabase) => {
@@ -26,13 +38,25 @@ const getUserId = async (supabase) => {
 };
 
 // =====================================================
+// UUID HELPER
+// =====================================================
+
+// Verifica si un string es un UUID válido
+const isValidUUID = (str) => {
+  if (!str || typeof str !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
+// =====================================================
 // MAPPERS: Local ↔ Supabase
 // =====================================================
 
 const mapToSupabase = (tx, userId) => ({
-  id: tx.id?.startsWith('tx_') ? undefined : tx.id, // Let Supabase generate UUID if local ID
+  // No enviar ID - dejar que Supabase genere UUID
   user_id: userId,
-  category_id: tx.categoryId || null,
+  // Solo enviar category_id si es UUID válido, sino null
+  category_id: isValidUUID(tx.categoryId) ? tx.categoryId : null,
   date: tx.date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
   amount: parseFloat(tx.amount) || 0,
   currency: tx.currency || 'EUR',
@@ -43,7 +67,7 @@ const mapToSupabase = (tx, userId) => ({
   import_source: tx.importedAt ? 'excel' : null,
   original_description: tx.originalDescription || null,
   is_recurring: tx.isRecurring || false,
-  recurring_id: tx.recurringId || null
+  recurring_id: isValidUUID(tx.recurringId) ? tx.recurringId : null
 });
 
 const mapFromSupabase = (row) => ({

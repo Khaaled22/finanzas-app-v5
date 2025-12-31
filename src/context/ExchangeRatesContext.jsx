@@ -12,15 +12,27 @@ const DEFAULT_RATES = {
   CLP_UF: 36000
 };
 
-// ✅ M37: Obtener cliente Supabase de forma segura (import dinámico)
+// ✅ M37: Obtener cliente Supabase de forma segura (singleton)
+let supabaseInstance = null;
+let supabasePromise = null;
+
 const getSupabaseClient = async () => {
-  try {
-    const { supabase } = await import('../modules/supabase/client');
-    return supabase;
-  } catch (e) {
-    console.log('⚠️ Supabase client no disponible');
-    return null;
-  }
+  if (supabaseInstance) return supabaseInstance;
+  
+  if (supabasePromise) return supabasePromise;
+  
+  supabasePromise = (async () => {
+    try {
+      const { supabase } = await import('../modules/supabase/client');
+      supabaseInstance = supabase;
+      return supabase;
+    } catch (e) {
+      console.log('⚠️ Supabase client no disponible');
+      return null;
+    }
+  })();
+  
+  return supabasePromise;
 };
 
 export const useExchangeRates = () => {
