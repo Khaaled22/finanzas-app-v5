@@ -75,7 +75,7 @@ export function BudgetProvider({
   });
 
   const [ynabConfig, setYnabConfig] = useState(() => 
-    StorageManager.load('ynabConfig_v5', { monthlyIncome: 3500, currency: 'EUR' })
+    StorageManager.load('ynabConfig_v5', { monthlyIncome: 0, currency: 'EUR' })
   );
 
   // Auto-save

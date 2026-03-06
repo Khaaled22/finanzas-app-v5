@@ -12,27 +12,15 @@ const DEFAULT_RATES = {
   CLP_UF: 36000
 };
 
-// ✅ M37: Obtener cliente Supabase de forma segura (singleton)
-let supabaseInstance = null;
-let supabasePromise = null;
-
+// ✅ M37: Obtener cliente Supabase de forma segura (import dinámico)
 const getSupabaseClient = async () => {
-  if (supabaseInstance) return supabaseInstance;
-  
-  if (supabasePromise) return supabasePromise;
-  
-  supabasePromise = (async () => {
-    try {
-      const { supabase } = await import('../modules/supabase/client');
-      supabaseInstance = supabase;
-      return supabase;
-    } catch (e) {
-      console.log('⚠️ Supabase client no disponible');
-      return null;
-    }
-  })();
-  
-  return supabasePromise;
+  try {
+    const { supabase } = await import('../modules/supabase/client');
+    return supabase;
+  } catch (e) {
+    console.log('⚠️ Supabase client no disponible');
+    return null;
+  }
 };
 
 export const useExchangeRates = () => {
@@ -233,7 +221,7 @@ export function ExchangeRatesProvider({ children, currentUser }) {
       }
     }
     
-    return exchangeRates.current;
+    return exchangeRates.current || DEFAULT_RATES;
   }, [exchangeRates]);
 
   // ✅ Conversión con tasa histórica
@@ -299,10 +287,10 @@ export function ExchangeRatesProvider({ children, currentUser }) {
         amountInEUR = amount / rates.EUR_CLP;
         break;
       case 'USD':
-        amountInEUR = amount / rates.EUR_USD;
+        amountInEUR = amount / (rates.EUR_USD || DEFAULT_RATES.EUR_USD);
         break;
       case 'UF':
-        const clpAmount = amount * (rates.CLP_UF || rates.UF_CLP || 36000);
+        const clpAmount = amount * (rates.CLP_UF || rates.UF_CLP || DEFAULT_RATES.CLP_UF);
         amountInEUR = clpAmount / rates.EUR_CLP;
         break;
       default:
@@ -315,10 +303,10 @@ export function ExchangeRatesProvider({ children, currentUser }) {
       case 'CLP':
         return amountInEUR * rates.EUR_CLP;
       case 'USD':
-        return amountInEUR * rates.EUR_USD;
+        return amountInEUR * (rates.EUR_USD || DEFAULT_RATES.EUR_USD);
       case 'UF':
         const clpValue = amountInEUR * rates.EUR_CLP;
-        return clpValue / (rates.CLP_UF || rates.UF_CLP || 36000);
+        return clpValue / (rates.CLP_UF || rates.UF_CLP || DEFAULT_RATES.CLP_UF);
       default:
         return amountInEUR;
     }

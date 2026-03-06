@@ -63,8 +63,10 @@ export function convertCurrency(amount, fromCurrency, toCurrency, rates) {
  */
 export function formatNumber(value, decimals = 0) {
   if (value === null || value === undefined || isNaN(value)) return '0';
-  
-  return value.toLocaleString('de-DE', {
+
+  // normalize -0 to 0 (-0 + 0 === 0 in JS)
+  const num = value + 0;
+  return num.toLocaleString('de-DE', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   });
