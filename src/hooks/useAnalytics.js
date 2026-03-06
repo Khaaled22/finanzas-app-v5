@@ -43,16 +43,19 @@ export function useAnalytics() {
   
   // M9.2: Tasa de Ahorro
   const savingsRate = useMemo(() => {
-    const monthlyExpenses = categories.reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget, cat.currency, displayCurrency), 0
-    )
-    
+    // Only count operating expenses (exclude income and investment categories)
+    const monthlyExpenses = categories
+      .filter(cat => cat.flowKind === 'OPERATING_EXPENSE' || cat.type === 'expense')
+      .reduce((sum, cat) =>
+        sum + convertCurrency(cat.budget, cat.currency, displayCurrency), 0
+      )
+
     const monthlyIncome = ynabConfig?.monthlyIncome
       ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency, displayCurrency)
       : 0
-    
+
     if (monthlyIncome === 0) return 0
-    
+
     return ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100
   }, [categories, ynabConfig, convertCurrency, displayCurrency])
   

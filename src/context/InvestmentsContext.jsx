@@ -233,17 +233,18 @@ export function InvestmentsProvider({ children }) {
    * ✅ Calcular ROI de plataforma
    */
   const calculatePlatformROI = useCallback((platform) => {
-    if (!platform) return { roi: 0, roiPercent: 0 };
-    
+    if (!platform) return { roi: 0, roiPercent: 0, hasData: false };
+
     const current = platform.currentBalance || 0;
-    const deposited = platform.totalDeposited || current;
-    
-    if (deposited === 0) return { roi: 0, roiPercent: 0 };
-    
+    const deposited = platform.totalDeposited;
+
+    // Can't calculate ROI without deposit info
+    if (!deposited || deposited <= 0) return { roi: 0, roiPercent: 0, hasData: false };
+
     const roi = current - deposited;
     const roiPercent = (roi / deposited) * 100;
-    
-    return { roi, roiPercent };
+
+    return { roi, roiPercent, hasData: true };
   }, []);
 
   // ===================== BALANCE HISTORY =====================

@@ -99,7 +99,12 @@ export default function SavingsView() {
   };
 
   const calculateDaysRemaining = (deadline) => {
-    return Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
+    if (!deadline) return -1;
+    // Parse as local date to avoid UTC midnight timezone shift on date-only strings
+    const d = typeof deadline === 'string' && !deadline.includes('T')
+      ? new Date(deadline + 'T00:00:00')
+      : new Date(deadline);
+    return Math.ceil((d - new Date()) / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -262,7 +267,7 @@ export default function SavingsView() {
                 {filteredGoals.map(goal => {
                   const percentage = (goal.currentAmount / goal.targetAmount) * 100;
                   const remaining = goal.targetAmount - goal.currentAmount;
-                  const daysRemaining = calculateDaysRemaining(goal.deadline);
+                  const daysRemaining = calculateDaysRemaining(goal.targetDate);
                   const priorityInfo = getPriorityInfo(goal.priority);
                   const isLinked = !!goal.linkedPlatformId;
                   
@@ -342,7 +347,7 @@ export default function SavingsView() {
           {filteredGoals.map(goal => {
             const percentage = (goal.currentAmount / goal.targetAmount) * 100;
             const remaining = goal.targetAmount - goal.currentAmount;
-            const daysRemaining = calculateDaysRemaining(goal.deadline);
+            const daysRemaining = calculateDaysRemaining(goal.targetDate);
             const priorityInfo = getPriorityInfo(goal.priority);
             const linkedPlatform = getLinkedPlatformInfo(goal.linkedPlatformId);
             const isLinked = !!linkedPlatform;
@@ -418,7 +423,12 @@ export default function SavingsView() {
                   <div className="flex justify-between items-center mb-4 text-sm">
                     <span className="text-gray-600">
                       <i className="fas fa-calendar mr-1"></i>
-                      {new Date(goal.deadline).toLocaleDateString('es-ES')}
+                      {goal.targetDate
+                        ? (typeof goal.targetDate === 'string' && !goal.targetDate.includes('T')
+                            ? new Date(goal.targetDate + 'T00:00:00')
+                            : new Date(goal.targetDate)
+                          ).toLocaleDateString('es-ES')
+                        : '—'}
                     </span>
                     <span className={`font-medium ${daysRemaining < 30 ? 'text-red-600' : 'text-gray-800'}`}>
                       {daysRemaining > 0 ? `${daysRemaining} días restantes` : 'Vencido'}

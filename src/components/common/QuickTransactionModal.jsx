@@ -152,7 +152,7 @@ export default function QuickTransactionModal({ isOpen, onClose }) {
       const transactionData = {
         ...formData,
         amount: parseFloat(formData.amount),
-        date: new Date(formData.date).toISOString()
+        date: formData.date
       };
 
       addTransaction(transactionData);

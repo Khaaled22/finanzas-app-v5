@@ -6,13 +6,13 @@ export default function AchievementsPanel() {
   const { investments, displayCurrency, convertCurrency } = useApp();
 
   const achievements = useMemo(() => {
-    // Separar plataformas y activos
-    const platforms = investments.filter(inv => inv.platform && !inv.quantity);
-    const assets = investments.filter(inv => inv.quantity);
+    // Separar plataformas (currentBalance) y activos (quantity*price)
+    const platforms = investments.filter(inv => !inv.isArchived && !inv.quantity);
+    const assets = investments.filter(inv => !inv.isArchived && inv.quantity);
 
     // Calcular métricas
     const platformsValue = platforms.reduce((sum, inv) => {
-      return sum + convertCurrency(inv.currentBalance, inv.currency, displayCurrency);
+      return sum + convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency);
     }, 0);
 
     let assetsValue = 0;
@@ -30,15 +30,19 @@ export default function AchievementsPanel() {
     // Calcular tiempo invertido (meses desde primera inversión)
     let monthsInvesting = 0;
     if (investments.length > 0) {
-      const dates = investments.map(inv => {
-        if (inv.balanceHistory && inv.balanceHistory.length > 0) {
-          return new Date(inv.balanceHistory[0].date);
-        }
-        return new Date(inv.lastUpdated);
-      });
-      const firstDate = new Date(Math.min(...dates));
-      const now = new Date();
-      monthsInvesting = Math.max(1, Math.round((now - firstDate) / (1000 * 60 * 60 * 24 * 30)));
+      const dates = investments
+        .map(inv => {
+          if (inv.balanceHistory?.length > 0) return new Date(inv.balanceHistory[0].date + 'T00:00:00');
+          const raw = inv.createdAt || inv.lastUpdated;
+          return raw ? new Date(raw) : null;
+        })
+        .filter(d => d && !isNaN(d.getTime()));
+
+      if (dates.length > 0) {
+        const firstDate = new Date(Math.min(...dates.map(d => d.getTime())));
+        const now = new Date();
+        monthsInvesting = Math.max(1, Math.round((now - firstDate) / (1000 * 60 * 60 * 24 * 30)));
+      }
     }
 
     // Calcular actualizaciones totales

@@ -325,16 +325,14 @@ export default function InvestmentsView() {
                   {/* ROI */}
                   <div className={`p-3 rounded-lg ${roiColors.bg} mb-4`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">
-                        {roiData.hasPreviousMonth ? 'ROI vs mes anterior' : 'ROI total'}
-                      </span>
-                      <span className={`font-bold ${roiColors.text}`}>
-                        {roiColors.icon} {formatPercent(roiData.roi, 1, true)}
+                      <span className="text-sm text-gray-600">ROI total</span>
+                      <span className={`font-bold ${roiData.hasData ? roiColors.text : 'text-gray-400'}`}>
+                        {roiData.hasData ? `${roiColors.icon} ${formatPercent(roiData.roiPercent, 1, true)}` : '—'}
                       </span>
                     </div>
-                    {roiData.change !== 0 && (
+                    {roiData.hasData && roiData.roi !== 0 && (
                       <p className={`text-xs ${roiColors.text} mt-1`}>
-                        {roiData.change >= 0 ? '+' : ''}{formatNumber(roiData.change)} {platform.currency}
+                        {roiData.roi >= 0 ? '+' : ''}{formatNumber(roiData.roi)} {platform.currency}
                       </p>
                     )}
                   </div>
@@ -429,8 +427,8 @@ export default function InvestmentsView() {
                         </p>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className={`font-bold ${roiColors.text}`}>
-                          {formatPercent(roiData.roi, 1, true)}
+                        <span className={`font-bold ${roiData.hasData ? roiColors.text : 'text-gray-400'}`}>
+                          {roiData.hasData ? formatPercent(roiData.roiPercent, 1, true) : '—'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">

@@ -37,8 +37,8 @@ describe('AnalysisEngine', () => {
   describe('calculateNautaIndex', () => {
     const baseData = {
       categories: [
-        { id: '1', name: 'Comida', budget: 500, currency: 'EUR' },
-        { id: '2', name: 'Transporte', budget: 200, currency: 'EUR' }
+        { id: '1', name: 'Comida', budget: 500, currency: 'EUR', flowKind: 'OPERATING_EXPENSE' },
+        { id: '2', name: 'Transporte', budget: 200, currency: 'EUR', flowKind: 'OPERATING_EXPENSE' }
       ],
       debts: [],
       savingsGoals: [],
@@ -185,8 +185,8 @@ describe('AnalysisEngine', () => {
         { id: '1', name: 'Fondo de Emergencia', currentAmount: 6000, currency: 'EUR' }
       ]
       const categories = [
-        { id: '1', budget: 1000, currency: 'EUR' },
-        { id: '2', budget: 500, currency: 'EUR' }
+        { id: '1', budget: 1000, currency: 'EUR', flowKind: 'OPERATING_EXPENSE' },
+        { id: '2', budget: 500, currency: 'EUR', flowKind: 'OPERATING_EXPENSE' }
       ]
 
       const result = AnalysisEngine.calculateEmergencyFundMonths(
@@ -206,7 +206,7 @@ describe('AnalysisEngine', () => {
         { id: '1', name: 'Vacaciones', currentAmount: 3000, currency: 'EUR' }
       ]
       const categories = [
-        { id: '1', budget: 1000, currency: 'EUR' }
+        { id: '1', budget: 1000, currency: 'EUR', flowKind: 'OPERATING_EXPENSE' }
       ]
 
       const result = AnalysisEngine.calculateEmergencyFundMonths(
@@ -225,7 +225,7 @@ describe('AnalysisEngine', () => {
         { id: '1', name: 'Emergency Fund', currentAmount: 3000, currency: 'EUR' }
       ]
       const categories = [
-        { id: '1', budget: 1000, currency: 'EUR' }
+        { id: '1', budget: 1000, currency: 'EUR', flowKind: 'OPERATING_EXPENSE' }
       ]
 
       const result = AnalysisEngine.calculateEmergencyFundMonths(

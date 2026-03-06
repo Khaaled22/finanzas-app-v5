@@ -26,10 +26,12 @@ export const AnalysisEngine = {
       retirement: { score: 0, max: 10, details: {} }
     }
 
-    // Calcular gasto mensual total
-    const monthlyExpenses = (categories || []).reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
-    )
+    // Calcular gasto mensual total (solo gastos operativos)
+    const monthlyExpenses = (categories || [])
+      .filter(cat => cat.flowKind === 'OPERATING_EXPENSE' || cat.type === 'expense')
+      .reduce((sum, cat) =>
+        sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
+      )
     
     // Convertir ingreso mensual
     const monthlyIncome = ynabConfig?.monthlyIncome 
@@ -38,25 +40,24 @@ export const AnalysisEngine = {
 
     // ============================================
     // 1. FONDO DE EMERGENCIA (0-20 puntos)
-    // ✅ M32: Buscar por isEmergencyFund o nombre + linkedPlatforms
+    // Buscar por isEmergencyFund, nombre, o plataformas isCash líquidas
     // ============================================
-    const emergencyFund = (savingsGoals || []).find(g => 
+    const emergencyFund = (savingsGoals || []).find(g =>
       g.isEmergencyFund === true ||
-      g.name?.toLowerCase().includes('emergencia') || 
+      g.name?.toLowerCase().includes('emergencia') ||
       g.name?.toLowerCase().includes('emergency')
     )
-    
-    if (emergencyFund && monthlyExpenses > 0) {
-      let fundAmount = 0
-      
-      // ✅ M32: Usar linkedPlatforms (array) si existe
+
+    let fundAmount = 0
+    let fundLabel = 'Sin fondo de emergencia configurado'
+
+    if (emergencyFund) {
       if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0 && investments) {
         fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
           const platform = investments.find(inv => inv.id === platformId)
-          if (platform) {
-            return sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
-          }
-          return sum
+          return platform
+            ? sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+            : sum
         }, 0)
       } else if (emergencyFund.linkedPlatformId && investments) {
         const platform = investments.find(inv => inv.id === emergencyFund.linkedPlatformId)
@@ -64,18 +65,25 @@ export const AnalysisEngine = {
           fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
         }
       } else {
-        fundAmount = convertCurrency(
-          emergencyFund.currentAmount || 0, 
-          emergencyFund.currency || 'EUR', 
-          displayCurrency
-        )
+        fundAmount = convertCurrency(emergencyFund.currentAmount || 0, emergencyFund.currency || 'EUR', displayCurrency)
       }
-      
+      fundLabel = emergencyFund.name
+    } else if (investments) {
+      // Fallback: sum all liquid cash platforms as emergency fund proxy
+      const cashPlatforms = investments.filter(inv => inv.isCash === true || inv.goal === 'cash')
+      if (cashPlatforms.length > 0) {
+        fundAmount = cashPlatforms.reduce((sum, inv) =>
+          sum + convertCurrency(inv.currentBalance || 0, inv.currency || 'EUR', displayCurrency), 0
+        )
+        fundLabel = 'Activos líquidos (Cash/Banco)'
+      }
+    }
+
+    if (monthlyExpenses > 0 && fundAmount > 0) {
       const monthsCovered = fundAmount / monthlyExpenses
       const objective = 6
-      
       const score = Math.min((monthsCovered / objective) * 20, 20)
-      
+
       breakdown.emergencyFund.score = score
       breakdown.emergencyFund.details = {
         currentAmount: fundAmount,
@@ -83,47 +91,54 @@ export const AnalysisEngine = {
         objective: objective,
         monthlyExpenses: monthlyExpenses,
         currency: displayCurrency,
-        goalName: emergencyFund.name,
-        status: monthsCovered >= 6 ? 'Excelente - 6+ meses cubiertos' : 
-                monthsCovered >= 3 ? 'Bueno - 3-6 meses cubiertos' : 
+        goalName: fundLabel,
+        status: monthsCovered >= 6 ? 'Excelente - 6+ meses cubiertos' :
+                monthsCovered >= 3 ? 'Bueno - 3-6 meses cubiertos' :
                 monthsCovered >= 1 ? 'Regular - 1-3 meses cubiertos' : 'Insuficiente - menos de 1 mes'
       }
-      
       totalScore += score
     } else {
       breakdown.emergencyFund.details = {
-        currentAmount: 0,
+        currentAmount: fundAmount,
         monthsCovered: 0,
         objective: 6,
         monthlyExpenses: monthlyExpenses,
         currency: displayCurrency,
-        status: emergencyFund ? 'Sin gastos configurados' : 'Sin fondo de emergencia configurado'
+        status: monthlyExpenses === 0 ? 'Sin gastos configurados' : fundLabel
       }
     }
 
     // ============================================
     // 2. TASA DE AHORRO (0-20 puntos)
+    // Fallback: derive income from INCOME-type categories if ynabConfig not set
     // ============================================
-    if (monthlyIncome > 0) {
-      const savingsAmount = monthlyIncome - monthlyExpenses
-      const savingsRate = savingsAmount / monthlyIncome
+    const monthlyIncomeFromCats = (categories || [])
+      .filter(cat => cat.flowKind === 'INCOME' || cat.type === 'income')
+      .reduce((sum, cat) =>
+        sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
+      )
+    const effectiveIncome = monthlyIncome > 0 ? monthlyIncome : monthlyIncomeFromCats
+
+    if (effectiveIncome > 0) {
+      const savingsAmount = effectiveIncome - monthlyExpenses
+      const savingsRate = savingsAmount / effectiveIncome
       const savingsRatePercent = savingsRate * 100
-      
+
       const score = Math.min(Math.max(savingsRate, 0) * (20 / 0.20), 20)
-      
+
       breakdown.savingsRate.score = score
       breakdown.savingsRate.details = {
-        monthlyIncome: monthlyIncome,
+        monthlyIncome: effectiveIncome,
         monthlyExpenses: monthlyExpenses,
         savingsAmount: savingsAmount,
         savingsRatePercent: savingsRatePercent,
         currency: displayCurrency,
         objective: 20,
-        status: savingsRatePercent >= 20 ? 'Excelente - 20%+ de ahorro' : 
-                savingsRatePercent >= 10 ? 'Bueno - 10-20% de ahorro' : 
+        status: savingsRatePercent >= 20 ? 'Excelente - 20%+ de ahorro' :
+                savingsRatePercent >= 10 ? 'Bueno - 10-20% de ahorro' :
                 savingsRatePercent >= 5 ? 'Regular - 5-10% de ahorro' : 'Insuficiente - menos del 5%'
       }
-      
+
       totalScore += score
     } else {
       breakdown.savingsRate.details = {
@@ -227,47 +242,57 @@ export const AnalysisEngine = {
     totalScore += Math.min(insuranceScore, 10)
 
     // ============================================
-    // 5. APV / PENSIÓN (0-10 puntos)
-    // ✅ M32: Detecta tipo APV en inversiones
+    // 5. INVERSIÓN A LARGO PLAZO (0-10 puntos)
+    // Detecta APV, ETF, fondos indexados, o cualquier inversión de crecimiento
     // ============================================
-    const hasAPVCategory = (categories || []).some(c => 
+    const hasRetirementCategory = (categories || []).some(c =>
       c.name?.toLowerCase().includes('apv') ||
       c.name?.toLowerCase().includes('previsional') ||
       c.name?.toLowerCase().includes('pensión') ||
-      c.name?.toLowerCase().includes('afp')
+      c.name?.toLowerCase().includes('afp') ||
+      c.name?.toLowerCase().includes('jubilación') ||
+      c.name?.toLowerCase().includes('retiro')
     )
-    
-    const hasAPVInvestment = (investments || []).some(inv =>
+
+    const hasLongTermInvestment = (investments || []).some(inv =>
       inv.name?.toLowerCase().includes('apv') ||
       inv.type?.toLowerCase() === 'apv' ||
-      inv.type === 'APV'
+      inv.type === 'APV' ||
+      inv.goal === 'retirement' ||
+      inv.subtype === 'etf' ||
+      inv.subtype === 'index_fund' ||
+      inv.subtype?.includes('index') ||
+      inv.name?.toLowerCase().includes('etf') ||
+      inv.name?.toLowerCase().includes('índice') ||
+      inv.name?.toLowerCase().includes('indexado') ||
+      (inv.goal === 'growth' && inv.subtype === 'etf')
     )
-    
+
     let retirementScore = 0
-    if (hasAPVCategory) retirementScore += 5
-    if (hasAPVInvestment) retirementScore += 5
-    
+    if (hasRetirementCategory) retirementScore += 5
+    if (hasLongTermInvestment) retirementScore += 5
+
     breakdown.retirement.score = Math.min(retirementScore, 10)
     breakdown.retirement.details = {
-      hasAPVCategory: hasAPVCategory,
-      hasAPVInvestment: hasAPVInvestment,
-      status: retirementScore >= 10 ? 'Excelente - APV activo' :
-              retirementScore >= 5 ? 'Bueno - Categoría o inversión APV' : 'Sin APV detectado'
+      hasRetirementCategory,
+      hasLongTermInvestment,
+      status: retirementScore >= 10 ? 'Excelente - Inversión de largo plazo activa' :
+              retirementScore >= 5 ? 'Bueno - Inversión o categoría detectada' : 'Sin inversión de largo plazo detectada'
     }
-    
+
     totalScore += Math.min(retirementScore, 10)
 
     // Escalar de 70 a 100
     const scaledScore = (totalScore / 70) * 100
-    
+
     let status, message
-    if (scaledScore >= 80) {
+    if (scaledScore >= 75) {
       status = 'Excelente'
       message = '¡Felicitaciones! Tu situación financiera es muy sólida.'
-    } else if (scaledScore >= 60) {
+    } else if (scaledScore >= 55) {
       status = 'Bueno'
       message = 'Vas por buen camino. Hay aspectos que puedes mejorar.'
-    } else if (scaledScore >= 40) {
+    } else if (scaledScore >= 30) {
       status = 'Regular'
       message = 'Tu situación requiere atención en varios aspectos.'
     } else {
@@ -340,42 +365,49 @@ export const AnalysisEngine = {
    * ✅ M32: Soporta linkedPlatforms
    */
   calculateEmergencyFundMonths(savingsGoals, investments, categories, convertCurrency, displayCurrency) {
-    const emergencyFund = (savingsGoals || []).find(g => 
+    const emergencyFund = (savingsGoals || []).find(g =>
       g.isEmergencyFund === true ||
       g.name?.toLowerCase().includes('emergencia') ||
       g.name?.toLowerCase().includes('emergency')
     )
-    if (!emergencyFund) return 0
-    
+
     let fundAmount = 0
-    
-    if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0 && investments) {
-      fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
-        const platform = investments.find(inv => inv.id === platformId)
+
+    if (emergencyFund) {
+      if (emergencyFund.linkedPlatforms && emergencyFund.linkedPlatforms.length > 0 && investments) {
+        fundAmount = emergencyFund.linkedPlatforms.reduce((sum, platformId) => {
+          const platform = investments.find(inv => inv.id === platformId)
+          return platform
+            ? sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+            : sum
+        }, 0)
+      } else if (emergencyFund.linkedPlatformId && investments) {
+        const platform = investments.find(inv => inv.id === emergencyFund.linkedPlatformId)
         if (platform) {
-          return sum + convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+          fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
         }
-        return sum
-      }, 0)
-    } else if (emergencyFund.linkedPlatformId && investments) {
-      const platform = investments.find(inv => inv.id === emergencyFund.linkedPlatformId)
-      if (platform) {
-        fundAmount = convertCurrency(platform.currentBalance || 0, platform.currency || 'EUR', displayCurrency)
+      } else {
+        fundAmount = convertCurrency(emergencyFund.currentAmount || 0, emergencyFund.currency || 'EUR', displayCurrency)
       }
-    } else {
-      fundAmount = convertCurrency(
-        emergencyFund.currentAmount || 0,
-        emergencyFund.currency || 'EUR',
-        displayCurrency
+    } else if (investments) {
+      // Fallback: liquid cash platforms act as emergency fund
+      const cashPlatforms = investments.filter(inv => inv.isCash === true || inv.goal === 'cash')
+      fundAmount = cashPlatforms.reduce((sum, inv) =>
+        sum + convertCurrency(inv.currentBalance || 0, inv.currency || 'EUR', displayCurrency), 0
       )
     }
-    
-    const monthlyExpenses = (categories || []).reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
-    )
-    
+
+    if (fundAmount === 0) return 0
+
+    // Only count operating expenses for monthly burn rate
+    const monthlyExpenses = (categories || [])
+      .filter(cat => cat.flowKind === 'OPERATING_EXPENSE' || cat.type === 'expense')
+      .reduce((sum, cat) =>
+        sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
+      )
+
     if (monthlyExpenses === 0) return 0
-    
+
     return fundAmount / monthlyExpenses
   },
 
