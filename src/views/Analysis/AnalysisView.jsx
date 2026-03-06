@@ -4,6 +4,7 @@ import { useAnalytics } from '../../hooks/useAnalytics'
 import { useApp } from '../../context/AppContext'
 import NautaIndexCard from './NautaIndexCard'
 import NetWorthHistoryChart from './NetWorthHistoryChart'
+import RollingBudgetChart from './RollingBudgetChart'
 
 export default function AnalysisView() {
   const { displayCurrency, ynabConfig } = useApp()
@@ -14,7 +15,8 @@ export default function AnalysisView() {
     debtServiceRatio,
     emergencyFundMonths,
     netWorth,
-    netWorthHistory // ✅ M32: Nuevo
+    netWorthHistory,
+    netWorthTimeline
   } = useAnalytics()
 
   return (
@@ -33,12 +35,15 @@ export default function AnalysisView() {
       {/* M8: Índice de Tranquilidad Financiera (Nauta) */}
       <NautaIndexCard nautaIndex={nautaIndex} />
 
-      {/* ✅ M32: Gráfico de Patrimonio Neto */}
-      <NetWorthHistoryChart 
-        history={netWorthHistory} 
+      {/* Gráfico de Patrimonio Neto */}
+      <NetWorthHistoryChart
+        timeline={netWorthTimeline}
         currentNetWorth={netWorth}
         displayCurrency={displayCurrency}
       />
+
+      {/* Presupuesto Rodante */}
+      <RollingBudgetChart />
 
       {/* M9: KPIs Adicionales */}
       <div>
@@ -203,12 +208,11 @@ export default function AnalysisView() {
             />
           )}
 
-          {/* ✅ M32: Recomendación de APV */}
           {nautaIndex.breakdown?.retirement?.score < 5 && (
             <RecommendationItem
-              icon="fa-clock"
+              icon="fa-chart-line"
               color="text-indigo-600"
-              text="No detectamos ahorro previsional (APV). Considera agregarlo para mejorar tu jubilación."
+              text="No detectamos inversión a largo plazo (ETF, fondos indexados, APV). Considera invertir regularmente para tu futuro."
             />
           )}
         </div>

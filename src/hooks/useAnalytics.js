@@ -120,11 +120,55 @@ export function useAnalytics() {
     }
   }, [netWorth, displayCurrency])
   
-  // ✅ M32: Historial de patrimonio neto
+  // ✅ M32: Historial de patrimonio neto (daily snapshots)
   const netWorthHistory = useMemo(() => {
     return AnalysisEngine.getNetWorthHistory();
-  }, [netWorth]) // Se recalcula cuando cambia netWorth
-  
+  }, [netWorth])
+
+  // Monthly net worth timeline — reconstructed from investment balanceHistory
+  // Falls back to daily snapshots when available, uses current savings/debts as static baseline
+  const netWorthTimeline = useMemo(() => {
+    const now = new Date();
+    const timeline = {};
+
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const endOfMonth = `${ym}-31`;
+
+      const invValue = investments.reduce((sum, inv) => {
+        const history = inv.balanceHistory;
+        if (!history?.length) {
+          return sum + convertCurrency(inv.currentBalance || 0, inv.currency || 'EUR', displayCurrency);
+        }
+        const entries = history
+          .filter(e => e.date <= endOfMonth)
+          .sort((a, b) => b.date.localeCompare(a.date));
+        const balance = entries.length > 0 ? entries[0].balance : 0;
+        return sum + convertCurrency(balance, inv.currency || 'EUR', displayCurrency);
+      }, 0);
+
+      const savingsValue = savingsGoals.reduce((sum, goal) =>
+        sum + convertCurrency(goal.currentAmount || 0, goal.currency || 'EUR', displayCurrency), 0
+      );
+
+      const debtValue = debts.reduce((sum, debt) =>
+        sum + convertCurrency(debt.currentBalance || 0, debt.currency || 'EUR', displayCurrency), 0
+      );
+
+      timeline[ym] = invValue + savingsValue - debtValue;
+    }
+
+    // Override months that have actual daily snapshots (most accurate)
+    const snapshots = AnalysisEngine.getNetWorthHistory();
+    Object.entries(snapshots).forEach(([date, data]) => {
+      const ym = date.slice(0, 7);
+      if (ym in timeline) timeline[ym] = data.value;
+    });
+
+    return timeline;
+  }, [investments, savingsGoals, debts, displayCurrency, convertCurrency])
+
   return {
     nautaIndex,
     debtToIncomeRatio,
@@ -132,6 +176,7 @@ export function useAnalytics() {
     debtServiceRatio,
     emergencyFundMonths,
     netWorth,
-    netWorthHistory // ✅ M32: Nuevo
+    netWorthHistory,
+    netWorthTimeline
   }
 }
