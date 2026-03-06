@@ -17,47 +17,9 @@ import { DebtsProvider, useDebts } from './DebtsContext';
 
 // Engine para cálculos
 import { AnalysisEngine } from '../domain/engines/AnalysisEngine';
+import { getFlowKind, isOperatingExpense, isDebtPayment, isInvestmentContribution, isIncome } from '../domain/flowKind';
 
 const AppContext = createContext();
-
-// =====================================================
-// HELPERS PARA CLASIFICACIÓN DE CATEGORÍAS
-// =====================================================
-
-/**
- * ✅ M36: Determina el flowKind de una categoría
- * Prioriza flowKind explícito, luego infiere de type/group
- */
-const getFlowKind = (category) => {
-  // Si tiene flowKind explícito, usarlo
-  if (category.flowKind) return category.flowKind;
-  
-  // Inferir de type
-  if (category.type === 'income') return 'INCOME';
-  if (category.type === 'investment') return 'INVESTMENT_CONTRIBUTION';
-  
-  // Inferir de group/name para deudas
-  const groupLower = (category.group || '').toLowerCase();
-  const nameLower = (category.name || '').toLowerCase();
-  
-  if (groupLower.includes('debt') || groupLower.includes('deuda') || 
-      groupLower.includes('loan') || groupLower.includes('préstamo') ||
-      nameLower.includes('mortgage') || nameLower.includes('hipoteca') ||
-      nameLower.includes('cae')) {
-    return 'DEBT_PAYMENT';
-  }
-  
-  // Default: gasto operativo
-  return 'OPERATING_EXPENSE';
-};
-
-/**
- * ✅ M36: Funciones helper para filtrar categorías
- */
-const isOperatingExpense = (cat) => getFlowKind(cat) === 'OPERATING_EXPENSE';
-const isDebtPayment = (cat) => getFlowKind(cat) === 'DEBT_PAYMENT';
-const isInvestmentContribution = (cat) => getFlowKind(cat) === 'INVESTMENT_CONTRIBUTION';
-const isIncome = (cat) => getFlowKind(cat) === 'INCOME';
 
 // =====================================================
 // HOOK PRINCIPAL
@@ -75,9 +37,8 @@ export const useApp = () => {
 // COMPONENTE COMPOSITOR
 // =====================================================
 
-function AppContextComposer({ children }) {
-  const [currentUser, setCurrentUser] = useState('Usuario 1');
-  const [displayCurrency, setDisplayCurrency] = useState('EUR');
+function AppContextComposer({ children, currentUser, displayCurrency, setDisplayCurrency }) {
+  const setCurrentUser = () => {}; // currentUser es de solo lectura en esta versión
 
   // Obtener valores de sub-contextos
   const transactionsCtx = useTransactions();
@@ -296,9 +257,6 @@ function AppContextComposer({ children }) {
     restorePlatform: investmentsCtx.restorePlatform,
     updatePlatformBalance: investmentsCtx.updatePlatformBalance,
     calculatePlatformROI: investmentsCtx.calculatePlatformROI,
-    addHoldingToPlatform: investmentsCtx.addHoldingToPlatform,
-    updateHoldingInPlatform: investmentsCtx.updateHoldingInPlatform,
-    deleteHoldingFromPlatform: investmentsCtx.deleteHoldingFromPlatform,
     addBalanceHistory: investmentsCtx.addBalanceHistory,
     updateBalanceHistory: investmentsCtx.updateBalanceHistory,
     // Balance entries para inversiones (plataformas)
@@ -360,7 +318,11 @@ export function AppProvider({ children }) {
         <ExchangeRatesProvider currentUser={currentUser}>
           <TransactionsProvider currentUser={currentUser}>
             <BudgetProviderWrapper displayCurrency={displayCurrency}>
-              <AppContextComposer>
+              <AppContextComposer
+                currentUser={currentUser}
+                displayCurrency={displayCurrency}
+                setDisplayCurrency={setDisplayCurrency}
+              >
                 {children}
               </AppContextComposer>
             </BudgetProviderWrapper>

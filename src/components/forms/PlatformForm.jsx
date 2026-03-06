@@ -20,6 +20,7 @@ export default function PlatformForm({ isOpen, onClose, platform = null }) {
   });
   
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // ✅ M36 Fase 6: Filtrar subtipos según el goal seleccionado
   const filteredSubtypes = useMemo(() => {
@@ -36,6 +37,7 @@ export default function PlatformForm({ isOpen, onClose, platform = null }) {
 
   // Cargar datos si es edición
   useEffect(() => {
+    setErrors({});
     if (platform) {
       setFormData({
         name: platform.name || '',
@@ -80,12 +82,20 @@ export default function PlatformForm({ isOpen, onClose, platform = null }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
+    const newErrors = {};
     if (!formData.name.trim()) {
-      alert('El nombre es obligatorio');
+      newErrors.name = 'El nombre es obligatorio';
+    }
+    if (formData.currentBalance !== '' && parseFloat(formData.currentBalance) < 0) {
+      newErrors.currentBalance = 'El balance no puede ser negativo';
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-    
+    setErrors({});
+
     const platformData = {
       ...formData,
       id: platform?.id,
@@ -192,13 +202,13 @@ export default function PlatformForm({ isOpen, onClose, platform = null }) {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder={isCashMode 
-                ? 'Ej: Cuenta Corriente Santander, Efectivo Casa...' 
+              onChange={(e) => { handleChange('name', e.target.value); if (errors.name) setErrors(prev => ({ ...prev, name: undefined })); }}
+              placeholder={isCashMode
+                ? 'Ej: Cuenta Corriente Santander, Efectivo Casa...'
                 : 'Ej: Fintual, Trade Republic, Binance...'}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
             />
+            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
           </div>
 
           {/* ✅ M36 Fase 6: Institución (solo para Cash) */}
@@ -244,13 +254,12 @@ export default function PlatformForm({ isOpen, onClose, platform = null }) {
               <input
                 type="number"
                 step="0.01"
-                min="0"
                 value={formData.currentBalance}
-                onChange={(e) => handleChange('currentBalance', e.target.value)}
+                onChange={(e) => { handleChange('currentBalance', e.target.value); if (errors.currentBalance) setErrors(prev => ({ ...prev, currentBalance: undefined })); }}
                 placeholder="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.currentBalance ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
               />
+              {errors.currentBalance && <p className="mt-1 text-sm text-red-600">{errors.currentBalance}</p>}
             </div>
 
             <div>

@@ -6,41 +6,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_CATEGORIES, INITIAL_MONTHLY_BUDGETS } from '../config/initialData';
+import { getFlowKind as inferFlowKind } from '../domain/flowKind';
 
 const BudgetContext = createContext();
-
-// =====================================================
-// ✅ M36: HELPERS DE FLOWKIND
-// =====================================================
-
-/**
- * Infiere el flowKind de una categoría basándose en type y group
- */
-const inferFlowKind = (category) => {
-  // Si ya tiene flowKind, retornarlo
-  if (category.flowKind) return category.flowKind;
-  
-  const { type, group, name } = category;
-  
-  // Por type
-  if (type === 'income') return 'INCOME';
-  if (type === 'investment') return 'INVESTMENT_CONTRIBUTION';
-  
-  // Por group/name para detectar deudas
-  const groupLower = (group || '').toLowerCase();
-  const nameLower = (name || '').toLowerCase();
-  
-  if (groupLower.includes('debt') || groupLower.includes('loan') || 
-      groupLower.includes('deuda') || groupLower.includes('préstamo') ||
-      nameLower.includes('hipoteca') || nameLower.includes('mortgage') ||
-      nameLower.includes('cae') || nameLower.includes('crédito') ||
-      nameLower.includes('cuota')) {
-    return 'DEBT_PAYMENT';
-  }
-  
-  // Default
-  return 'OPERATING_EXPENSE';
-};
 
 /**
  * Migra categorías para agregar flowKind si no existe
@@ -218,8 +186,8 @@ export function BudgetProvider({
       
       return {
         ...cat,
-        // ✅ M36: Asegurar que flowKind esté presente
-        flowKind: cat.flowKind || inferFlowKind(cat),
+        // flowKind garantizado por migrateCategoriesToFlowKind al cargar
+        flowKind: cat.flowKind,
         budget: budgetConverted,
         spent: spentConverted,
         budgetOriginal: budgetInOriginal,
@@ -510,5 +478,5 @@ export function BudgetProvider({
   );
 }
 
-// ✅ M36: Exportar helper para uso externo
-export { inferFlowKind };
+// Re-exportar para compatibilidad con importadores directos de BudgetContext
+export { getFlowKind as inferFlowKind } from '../domain/flowKind';

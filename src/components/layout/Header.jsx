@@ -1,18 +1,19 @@
 // src/components/layout/Header.jsx
 // ✅ M31: Header optimizado y responsivo
 import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp, useExchangeRates } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import ExportPDFButton from '../common/ExportPDFButton';
 import ExportExcelButton from '../common/ExportExcelButton';
 
 export default function Header() {
-  const { 
-    displayCurrency, 
-    setDisplayCurrency, 
+  const {
+    displayCurrency,
+    setDisplayCurrency,
     financialHealth
   } = useApp();
-  
+
+  const { syncStatus } = useExchangeRates();
   const { user, isLocalMode } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -37,6 +38,19 @@ export default function Header() {
 
           {/* Controles Desktop - ocultos en móvil */}
           <div className="hidden md:flex items-center space-x-3">
+            {/* Sync indicator */}
+            {syncStatus.syncing && (
+              <div className="flex items-center gap-1.5 bg-white bg-opacity-20 px-2 py-1 rounded-lg text-xs text-white" title="Sincronizando tasas...">
+                <i className="fas fa-sync-alt animate-spin text-xs"></i>
+                <span>Sync</span>
+              </div>
+            )}
+            {!syncStatus.syncing && syncStatus.error && (
+              <div className="flex items-center gap-1 bg-red-500 bg-opacity-60 px-2 py-1 rounded-lg text-xs text-white" title={syncStatus.error}>
+                <i className="fas fa-exclamation-triangle text-xs"></i>
+              </div>
+            )}
+
             {/* Salud Financiera */}
             <div className="bg-white bg-opacity-20 px-3 py-1.5 rounded-lg backdrop-blur">
               <p className="text-xs text-purple-100">Salud</p>

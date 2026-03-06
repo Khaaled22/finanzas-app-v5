@@ -298,23 +298,6 @@ export function InvestmentsProvider({ children }) {
     return true;
   }, []);
 
-  // ===================== HOLDINGS (Legacy) =====================
-
-  const addHoldingToPlatform = useCallback((platformId, holding) => {
-    // No-op en M33+ pero mantenido para compatibilidad
-    console.warn('addHoldingToPlatform: Holdings deshabilitados en M33+');
-    return false;
-  }, []);
-
-  const updateHoldingInPlatform = useCallback((platformId, holdingId, updates) => {
-    console.warn('updateHoldingInPlatform: Holdings deshabilitados en M33+');
-    return false;
-  }, []);
-
-  const deleteHoldingFromPlatform = useCallback((platformId, holdingId) => {
-    console.warn('deleteHoldingFromPlatform: Holdings deshabilitados en M33+');
-    return false;
-  }, []);
 
   // ===================== SAVINGS GOALS =====================
 
@@ -387,36 +370,27 @@ export function InvestmentsProvider({ children }) {
   // ===================== M36 FASE 6: HELPERS PARA CASH =====================
 
   /**
-   * ✅ M36 Fase 6: Obtener solo plataformas de cash/banco
+   * Obtener solo plataformas de cash/banco (no archivadas)
    */
   const cashPlatforms = useMemo(() => {
-    return investments.filter(inv => 
+    return investments.filter(inv =>
       !inv.isArchived && (inv.isCash || inv.goal === 'cash')
     );
   }, [investments]);
 
   /**
-   * ✅ M36 Fase 6: Obtener solo plataformas de inversión (no cash)
+   * Obtener solo plataformas de inversión (no cash, no archivadas)
    */
   const investmentPlatforms = useMemo(() => {
-    return investments.filter(inv => 
+    return investments.filter(inv =>
       !inv.isArchived && !inv.isCash && inv.goal !== 'cash'
     );
   }, [investments]);
 
-  /**
-   * ✅ M36 Fase 6: Total en cash/banco
-   */
-  const totalCash = useMemo(() => {
-    return cashPlatforms.reduce((sum, inv) => sum + (inv.currentBalance || 0), 0);
-  }, [cashPlatforms]);
-
-  /**
-   * ✅ M36 Fase 6: Total en inversiones (sin cash)
-   */
-  const totalInvestmentsValue = useMemo(() => {
-    return investmentPlatforms.reduce((sum, inv) => sum + (inv.currentBalance || 0), 0);
-  }, [investmentPlatforms]);
+  // Nota: totalCash y totalInvestmentsValue NO se calculan aquí porque requieren
+  // convertCurrency (disponible en ExchangeRatesContext). Los consumidores deben
+  // calcularlos con convertCurrency para soportar multi-moneda correctamente.
+  // Ver Dashboard.jsx líneas 37-58 como referencia.
 
   // ===================== VALUE =====================
 
@@ -442,11 +416,6 @@ export function InvestmentsProvider({ children }) {
     updateBalanceEntry,
     deleteBalanceEntry,
     
-    // Holdings (legacy)
-    addHoldingToPlatform,
-    updateHoldingInPlatform,
-    deleteHoldingFromPlatform,
-    
     // Savings Goals
     addSavingsGoal,
     updateSavingsGoal,
@@ -459,11 +428,9 @@ export function InvestmentsProvider({ children }) {
     updateInvestment,
     deleteInvestment,
     
-    // ✅ M36 Fase 6: Helpers de Cash/Banco
+    // Helpers de Cash/Banco (sin totales - requieren convertCurrency)
     cashPlatforms,
-    investmentPlatforms,
-    totalCash,
-    totalInvestmentsValue
+    investmentPlatforms
   }), [
     investments,
     savingsGoals,
@@ -478,9 +445,6 @@ export function InvestmentsProvider({ children }) {
     addBalanceEntry,
     updateBalanceEntry,
     deleteBalanceEntry,
-    addHoldingToPlatform,
-    updateHoldingInPlatform,
-    deleteHoldingFromPlatform,
     addSavingsGoal,
     updateSavingsGoal,
     deleteSavingsGoal,
@@ -490,9 +454,7 @@ export function InvestmentsProvider({ children }) {
     updateInvestment,
     deleteInvestment,
     cashPlatforms,
-    investmentPlatforms,
-    totalCash,
-    totalInvestmentsValue
+    investmentPlatforms
   ]);
 
   return (

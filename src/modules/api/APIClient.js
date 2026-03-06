@@ -9,8 +9,8 @@ import { createClient } from '@supabase/supabase-js'
 // =====================================================
 
 const CONFIG = {
-  // ⚠️ Cambiar a true para usar Supabase
-  useBackend: true,
+  // Controlado por VITE_USE_BACKEND en .env ("true" = Supabase, "false" = localStorage)
+  useBackend: import.meta.env.VITE_USE_BACKEND === 'true',
   
   // Supabase config (desde .env)
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,

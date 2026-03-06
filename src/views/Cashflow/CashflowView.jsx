@@ -25,7 +25,9 @@ export default function CashflowView() {
     setInvestmentMode,
     flexibleInvestmentPercent,
     setFlexibleInvestmentPercent,
-    investmentModeComparison
+    investmentModeComparison,
+    annualGrowthRate,
+    setAnnualGrowthRate
   } = useProjection();
 
   const [showEventModal, setShowEventModal] = useState(false);
@@ -277,6 +279,33 @@ export default function CashflowView() {
               <span>5%</span>
               <span>25%</span>
               <span>50%</span>
+            </div>
+          </div>
+        )}
+
+        {/* Tasa de crecimiento anual de inversiones */}
+        {investmentMode !== 'none' && (
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-medium text-blue-800">
+                <i className="fas fa-chart-line mr-2"></i>
+                Tasa de crecimiento anual estimada
+              </label>
+              <span className="text-2xl font-bold text-blue-600">{(annualGrowthRate * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="0.20"
+              step="0.01"
+              value={annualGrowthRate}
+              onChange={(e) => setAnnualGrowthRate(parseFloat(e.target.value))}
+              className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <div className="flex justify-between text-xs text-blue-600 mt-1">
+              <span>0%</span>
+              <span>7% (S&P 500 histórico)</span>
+              <span>20%</span>
             </div>
           </div>
         )}

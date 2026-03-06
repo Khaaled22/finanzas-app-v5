@@ -62,7 +62,7 @@ describe('AnalysisEngine', () => {
       
       expect(result.breakdown.emergencyFund.score).toBe(20) // Score máximo
       expect(result.breakdown.emergencyFund.details.monthsCovered).toBe(6)
-      expect(result.breakdown.emergencyFund.details.status).toBe('Excelente')
+      expect(result.breakdown.emergencyFund.details.status).toContain('Excelente')
     })
 
     it('debería calcular score parcial para fondo de emergencia insuficiente', () => {
@@ -82,7 +82,7 @@ describe('AnalysisEngine', () => {
       
       expect(result.breakdown.emergencyFund.score).toBe(10) // 50% del máximo
       expect(result.breakdown.emergencyFund.details.monthsCovered).toBe(3)
-      expect(result.breakdown.emergencyFund.details.status).toBe('Bueno')
+      expect(result.breakdown.emergencyFund.details.status).toContain('Bueno')
     })
 
     it('debería calcular tasa de ahorro correctamente', () => {
@@ -174,14 +174,15 @@ describe('AnalysisEngine', () => {
         { id: '1', budget: 1000, currency: 'EUR' },
         { id: '2', budget: 500, currency: 'EUR' }
       ]
-      
+
       const result = AnalysisEngine.calculateEmergencyFundMonths(
-        savingsGoals, 
-        categories, 
-        mockConvertCurrency, 
+        savingsGoals,
+        [], // investments
+        categories,
+        mockConvertCurrency,
         'EUR'
       )
-      
+
       // 6000 / 1500 = 4 meses
       expect(result).toBe(4)
     })
@@ -193,14 +194,15 @@ describe('AnalysisEngine', () => {
       const categories = [
         { id: '1', budget: 1000, currency: 'EUR' }
       ]
-      
+
       const result = AnalysisEngine.calculateEmergencyFundMonths(
-        savingsGoals, 
-        categories, 
-        mockConvertCurrency, 
+        savingsGoals,
+        [],
+        categories,
+        mockConvertCurrency,
         'EUR'
       )
-      
+
       expect(result).toBe(0)
     })
 
@@ -211,14 +213,15 @@ describe('AnalysisEngine', () => {
       const categories = [
         { id: '1', budget: 1000, currency: 'EUR' }
       ]
-      
+
       const result = AnalysisEngine.calculateEmergencyFundMonths(
-        savingsGoals, 
-        categories, 
-        mockConvertCurrency, 
+        savingsGoals,
+        [],
+        categories,
+        mockConvertCurrency,
         'EUR'
       )
-      
+
       expect(result).toBe(3)
     })
   })

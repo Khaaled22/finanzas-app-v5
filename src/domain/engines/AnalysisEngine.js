@@ -189,7 +189,7 @@ export const AnalysisEngine = {
     }
     
     // Si no hay config, detectar desde categorías
-    if (!insuranceConfig || (!hasHealthInsurance && !hasLifeInsurance && !hasCatastrophicInsurance)) {
+    if (!insuranceConfig) {
       hasHealthInsurance = hasHealthInsurance || (categories || []).some(c => 
         c.name?.toLowerCase().includes('seguro') && 
         (c.name?.toLowerCase().includes('médico') || 
@@ -436,8 +436,8 @@ export const AnalysisEngine = {
    * Genera insights automáticos
    */
   generateInsights(data, convertCurrency, displayCurrency) {
-    const insights = []
-    const { categories, totals, debts, savingsGoals, ynabConfig } = data
+    const insights = [];
+    const { categories, totals, debts, savingsGoals, ynabConfig } = data;
 
     (categories || []).forEach(cat => {
       const percentage = cat.budget > 0 ? (cat.spent / cat.budget) * 100 : 0

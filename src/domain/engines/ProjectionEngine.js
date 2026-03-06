@@ -2,6 +2,8 @@
 // ✅ M36 Fase 5: EXTENDIDO con inversión flexible y separación flowKind
 // ✅ M19.3: Mantiene escenarios y eventos programados
 
+import { getFlowKind } from '../flowKind';
+
 export const ProjectionEngine = {
   /**
    * Proyecta el cashflow para los próximos 12 meses
@@ -22,7 +24,8 @@ export const ProjectionEngine = {
       // ✅ M36 Fase 5: Nuevas opciones de inversión
       investmentMode = 'fixed', // 'fixed' | 'flexible' | 'none'
       flexibleInvestmentPercent = 20, // % del excedente para inversión flexible
-      investments = [] // Para calcular proyección de crecimiento
+      investments = [], // Para calcular proyección de crecimiento
+      annualGrowthRate = 0.07 // Tasa de crecimiento anual estimada de inversiones
     } = options;
 
     const projection = [];
@@ -109,8 +112,8 @@ export const ProjectionEngine = {
       
       cumulativeBalance += netCashflow;
       
-      // Proyectar crecimiento de inversiones (estimado 7% anual)
-      const monthlyGrowthRate = Math.pow(1.07, 1/12) - 1;
+      // Proyectar crecimiento de inversiones según tasa anual configurada
+      const monthlyGrowthRate = Math.pow(1 + annualGrowthRate, 1/12) - 1;
       cumulativeInvestment = (cumulativeInvestment + investmentContribution) * (1 + monthlyGrowthRate);
       
       projection.push({
@@ -145,26 +148,7 @@ export const ProjectionEngine = {
     return projection;
   },
 
-  /**
-   * ✅ M36 Fase 5: Helper para determinar flowKind
-   */
-  getFlowKind(category) {
-    if (category.flowKind) return category.flowKind;
-    if (category.type === 'income') return 'INCOME';
-    if (category.type === 'investment') return 'INVESTMENT_CONTRIBUTION';
-    
-    const groupLower = (category.group || '').toLowerCase();
-    const nameLower = (category.name || '').toLowerCase();
-    
-    if (groupLower.includes('debt') || groupLower.includes('deuda') || 
-        groupLower.includes('loan') || groupLower.includes('préstamo') ||
-        nameLower.includes('mortgage') || nameLower.includes('hipoteca') ||
-        nameLower.includes('cae')) {
-      return 'DEBT_PAYMENT';
-    }
-    
-    return 'OPERATING_EXPENSE';
-  },
+  getFlowKind(category) { return getFlowKind(category); },
 
   /**
    * ✅ M36 Fase 5: Calcular valor actual de inversiones

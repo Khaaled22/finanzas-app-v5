@@ -42,6 +42,11 @@ export function useProjection() {
     return saved ? parseInt(saved, 10) : 20;
   });
 
+  const [annualGrowthRate, setAnnualGrowthRate] = useState(() => {
+    const saved = localStorage.getItem('projection_annualGrowthRate');
+    return saved ? parseFloat(saved) : 0.07;
+  });
+
   // Persistir configuración
   useEffect(() => {
     localStorage.setItem('projection_scenario', scenario);
@@ -58,7 +63,11 @@ export function useProjection() {
   useEffect(() => {
     localStorage.setItem('projection_flexiblePercent', flexibleInvestmentPercent.toString());
   }, [flexibleInvestmentPercent]);
-  
+
+  useEffect(() => {
+    localStorage.setItem('projection_annualGrowthRate', annualGrowthRate.toString());
+  }, [annualGrowthRate]);
+
   // Proyección del escenario actual
   const cashflowProjection = useMemo(() => {
     return ProjectionEngine.projectCashflow(
@@ -67,16 +76,17 @@ export function useProjection() {
       ynabConfig,
       convertCurrency,
       displayCurrency,
-      { 
-        scenario, 
+      {
+        scenario,
         scheduledEvents,
         investmentMode,
         flexibleInvestmentPercent,
-        investments
+        investments,
+        annualGrowthRate
       }
     );
-  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency, 
-      scenario, scheduledEvents, investmentMode, flexibleInvestmentPercent, investments]);
+  }, [categories, debts, ynabConfig, convertCurrency, displayCurrency,
+      scenario, scheduledEvents, investmentMode, flexibleInvestmentPercent, investments, annualGrowthRate]);
   
   const projectionStats = useMemo(() => {
     return ProjectionEngine.getProjectionStats(cashflowProjection);
@@ -172,6 +182,9 @@ export function useProjection() {
     setInvestmentMode,
     flexibleInvestmentPercent,
     setFlexibleInvestmentPercent,
-    investmentModeComparison
+    investmentModeComparison,
+    // Tasa de crecimiento anual configurable
+    annualGrowthRate,
+    setAnnualGrowthRate
   };
 }
