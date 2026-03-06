@@ -1,8 +1,22 @@
 // src/tests/domain/AnalysisEngine.test.js
 // ✅ M27: Tests unitarios para AnalysisEngine
 // ✅ Corregido: Removido tests para calculateFinancialHealth (no existe en el engine actual)
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AnalysisEngine } from '../../domain/engines/AnalysisEngine'
+
+// Mock StorageManager para controlar insuranceConfig en calculateNautaIndex
+vi.mock('../../modules/storage/StorageManager', () => ({
+  default: {
+    load: vi.fn(() => null),
+    save: vi.fn()
+  }
+}))
+
+import StorageManager from '../../modules/storage/StorageManager'
+
+beforeEach(() => {
+  StorageManager.load.mockReturnValue(null) // por defecto sin insuranceConfig
+})
 
 // Mock de función de conversión simple (1:1 para tests)
 const mockConvertCurrency = (amount, from, to) => {
@@ -344,6 +358,228 @@ describe('AnalysisEngine', () => {
       expect(result.lastMonth.total).toBe(150)
       expect(result.difference).toBe(150)
       expect(result.trend).toBe('up')
+    })
+  })
+
+  // =====================================================
+  // NUEVOS TESTS: métodos sin cobertura (Fase 1 Audit)
+  // =====================================================
+
+  describe('calculateFinancialHealth', () => {
+    it('retorna un entero entre 0 y 100', () => {
+      const data = {
+        categories: [],
+        debts: [],
+        savingsGoals: [],
+        ynabConfig: null
+      }
+      const result = AnalysisEngine.calculateFinancialHealth(data, mockConvertCurrency, 'EUR')
+      expect(Number.isInteger(result)).toBe(true)
+      expect(result).toBeGreaterThanOrEqual(0)
+      expect(result).toBeLessThanOrEqual(100)
+    })
+
+    it('es el redondeo del score de calculateNautaIndex', () => {
+      const data = {
+        categories: [{ id: '1', name: 'Gastos', budget: 500, currency: 'EUR' }],
+        debts: [],
+        savingsGoals: [],
+        ynabConfig: { monthlyIncome: 3000, currency: 'EUR' }
+      }
+      const nauta = AnalysisEngine.calculateNautaIndex(data, mockConvertCurrency, 'EUR')
+      const health = AnalysisEngine.calculateFinancialHealth(data, mockConvertCurrency, 'EUR')
+      expect(health).toBe(Math.round(nauta.score))
+    })
+  })
+
+  describe('calculateDebtToIncomeRatio', () => {
+    it('calcula ratio deuda/ingreso anual correctamente', () => {
+      const debts = [
+        { currentBalance: 12000, currency: 'EUR' },
+        { currentBalance: 6000, currency: 'EUR' }
+      ]
+      // ingreso anual = 3000*12 = 36000, deuda total = 18000
+      // ratio = 18000/36000 * 100 = 50%
+      const ratio = AnalysisEngine.calculateDebtToIncomeRatio(debts, 3000, mockConvertCurrency, 'EUR', 'EUR')
+      expect(ratio).toBeCloseTo(50, 1)
+    })
+
+    it('retorna 0 cuando monthlyIncome es 0', () => {
+      const debts = [{ currentBalance: 5000, currency: 'EUR' }]
+      expect(AnalysisEngine.calculateDebtToIncomeRatio(debts, 0, mockConvertCurrency, 'EUR', 'EUR')).toBe(0)
+    })
+
+    it('retorna 0 cuando monthlyIncome es null', () => {
+      expect(AnalysisEngine.calculateDebtToIncomeRatio([], null, mockConvertCurrency, 'EUR', 'EUR')).toBe(0)
+    })
+
+    it('retorna 0 sin deudas', () => {
+      const ratio = AnalysisEngine.calculateDebtToIncomeRatio([], 3000, mockConvertCurrency, 'EUR', 'EUR')
+      expect(ratio).toBe(0)
+    })
+
+    it('convierte moneda de la deuda al display currency', () => {
+      const debts = [{ currentBalance: 1000000, currency: 'CLP' }]
+      // 1000000 CLP → 1000 EUR (mock: CLP-EUR = 0.001), ingreso anual = 3000*12=36000 EUR
+      // ratio = 1000/36000 * 100 ≈ 2.78%
+      const ratio = AnalysisEngine.calculateDebtToIncomeRatio(debts, 3000, mockConvertCurrency, 'EUR', 'EUR')
+      expect(ratio).toBeCloseTo(2.78, 1)
+    })
+  })
+
+  describe('calculateSavingsRate', () => {
+    it('calcula tasa de ahorro correctamente', () => {
+      const totals = { available: 600 }
+      const ynabConfig = { monthlyIncome: 3000, currency: 'EUR' }
+      const rate = AnalysisEngine.calculateSavingsRate(totals, ynabConfig, mockConvertCurrency, 'EUR')
+      expect(rate).toBeCloseTo(20, 1)
+    })
+
+    it('retorna 0 cuando no hay ynabConfig', () => {
+      const totals = { available: 600 }
+      const rate = AnalysisEngine.calculateSavingsRate(totals, null, mockConvertCurrency, 'EUR')
+      expect(rate).toBe(0)
+    })
+
+    it('retorna 0 cuando monthlyIncome es 0', () => {
+      const totals = { available: 600 }
+      const ynabConfig = { monthlyIncome: 0, currency: 'EUR' }
+      const rate = AnalysisEngine.calculateSavingsRate(totals, ynabConfig, mockConvertCurrency, 'EUR')
+      expect(rate).toBe(0)
+    })
+
+    it('calcula tasa negativa cuando available es negativo', () => {
+      const totals = { available: -300 }
+      const ynabConfig = { monthlyIncome: 3000, currency: 'EUR' }
+      const rate = AnalysisEngine.calculateSavingsRate(totals, ynabConfig, mockConvertCurrency, 'EUR')
+      expect(rate).toBeCloseTo(-10, 1)
+    })
+  })
+
+  describe('calculateDebtServiceRatio', () => {
+    it('calcula ratio de servicio de deuda correctamente', () => {
+      const debts = [
+        { monthlyPayment: 300, currency: 'EUR' },
+        { monthlyPayment: 200, currency: 'EUR' }
+      ]
+      // pagos mensuales = 500, ingreso = 2500, ratio = 20%
+      const ratio = AnalysisEngine.calculateDebtServiceRatio(debts, 2500, mockConvertCurrency, 'EUR', 'EUR')
+      expect(ratio).toBeCloseTo(20, 1)
+    })
+
+    it('retorna 0 cuando monthlyIncome es 0', () => {
+      const debts = [{ monthlyPayment: 300, currency: 'EUR' }]
+      expect(AnalysisEngine.calculateDebtServiceRatio(debts, 0, mockConvertCurrency, 'EUR', 'EUR')).toBe(0)
+    })
+
+    it('retorna 0 cuando no hay deudas', () => {
+      const ratio = AnalysisEngine.calculateDebtServiceRatio([], 3000, mockConvertCurrency, 'EUR', 'EUR')
+      expect(ratio).toBe(0)
+    })
+
+    it('usa 0 para deudas sin monthlyPayment definido', () => {
+      const debts = [{ currentBalance: 5000, currency: 'EUR' }] // sin monthlyPayment
+      const ratio = AnalysisEngine.calculateDebtServiceRatio(debts, 3000, mockConvertCurrency, 'EUR', 'EUR')
+      expect(ratio).toBe(0)
+    })
+  })
+
+  describe('calculateNetWorth', () => {
+    it('suma ahorros + inversiones - deudas', () => {
+      const data = {
+        savingsGoals: [{ currentAmount: 5000, currency: 'EUR' }],
+        investments: [{ currentBalance: 10000, currency: 'EUR' }],
+        debts: [{ currentBalance: 3000, currency: 'EUR' }]
+      }
+      const result = AnalysisEngine.calculateNetWorth(data, mockConvertCurrency, 'EUR')
+      expect(result).toBe(12000) // 5000 + 10000 - 3000
+    })
+
+    it('calcula valor de inversión con quantity * currentPrice', () => {
+      const data = {
+        savingsGoals: [],
+        investments: [{ quantity: 10, currentPrice: 200, currency: 'EUR' }],
+        debts: []
+      }
+      const result = AnalysisEngine.calculateNetWorth(data, mockConvertCurrency, 'EUR')
+      expect(result).toBe(2000) // 10 * 200
+    })
+
+    it('usa 0 para inversiones sin currentBalance ni quantity/price', () => {
+      const data = {
+        savingsGoals: [],
+        investments: [{ name: 'Raro', currency: 'EUR' }],
+        debts: []
+      }
+      const result = AnalysisEngine.calculateNetWorth(data, mockConvertCurrency, 'EUR')
+      expect(result).toBe(0)
+    })
+
+    it('retorna 0 con arrays vacíos', () => {
+      const data = { savingsGoals: [], investments: [], debts: [] }
+      expect(AnalysisEngine.calculateNetWorth(data, mockConvertCurrency, 'EUR')).toBe(0)
+    })
+
+    it('puede ser negativo con deudas superiores a activos', () => {
+      const data = {
+        savingsGoals: [{ currentAmount: 1000, currency: 'EUR' }],
+        investments: [],
+        debts: [{ currentBalance: 5000, currency: 'EUR' }]
+      }
+      const result = AnalysisEngine.calculateNetWorth(data, mockConvertCurrency, 'EUR')
+      expect(result).toBe(-4000)
+    })
+  })
+
+  describe('calculateNautaIndex — ramas adicionales', () => {
+    it('respeta isToxic=true explícito aunque el tipo no sea tóxico', () => {
+      const data = {
+        categories: [],
+        debts: [{ id: 'd1', name: 'Deuda Buena', type: 'Hipoteca', isToxic: true, currentBalance: 5000, currency: 'EUR' }],
+        savingsGoals: [],
+        ynabConfig: null
+      }
+      const result = AnalysisEngine.calculateNautaIndex(data, mockConvertCurrency, 'EUR')
+      expect(result.breakdown.toxicDebts.details.count).toBe(1)
+    })
+
+    it('respeta isToxic=false explícito aunque el tipo sea tóxico', () => {
+      const data = {
+        categories: [],
+        debts: [{ id: 'd1', name: 'Tarjeta', type: 'Tarjeta de Crédito', isToxic: false, currentBalance: 5000, currency: 'EUR' }],
+        savingsGoals: [],
+        ynabConfig: null
+      }
+      const result = AnalysisEngine.calculateNautaIndex(data, mockConvertCurrency, 'EUR')
+      expect(result.breakdown.toxicDebts.details.count).toBe(0)
+    })
+
+    it('prioriza insuranceConfig de Settings sobre detección por categorías', () => {
+      // Simular que Settings tiene seguros desactivados explícitamente
+      StorageManager.load.mockReturnValue({ hasHealthInsurance: false, hasLifeInsurance: false, hasCatastrophicInsurance: false })
+      const data = {
+        categories: [{ id: '1', name: 'Seguro Médico Salud', budget: 100, currency: 'EUR' }],
+        debts: [],
+        savingsGoals: [],
+        ynabConfig: null
+      }
+      const result = AnalysisEngine.calculateNautaIndex(data, mockConvertCurrency, 'EUR')
+      // insuranceConfig dice false, debe valer false aunque la categoría lo sugiera
+      expect(result.breakdown.insurance.score).toBe(0)
+      expect(result.breakdown.insurance.details.configuredInSettings).toBe(true)
+    })
+
+    it('detecta seguros desde categorías cuando no hay insuranceConfig', () => {
+      StorageManager.load.mockReturnValue(null) // sin config de Settings
+      const data = {
+        categories: [{ id: '1', name: 'Seguro Médico Salud', budget: 100, currency: 'EUR' }],
+        debts: [],
+        savingsGoals: [],
+        ynabConfig: null
+      }
+      const result = AnalysisEngine.calculateNautaIndex(data, mockConvertCurrency, 'EUR')
+      expect(result.breakdown.insurance.score).toBeGreaterThan(0)
+      expect(result.breakdown.insurance.details.configuredInSettings).toBe(false)
     })
   })
 
