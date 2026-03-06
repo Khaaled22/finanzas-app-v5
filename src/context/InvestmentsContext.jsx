@@ -17,7 +17,7 @@ export const PLATFORM_GOALS = [
   { id: 'fi_step1', name: 'FI Step 1', icon: '💰', description: 'Liquidez inmediata', color: 'blue' },
   { id: 'emergency', name: 'Fondo Emergencia', icon: '🛟', description: 'Reserva de emergencia', color: 'green' },
   { id: 'down_payment', name: 'Pie/Down Payment', icon: '🏠', description: 'Ahorro para compra grande', color: 'purple' },
-  { id: 'real_state', name: 'Real State', icon: '🏢', description: 'Inversión inmobiliaria', color: 'orange' },
+  { id: 'real_state', name: 'Real Estate', icon: '🏢', description: 'Inversión inmobiliaria', color: 'orange' },
   { id: 'retirement', name: 'Jubilación', icon: '👴', description: 'Ahorro previsional (APV)', color: 'indigo' },
   { id: 'growth', name: 'Crecimiento', icon: '📈', description: 'Inversión a largo plazo', color: 'cyan' },
   { id: 'other', name: 'Otro', icon: '📦', description: 'Otra inversión', color: 'slate' }
@@ -37,7 +37,7 @@ export const PLATFORM_SUBTYPES = [
   { id: 'acciones', name: 'Acciones', icon: '📉' },
   { id: 'money_market', name: 'Money Market', icon: '💵' },
   { id: 'crypto', name: 'Crypto', icon: '₿' },
-  { id: 'real_state', name: 'Real State', icon: '🏢' },
+  { id: 'real_state', name: 'Real Estate', icon: '🏢' },
   { id: 'apv', name: 'APV', icon: '👴' },
   { id: 'otro', name: 'Otro', icon: '📦' }
 ];

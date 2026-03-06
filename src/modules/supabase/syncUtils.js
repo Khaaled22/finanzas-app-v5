@@ -31,9 +31,9 @@ export async function loadFromSupabase(key) {
       .select('data')
       .eq('user_id', user.id)
       .eq('key', key)
-      .single();
+      .maybeSingle();
 
-    if (error) return null; // PGRST116 = row not found, other errors also silent
+    if (error) return null;
     return data?.data ?? null;
   } catch {
     return null;

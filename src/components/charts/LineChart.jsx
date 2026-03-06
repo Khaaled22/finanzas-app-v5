@@ -21,28 +21,21 @@ ChartJS.register(
   Legend
 );
 
-export default function LineChart({ data, options = {}, height = 300 }) {
-  const defaultOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'bottom'
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => `${context.dataset.label}: ${context.parsed.y?.toFixed(2) || 'N/A'}`
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true
+const defaultOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: true, position: 'bottom' },
+    tooltip: {
+      callbacks: {
+        label: (context) => `${context.dataset.label}: ${context.parsed.y?.toFixed(2) || 'N/A'}`
       }
     }
-  };
+  },
+  scales: { y: { beginAtZero: true } }
+};
 
+export default function LineChart({ data, options = {}, height = 300 }) {
   return (
     <div style={{ height: `${height}px`, position: 'relative' }}>
       <Line data={data} options={{ ...defaultOptions, ...options }} />

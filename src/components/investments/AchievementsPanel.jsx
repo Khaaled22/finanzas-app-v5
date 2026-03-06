@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 
 export default function AchievementsPanel() {
+  const [collapsed, setCollapsed] = useState(true);
   const { investments, displayCurrency, convertCurrency } = useApp();
 
   const achievements = useMemo(() => {
@@ -180,10 +181,16 @@ export default function AchievementsPanel() {
     }
   };
 
+  const hasInvestments = investments.length > 0;
+  const isExpanded = hasInvestments || !collapsed;
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div
+        className="flex items-center justify-between cursor-pointer"
+        onClick={() => setCollapsed(c => !c)}
+      >
         <div>
           <h3 className="text-lg font-bold text-gray-800 flex items-center">
             <i className="fas fa-trophy mr-2 text-yellow-500"></i>
@@ -193,88 +200,92 @@ export default function AchievementsPanel() {
             {achievements.unlockedCount} de {achievements.totalCount} desbloqueados
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-3xl font-bold text-gray-800">
-            {achievements.completionPercent.toFixed(0)}%
-          </p>
-          <p className="text-xs text-gray-500">Completado</p>
-        </div>
-      </div>
-
-      {/* Barra de progreso global */}
-      <div className="mb-6">
-        <div className="w-full bg-gray-200 rounded-full h-3">
-          <div
-            className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-3 rounded-full transition-all duration-500"
-            style={{ width: `${achievements.completionPercent}%` }}
-          ></div>
-        </div>
-      </div>
-
-      {/* Grid de logros */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {achievements.achievements.map((achievement) => (
-          <div
-            key={achievement.id}
-            className={`${
-              achievement.unlocked
-                ? `border-2 ${getRarityColor(achievement.rarity)}`
-                : 'border-2 border-gray-200 opacity-50'
-            } rounded-lg p-4 text-center transition-all hover:scale-105 cursor-pointer`}
-            title={achievement.description}
-          >
-            <div className={`text-4xl mb-2 ${achievement.unlocked ? '' : 'grayscale'}`}>
-              {achievement.icon}
-            </div>
-            <h4 className={`text-xs font-semibold mb-1 ${
-              achievement.unlocked ? 'text-gray-900' : 'text-gray-400'
-            }`}>
-              {achievement.title}
-            </h4>
-            
-            {achievement.unlocked ? (
-              <div className="flex items-center justify-center">
-                <i className="fas fa-check-circle text-green-500 text-sm"></i>
-              </div>
-            ) : (
-              <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-blue-500 h-1.5 rounded-full"
-                    style={{ 
-                      width: `${(achievement.progress / achievement.total) * 100}%` 
-                    }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {achievement.progress}/{achievement.total}
-                </p>
-              </div>
-            )}
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-3xl font-bold text-gray-800">
+              {achievements.completionPercent.toFixed(0)}%
+            </p>
+            <p className="text-xs text-gray-500">Completado</p>
           </div>
-        ))}
+          <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-400`}></i>
+        </div>
       </div>
 
-      {/* Mensaje motivacional */}
-      {achievements.completionPercent === 100 ? (
-        <div className="mt-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg p-4 text-center">
-          <p className="text-white font-bold text-lg mb-1">
-            🎉 ¡Felicitaciones! 🎉
-          </p>
-          <p className="text-yellow-100 text-sm">
-            Has desbloqueado todos los logros de inversión
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <i className="fas fa-lightbulb mr-2"></i>
-            {achievements.unlockedCount === 0 
-              ? 'Comienza registrando tu primera inversión para desbloquear logros.'
-              : `¡Sigue invirtiendo! Te faltan ${achievements.totalCount - achievements.unlockedCount} logros por desbloquear.`
-            }
-          </p>
-        </div>
+      {!isExpanded && (
+        <p className="text-sm text-gray-400 mt-3">
+          Registra tu primera inversión para desbloquear logros.
+        </p>
+      )}
+
+      {isExpanded && (
+        <>
+          {/* Barra de progreso global */}
+          <div className="mt-6 mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${achievements.completionPercent}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Grid de logros */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {achievements.achievements.map((achievement) => (
+              <div
+                key={achievement.id}
+                className={`${
+                  achievement.unlocked
+                    ? `border-2 ${getRarityColor(achievement.rarity)}`
+                    : 'border-2 border-gray-200 opacity-50'
+                } rounded-lg p-4 text-center transition-all hover:scale-105 cursor-pointer`}
+                title={achievement.description}
+              >
+                <div className={`text-4xl mb-2 ${achievement.unlocked ? '' : 'grayscale'}`}>
+                  {achievement.icon}
+                </div>
+                <h4 className={`text-xs font-semibold mb-1 ${
+                  achievement.unlocked ? 'text-gray-900' : 'text-gray-400'
+                }`}>
+                  {achievement.title}
+                </h4>
+
+                {achievement.unlocked ? (
+                  <div className="flex items-center justify-center">
+                    <i className="fas fa-check-circle text-green-500 text-sm"></i>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-blue-500 h-1.5 rounded-full"
+                        style={{ width: `${(achievement.progress / achievement.total) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {achievement.progress}/{achievement.total}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Mensaje motivacional */}
+          {achievements.completionPercent === 100 ? (
+            <div className="mt-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg p-4 text-center">
+              <p className="text-white font-bold text-lg mb-1">🎉 ¡Felicitaciones! 🎉</p>
+              <p className="text-yellow-100 text-sm">Has desbloqueado todos los logros de inversión</p>
+            </div>
+          ) : achievements.unlockedCount > 0 ? (
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <i className="fas fa-lightbulb mr-2"></i>
+                {`¡Sigue invirtiendo! Te faltan ${achievements.totalCount - achievements.unlockedCount} logros por desbloquear.`}
+              </p>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

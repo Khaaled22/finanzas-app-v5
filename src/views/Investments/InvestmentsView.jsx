@@ -179,7 +179,7 @@ export default function InvestmentsView() {
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-orange-500">
-          <p className="text-sm text-gray-600 mb-1">Real State</p>
+          <p className="text-sm text-gray-600 mb-1">Real Estate</p>
           <p className="text-3xl font-bold text-orange-600">
             {formatNumber(totals.byGoal.real_state || 0)}
           </p>

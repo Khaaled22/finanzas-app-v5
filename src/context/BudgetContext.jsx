@@ -33,8 +33,8 @@ const migrateCategoriesToFlowKind = (categories) => {
     return cat;
   });
   
-  if (migrated) {
-    console.log('[M36] Migración de flowKind completada para', 
+  if (migrated && import.meta.env.DEV) {
+    console.log('[M36] Migración de flowKind completada para',
       updatedCategories.filter(c => c.flowKind).length, 'categorías');
   }
   

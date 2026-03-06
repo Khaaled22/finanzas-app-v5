@@ -702,7 +702,7 @@ export default function Dashboard() {
               <div className="pt-2 border-t">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Deuda</span>
-                  <span className="font-semibold text-red-600">-{formatNumber(debtTotal)}</span>
+                  <span className="font-semibold text-red-600">{debtTotal > 0 ? `-${formatNumber(debtTotal)}` : '0'}</span>
                 </div>
               </div>
               <div className="pt-2 border-t-2 border-gray-300">

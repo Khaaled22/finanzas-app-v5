@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import Modal from '../common/Modal';
 
@@ -41,14 +41,12 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     setErrors({});
   }, [transaction, categories, isOpen]);
 
-  // Agrupar categorías por grupo
-  const groupedCategories = categories.reduce((acc, cat) => {
-    if (!acc[cat.group]) {
-      acc[cat.group] = [];
-    }
+  // Agrupar categorías por grupo (memoized)
+  const groupedCategories = useMemo(() => categories.reduce((acc, cat) => {
+    if (!acc[cat.group]) acc[cat.group] = [];
     acc[cat.group].push(cat);
     return acc;
-  }, {});
+  }, {}), [categories]);
 
   // Detectar si la categoría seleccionada es income
   const selectedCategory = categories.find(cat => cat.id === formData.categoryId);
@@ -104,7 +102,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
     const transactionData = {
       ...formData,
       amount: parseFloat(formData.amount),
-      date: new Date(formData.date).toISOString()
+      date: formData.date
     };
 
     if (transaction) {
@@ -146,7 +144,7 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
       title={transaction ? "Editar Transacción" : "Nueva Transacción"}
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         {/* Fecha */}
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
@@ -284,6 +282,12 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
             <p className="mt-1 text-sm text-red-600">
               <i className="fas fa-exclamation-circle mr-1"></i>
               {errors.categoryId}
+            </p>
+          )}
+          {categories.length === 0 && (
+            <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <i className="fas fa-info-circle mr-1"></i>
+              No hay categorías. <a href="/settings" className="font-semibold underline">Créalas en Ajustes</a> para poder guardar transacciones.
             </p>
           )}
         </div>

@@ -26,13 +26,12 @@ function NavItem({ icon, text, path, compact = false }) {
           ? 'bg-purple-100 text-purple-700'
           : 'text-gray-600 hover:bg-gray-100 hover:text-purple-600'
         }
-        ${compact ? 'flex-col text-xs px-2' : ''}
+        ${compact ? 'px-3' : ''}
       `}
       title={text}
     >
-      <i className={`fas ${icon} ${compact ? 'text-lg' : 'text-sm'}`}></i>
+      <i className={`fas ${icon} text-lg`}></i>
       {!compact && <span className="hidden lg:inline text-sm">{text}</span>}
-      {compact && <span className="text-[10px]">{text.slice(0, 6)}</span>}
     </NavLink>
   );
 }

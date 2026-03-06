@@ -93,12 +93,11 @@ export function ExchangeRatesProvider({ children, currentUser }) {
       const supabase = await getSupabaseClient();
       
       if (!supabase) {
-        console.log('⚠️ Supabase no configurado, usando localStorage');
         setSyncStatus({ lastSync: null, syncing: false, error: null });
         return { success: false, message: 'Supabase no configurado' };
       }
 
-      console.log('🔄 Sincronizando tasas desde Supabase...');
+      if (import.meta.env.DEV) console.log('🔄 Sincronizando tasas desde Supabase...');
 
       // Obtener todas las tasas de Supabase
       const { data, error } = await supabase
@@ -109,7 +108,6 @@ export function ExchangeRatesProvider({ children, currentUser }) {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        console.log('⚠️ No hay tasas en Supabase');
         setSyncStatus({ lastSync: new Date().toISOString(), syncing: false, error: null });
         return { success: true, message: 'No hay datos nuevos' };
       }
@@ -151,7 +149,7 @@ export function ExchangeRatesProvider({ children, currentUser }) {
       const mergedHistory = { ...localHistory, ...history };
       localStorage.setItem('exchangeRatesHistory', JSON.stringify(mergedHistory));
 
-      console.log(`✅ Sincronizadas ${data.length} tasas desde Supabase`);
+      if (import.meta.env.DEV) console.log(`✅ Sincronizadas ${data.length} tasas desde Supabase`);
       
       setSyncStatus({ 
         lastSync: new Date().toISOString(), 

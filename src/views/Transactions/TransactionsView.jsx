@@ -3,6 +3,7 @@
 // ✅ M36 Fase 7: Filtros con investment
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatNumber } from '../../utils/formatters';
 import TransactionForm from '../../components/forms/TransactionForm';
 import TransactionFilters from '../../components/forms/TransactionFilters';
 import ImportTransactionsModal from '../../components/modals/ImportTransactionsModal';
@@ -116,15 +117,6 @@ export default function TransactionsView() {
     }
   };
 
-  // ✅ M32: Formatear número con separador de miles
-  const formatNumber = (num, decimals = 0) => {
-    if (num === undefined || num === null || isNaN(num)) return '0';
-    return new Intl.NumberFormat('de-DE', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    }).format(num);
-  };
-
   const formatAmount = (amount, currency) => {
     if (amount === undefined || amount === null || isNaN(amount)) {
       return `0 ${currency}`;
@@ -149,7 +141,7 @@ export default function TransactionsView() {
             <i className="fas fa-receipt mr-3 text-blue-600"></i>
             Transacciones
           </h2>
-          <p className="text-gray-500 text-sm mt-1 capitalize">
+          <p className="text-gray-500 text-sm mt-1">
             {getMonthName(filters.month)}
           </p>
         </div>
@@ -193,7 +185,7 @@ export default function TransactionsView() {
             </div>
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Ingresos</p>
             <p className="text-lg md:text-xl font-bold text-green-600">
-              +{formatNumber(monthSummary.ingresos)}
+              {monthSummary.ingresos > 0 ? '+' : ''}{formatNumber(monthSummary.ingresos)}
             </p>
             <p className="text-xs text-gray-400">{displayCurrency}</p>
           </div>
@@ -207,7 +199,7 @@ export default function TransactionsView() {
             </div>
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Gastos</p>
             <p className="text-lg md:text-xl font-bold text-red-600">
-              -{formatNumber(monthSummary.gastos)}
+              {monthSummary.gastos > 0 ? '-' : ''}{formatNumber(monthSummary.gastos)}
             </p>
             <p className="text-xs text-gray-400">{displayCurrency}</p>
           </div>
@@ -241,7 +233,7 @@ export default function TransactionsView() {
             <p className={`text-lg md:text-xl font-bold ${
               monthSummary.balance >= 0 ? 'text-blue-600' : 'text-orange-600'
             }`}>
-              {monthSummary.balance >= 0 ? '+' : ''}{formatNumber(monthSummary.balance)}
+              {monthSummary.balance > 0 ? '+' : ''}{formatNumber(monthSummary.balance)}
             </p>
             <p className="text-xs text-gray-400">{displayCurrency}</p>
           </div>
