@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { useApp, useExchangeRates } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
-import ExportPDFButton from '../common/ExportPDFButton';
-import ExportExcelButton from '../common/ExportExcelButton';
 
 export default function Header() {
   const {
@@ -56,10 +54,6 @@ export default function Header() {
               <p className="text-xs text-purple-100">Salud</p>
               <p className="text-lg font-bold">{financialHealth}/100</p>
             </div>
-
-            {/* Botones Export */}
-            <ExportPDFButton />
-            <ExportExcelButton />
 
             {/* Selector de Moneda */}
             <select 
@@ -123,10 +117,6 @@ export default function Header() {
                 {!isLocalMode && (
                   <span className="text-xs bg-green-500 px-2 py-0.5 rounded">Sync</span>
                 )}
-              </div>
-              <div className="flex gap-2">
-                <ExportPDFButton />
-                <ExportExcelButton />
               </div>
             </div>
           </div>
