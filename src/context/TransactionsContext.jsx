@@ -1,8 +1,12 @@
 // src/context/TransactionsContext.jsx
 // ✅ M26: Sub-contexto para gestión de transacciones
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+// ✅ Fase 5: Supabase sync via user_data table
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_TRANSACTIONS } from '../config/initialData';
+import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+
+const SYNC_KEY = 'transactions_v5';
 
 const TransactionsContext = createContext();
 
@@ -15,13 +19,26 @@ export const useTransactions = () => {
 };
 
 export function TransactionsProvider({ children, currentUser }) {
-  const [transactions, setTransactions] = useState(() => 
-    StorageManager.load('transactions_v5', INITIAL_TRANSACTIONS)
+  const [transactions, setTransactions] = useState(() =>
+    StorageManager.load(SYNC_KEY, INITIAL_TRANSACTIONS)
   );
+  const syncReady = useRef(false);
 
-  // Auto-save
-  useEffect(() => { 
-    StorageManager.save('transactions_v5', transactions); 
+  // Load from Supabase on mount (once) — overrides localStorage if cloud has data
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY).then(data => {
+      syncReady.current = true;
+      if (Array.isArray(data) && data.length > 0) {
+        setTransactions(data);
+        StorageManager.save(SYNC_KEY, data);
+      }
+    });
+  }, []);
+
+  // Save to localStorage + Supabase on every change (after initial sync)
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY, transactions);
+    if (syncReady.current) saveToSupabase(SYNC_KEY, transactions);
   }, [transactions]);
 
   // ✅ Agregar transacción

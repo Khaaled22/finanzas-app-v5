@@ -2,11 +2,17 @@
 // ✅ M36: Sub-contexto para gestión de presupuestos mensuales
 // - Migración automática de flowKind
 // - Helpers de clasificación integrados
+// ✅ Fase 5: Supabase sync via user_data table
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_CATEGORIES, INITIAL_MONTHLY_BUDGETS } from '../config/initialData';
 import { getFlowKind as inferFlowKind } from '../domain/flowKind';
+import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+
+const SYNC_KEY_CAT = 'categories_v5';
+const SYNC_KEY_BUDGETS = 'monthlyBudgets_v5';
+const SYNC_KEY_YNAB = 'ynabConfig_v5';
 
 const BudgetContext = createContext();
 
@@ -61,12 +67,12 @@ export function BudgetProvider({
 }) {
   // ✅ M36: Cargar y migrar categorías con flowKind
   const [categories, setCategories] = useState(() => {
-    const loaded = StorageManager.load('categories_v5', INITIAL_CATEGORIES);
+    const loaded = StorageManager.load(SYNC_KEY_CAT, INITIAL_CATEGORIES);
     return migrateCategoriesToFlowKind(loaded);
   });
 
-  const [monthlyBudgets, setMonthlyBudgets] = useState(() => 
-    StorageManager.load('monthlyBudgets_v5', INITIAL_MONTHLY_BUDGETS)
+  const [monthlyBudgets, setMonthlyBudgets] = useState(() =>
+    StorageManager.load(SYNC_KEY_BUDGETS, INITIAL_MONTHLY_BUDGETS)
   );
 
   const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(() => {
@@ -74,21 +80,64 @@ export function BudgetProvider({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  const [ynabConfig, setYnabConfig] = useState(() => 
-    StorageManager.load('ynabConfig_v5', { monthlyIncome: 0, currency: 'EUR' })
+  const [ynabConfig, setYnabConfig] = useState(() =>
+    StorageManager.load(SYNC_KEY_YNAB, { monthlyIncome: 0, currency: 'EUR' })
   );
 
-  // Auto-save
-  useEffect(() => { 
-    StorageManager.save('categories_v5', categories); 
+  const syncReadyCat = useRef(false);
+  const syncReadyBudgets = useRef(false);
+  const syncReadyYnab = useRef(false);
+
+  // Load categories from Supabase on mount
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY_CAT).then(data => {
+      syncReadyCat.current = true;
+      if (Array.isArray(data) && data.length > 0) {
+        const migrated = migrateCategoriesToFlowKind(data);
+        setCategories(migrated);
+        StorageManager.save(SYNC_KEY_CAT, migrated);
+      }
+    });
+  }, []);
+
+  // Load monthlyBudgets from Supabase on mount
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY_BUDGETS).then(data => {
+      syncReadyBudgets.current = true;
+      if (data && typeof data === 'object' && !Array.isArray(data) && Object.keys(data).length > 0) {
+        setMonthlyBudgets(data);
+        StorageManager.save(SYNC_KEY_BUDGETS, data);
+      }
+    });
+  }, []);
+
+  // Load ynabConfig from Supabase on mount
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY_YNAB).then(data => {
+      syncReadyYnab.current = true;
+      if (data && typeof data === 'object') {
+        setYnabConfig(data);
+        StorageManager.save(SYNC_KEY_YNAB, data);
+      }
+    });
+  }, []);
+
+  // Save categories
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY_CAT, categories);
+    if (syncReadyCat.current) saveToSupabase(SYNC_KEY_CAT, categories);
   }, [categories]);
 
-  useEffect(() => { 
-    StorageManager.save('monthlyBudgets_v5', monthlyBudgets); 
+  // Save monthlyBudgets
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY_BUDGETS, monthlyBudgets);
+    if (syncReadyBudgets.current) saveToSupabase(SYNC_KEY_BUDGETS, monthlyBudgets);
   }, [monthlyBudgets]);
 
-  useEffect(() => { 
-    StorageManager.save('ynabConfig_v5', ynabConfig); 
+  // Save ynabConfig
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY_YNAB, ynabConfig);
+    if (syncReadyYnab.current) saveToSupabase(SYNC_KEY_YNAB, ynabConfig);
   }, [ynabConfig]);
 
   // =====================================================

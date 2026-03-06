@@ -1,8 +1,12 @@
 // src/context/DebtsContext.jsx
 // ✅ M36 Fase 4: Sub-contexto para gestión de deudas con balanceHistory
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+// ✅ Fase 5: Supabase sync via user_data table
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_DEBTS } from '../config/initialData';
+import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+
+const SYNC_KEY = 'debts_v5';
 
 const DebtsContext = createContext();
 
@@ -16,17 +20,30 @@ export const useDebts = () => {
 
 export function DebtsProvider({ children }) {
   const [debts, setDebts] = useState(() => {
-    const loaded = StorageManager.load('debts_v5', INITIAL_DEBTS);
-    // Migrar deudas existentes para agregar balanceHistory si no existe
+    const loaded = StorageManager.load(SYNC_KEY, INITIAL_DEBTS);
     return loaded.map(debt => ({
       ...debt,
       balanceHistory: debt.balanceHistory || []
     }));
   });
+  const syncReady = useRef(false);
 
-  // Auto-save
-  useEffect(() => { 
-    StorageManager.save('debts_v5', debts); 
+  // Load from Supabase on mount
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY).then(data => {
+      syncReady.current = true;
+      if (Array.isArray(data) && data.length > 0) {
+        const migrated = data.map(debt => ({ ...debt, balanceHistory: debt.balanceHistory || [] }));
+        setDebts(migrated);
+        StorageManager.save(SYNC_KEY, migrated);
+      }
+    });
+  }, []);
+
+  // Save to localStorage + Supabase
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY, debts);
+    if (syncReady.current) saveToSupabase(SYNC_KEY, debts);
   }, [debts]);
 
   // =====================================================

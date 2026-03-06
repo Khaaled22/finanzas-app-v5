@@ -1,8 +1,13 @@
 // src/context/InvestmentsContext.jsx
 // ✅ M33: Simplificado - Solo plataformas con balance global (sin holdings/activos)
 // ✅ M36 Fase 6: Soporte mejorado para Cash/Banco como plataforma
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+// ✅ Fase 5: Supabase sync via user_data table
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
+import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+
+const SYNC_KEY_INV = 'investments_v5';
+const SYNC_KEY_GOALS = 'savingsGoals_v5';
 
 const InvestmentsContext = createContext();
 
@@ -50,21 +55,47 @@ const INITIAL_INVESTMENTS = [];
 const INITIAL_SAVINGS_GOALS = [];
 
 export function InvestmentsProvider({ children }) {
-  const [investments, setInvestments] = useState(() => 
-    StorageManager.load('investments_v5', INITIAL_INVESTMENTS)
+  const [investments, setInvestments] = useState(() =>
+    StorageManager.load(SYNC_KEY_INV, INITIAL_INVESTMENTS)
   );
-
-  const [savingsGoals, setSavingsGoals] = useState(() => 
-    StorageManager.load('savingsGoals_v5', INITIAL_SAVINGS_GOALS)
+  const [savingsGoals, setSavingsGoals] = useState(() =>
+    StorageManager.load(SYNC_KEY_GOALS, INITIAL_SAVINGS_GOALS)
   );
+  const syncReadyInv = useRef(false);
+  const syncReadyGoals = useRef(false);
 
-  // Auto-save
-  useEffect(() => { 
-    StorageManager.save('investments_v5', investments); 
+  // Load investments from Supabase on mount
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY_INV).then(data => {
+      syncReadyInv.current = true;
+      if (Array.isArray(data) && data.length > 0) {
+        setInvestments(data);
+        StorageManager.save(SYNC_KEY_INV, data);
+      }
+    });
+  }, []);
+
+  // Load savings goals from Supabase on mount
+  useEffect(() => {
+    loadFromSupabase(SYNC_KEY_GOALS).then(data => {
+      syncReadyGoals.current = true;
+      if (Array.isArray(data) && data.length > 0) {
+        setSavingsGoals(data);
+        StorageManager.save(SYNC_KEY_GOALS, data);
+      }
+    });
+  }, []);
+
+  // Save investments
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY_INV, investments);
+    if (syncReadyInv.current) saveToSupabase(SYNC_KEY_INV, investments);
   }, [investments]);
 
-  useEffect(() => { 
-    StorageManager.save('savingsGoals_v5', savingsGoals); 
+  // Save savings goals
+  useEffect(() => {
+    StorageManager.save(SYNC_KEY_GOALS, savingsGoals);
+    if (syncReadyGoals.current) saveToSupabase(SYNC_KEY_GOALS, savingsGoals);
   }, [savingsGoals]);
 
   // ✅ Actualizar savings vinculados
