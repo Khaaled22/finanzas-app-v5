@@ -29,7 +29,7 @@ export default function Header() {
             <div>
               <h1 className="text-lg md:text-2xl font-bold">Finanzas PRO</h1>
               <p className="text-xs text-purple-200 hidden sm:block">
-                {isLocalMode ? 'Modo Local' : 'Cloud Sync'}
+                {isLocalMode ? 'Modo Local' : 'Sync'}
               </p>
             </div>
           </div>
@@ -56,9 +56,10 @@ export default function Header() {
             </div>
 
             {/* Selector de Moneda */}
-            <select 
+            <select
               value={displayCurrency}
               onChange={(e) => setDisplayCurrency(e.target.value)}
+              aria-label="Moneda de visualización"
               className="bg-purple-500 bg-opacity-50 text-white px-3 py-2 rounded-lg border border-purple-400 focus:outline-none focus:border-white text-sm"
             >
               <option value="EUR">EUR €</option>
@@ -84,9 +85,10 @@ export default function Header() {
             </div>
 
             {/* Selector moneda compacto */}
-            <select 
+            <select
               value={displayCurrency}
               onChange={(e) => setDisplayCurrency(e.target.value)}
+              aria-label="Moneda de visualización"
               className="bg-purple-500 bg-opacity-50 text-white px-2 py-1.5 rounded border border-purple-400 text-sm"
             >
               <option value="EUR">€</option>

@@ -129,20 +129,26 @@ export function BudgetProvider({
     });
   }, []);
 
-  // Save categories
+  // Save categories (skip initial mount to avoid overwriting before merge)
+  const initialMountCat = useRef(true);
   useEffect(() => {
+    if (initialMountCat.current) { initialMountCat.current = false; return; }
     StorageManager.save(SYNC_KEY_CAT, categories);
     if (syncReadyCat.current) saveToSupabase(SYNC_KEY_CAT, categories);
   }, [categories]);
 
   // Save monthlyBudgets
+  const initialMountBudgets = useRef(true);
   useEffect(() => {
+    if (initialMountBudgets.current) { initialMountBudgets.current = false; return; }
     StorageManager.save(SYNC_KEY_BUDGETS, monthlyBudgets);
     if (syncReadyBudgets.current) saveToSupabase(SYNC_KEY_BUDGETS, monthlyBudgets);
   }, [monthlyBudgets]);
 
   // Save ynabConfig
+  const initialMountYnab = useRef(true);
   useEffect(() => {
+    if (initialMountYnab.current) { initialMountYnab.current = false; return; }
     StorageManager.save(SYNC_KEY_YNAB, ynabConfig);
     if (syncReadyYnab.current) saveToSupabase(SYNC_KEY_YNAB, ynabConfig);
   }, [ynabConfig]);
@@ -237,19 +243,40 @@ export function BudgetProvider({
 
   // YNAB carry-over: compute how much rolled over from previous month
   // carryOver = previous month's (budget + its own carryOver - spent)
+  const carryOverCache = useRef(new Map());
+
+  // Invalidate cache when dependencies change
+  const carryOverCacheKey = useMemo(() => {
+    return `${JSON.stringify(Object.keys(monthlyBudgets))}_${transactions.length}`;
+  }, [monthlyBudgets, transactions]);
+
+  useEffect(() => {
+    carryOverCache.current.clear();
+  }, [carryOverCacheKey]);
+
   const getCarryOver = useCallback((categoryId, month, depth = 0) => {
     if (depth > 12) return 0; // safety: max 12 months lookback
+
+    const cacheKey = `${categoryId}_${month}`;
+    if (carryOverCache.current.has(cacheKey)) {
+      return carryOverCache.current.get(cacheKey);
+    }
 
     const prev = getPreviousMonth(month);
     const prevBudget = monthlyBudgets[prev]?.[categoryId]?.budget;
 
     // No previous budget data = no carry-over
-    if (prevBudget === undefined) return 0;
+    if (prevBudget === undefined) {
+      carryOverCache.current.set(cacheKey, 0);
+      return 0;
+    }
 
     const prevSpent = getCategorySpentForMonth(categoryId, prev);
     const prevCarry = getCarryOver(categoryId, prev, depth + 1);
 
-    return prevBudget + prevCarry - prevSpent;
+    const result = prevBudget + prevCarry - prevSpent;
+    carryOverCache.current.set(cacheKey, result);
+    return result;
   }, [monthlyBudgets, getCategorySpentForMonth, getPreviousMonth]);
 
   const categoriesWithMonthlyBudget = useMemo(() => {

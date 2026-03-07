@@ -62,7 +62,7 @@ export function convertCurrency(amount, fromCurrency, toCurrency, rates) {
  * @returns {string} - Valor formateado
  */
 export function formatNumber(value, decimals = 0) {
-  if (value === null || value === undefined || isNaN(value)) return '0';
+  if (value === null || value === undefined || isNaN(value) || !isFinite(value)) return '0';
 
   // normalize -0 to 0 (-0 + 0 === 0 in JS)
   const num = value + 0;

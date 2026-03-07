@@ -1,8 +1,6 @@
 // ✅ M35: src/utils/TransactionImporter.js
 // Genera mapping dinámico desde categorías del context
 
-import * as XLSX from 'xlsx';
-
 export class TransactionImporter {
   constructor(categories = []) {
     this.categories = categories;
@@ -35,9 +33,10 @@ export class TransactionImporter {
   }
 
   async readExcelFile(file) {
+    const XLSX = await import('xlsx');
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
@@ -50,7 +49,7 @@ export class TransactionImporter {
           reject(new Error(`Error leyendo Excel: ${error.message}`));
         }
       };
-      
+
       reader.onerror = () => reject(new Error('Error cargando archivo'));
       reader.readAsArrayBuffer(file);
     });

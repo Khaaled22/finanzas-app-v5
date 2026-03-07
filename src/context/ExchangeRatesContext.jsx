@@ -222,89 +222,91 @@ export function ExchangeRatesProvider({ children, currentUser }) {
     return exchangeRates.current || DEFAULT_RATES;
   }, [exchangeRates]);
 
-  // ✅ Conversión con tasa histórica
+  // ✅ Conversión con tasa histórica (con guard contra division by 0/null/undefined)
   const convertCurrencyAtDate = useCallback((amount, fromCurrency, toCurrency, date) => {
     if (fromCurrency === toCurrency) return amount;
     if (!amount || isNaN(amount)) return 0;
-    
+
     const rates = getRateForDate(date);
-    
+    const safeEUR_CLP = rates.EUR_CLP || DEFAULT_RATES.EUR_CLP;
+    const safeEUR_USD = rates.EUR_USD || DEFAULT_RATES.EUR_USD;
+    const safeCLP_UF = rates.UF_CLP || rates.CLP_UF || DEFAULT_RATES.CLP_UF;
+
     let amountInEUR;
-    
+
     switch (fromCurrency) {
       case 'EUR':
         amountInEUR = amount;
         break;
       case 'CLP':
-        amountInEUR = amount / rates.EUR_CLP;
+        amountInEUR = amount / safeEUR_CLP;
         break;
       case 'USD':
-        amountInEUR = rates.EUR_USD 
-          ? amount / rates.EUR_USD
-          : amount / ((rates.USD_CLP || 920) / rates.EUR_CLP);
+        amountInEUR = amount / safeEUR_USD;
         break;
       case 'UF':
-        const clpAmount = amount * (rates.UF_CLP || rates.CLP_UF || 36000);
-        amountInEUR = clpAmount / rates.EUR_CLP;
+        const clpAmount = amount * safeCLP_UF;
+        amountInEUR = clpAmount / safeEUR_CLP;
         break;
       default:
         amountInEUR = amount;
     }
-    
+
     switch (toCurrency) {
       case 'EUR':
         return amountInEUR;
       case 'CLP':
-        return amountInEUR * rates.EUR_CLP;
+        return amountInEUR * safeEUR_CLP;
       case 'USD':
-        return rates.EUR_USD 
-          ? amountInEUR * rates.EUR_USD
-          : amountInEUR * (rates.EUR_CLP / (rates.USD_CLP || 920));
+        return amountInEUR * safeEUR_USD;
       case 'UF':
-        const clpValue = amountInEUR * rates.EUR_CLP;
-        return clpValue / (rates.UF_CLP || rates.CLP_UF || 36000);
+        const clpValue = amountInEUR * safeEUR_CLP;
+        return clpValue / safeCLP_UF;
       default:
         return amountInEUR;
     }
   }, [getRateForDate]);
 
-  // ✅ Conversión con tasas actuales
+  // ✅ Conversión con tasas actuales (con guard contra division by 0/null/undefined)
   const convertCurrency = useCallback((amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!amount || isNaN(amount)) return 0;
-    
+
     const rates = exchangeRates.current || exchangeRates;
-    
+    const safeEUR_CLP = rates.EUR_CLP || DEFAULT_RATES.EUR_CLP;
+    const safeEUR_USD = rates.EUR_USD || DEFAULT_RATES.EUR_USD;
+    const safeCLP_UF = rates.CLP_UF || rates.UF_CLP || DEFAULT_RATES.CLP_UF;
+
     let amountInEUR;
-    
+
     switch (fromCurrency) {
       case 'EUR':
         amountInEUR = amount;
         break;
       case 'CLP':
-        amountInEUR = amount / rates.EUR_CLP;
+        amountInEUR = amount / safeEUR_CLP;
         break;
       case 'USD':
-        amountInEUR = amount / (rates.EUR_USD || DEFAULT_RATES.EUR_USD);
+        amountInEUR = amount / safeEUR_USD;
         break;
       case 'UF':
-        const clpAmount = amount * (rates.CLP_UF || rates.UF_CLP || DEFAULT_RATES.CLP_UF);
-        amountInEUR = clpAmount / rates.EUR_CLP;
+        const clpAmount = amount * safeCLP_UF;
+        amountInEUR = clpAmount / safeEUR_CLP;
         break;
       default:
         amountInEUR = amount;
     }
-    
+
     switch (toCurrency) {
       case 'EUR':
         return amountInEUR;
       case 'CLP':
-        return amountInEUR * rates.EUR_CLP;
+        return amountInEUR * safeEUR_CLP;
       case 'USD':
-        return amountInEUR * (rates.EUR_USD || DEFAULT_RATES.EUR_USD);
+        return amountInEUR * safeEUR_USD;
       case 'UF':
-        const clpValue = amountInEUR * rates.EUR_CLP;
-        return clpValue / (rates.CLP_UF || rates.UF_CLP || DEFAULT_RATES.CLP_UF);
+        const clpValue = amountInEUR * safeEUR_CLP;
+        return clpValue / safeCLP_UF;
       default:
         return amountInEUR;
     }

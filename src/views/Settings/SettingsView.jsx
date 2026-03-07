@@ -115,6 +115,24 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
           setImportStatus({ type: 'error', message: 'Archivo no compatible (version incorrecta)' });
           return;
         }
+        // Validaciones de seguridad
+        const rawText = event.target.result;
+        if (rawText.includes('__proto__') || rawText.includes('constructor')) {
+          setImportStatus({ type: 'error', message: 'Archivo contiene contenido no permitido' });
+          return;
+        }
+        if (data.categories && !Array.isArray(data.categories)) {
+          setImportStatus({ type: 'error', message: 'Formato inválido: categories debe ser un array' });
+          return;
+        }
+        if (data.transactions && !Array.isArray(data.transactions)) {
+          setImportStatus({ type: 'error', message: 'Formato inválido: transactions debe ser un array' });
+          return;
+        }
+        if (data.transactions && data.transactions.length > 50000) {
+          setImportStatus({ type: 'error', message: 'Archivo demasiado grande: máximo 50.000 transacciones' });
+          return;
+        }
         // Write each key to localStorage
         const keys = {
           categories_v5: data.categories,

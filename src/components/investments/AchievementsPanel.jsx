@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { formatNumber } from '../../utils/formatters';
 
 export default function AchievementsPanel() {
   const [collapsed, setCollapsed] = useState(true);
@@ -273,7 +274,7 @@ export default function AchievementsPanel() {
                       ></div>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {achievement.progress}/{achievement.total}
+                      {achievement.total > 1000 ? formatNumber(Math.round(achievement.progress)) : achievement.progress}/{achievement.total > 1000 ? formatNumber(achievement.total) : achievement.total}
                     </p>
                   </div>
                 )}

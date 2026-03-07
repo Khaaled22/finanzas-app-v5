@@ -16,21 +16,34 @@ const NAV_ITEMS = [
   { icon: 'fa-cog', text: 'Ajustes', path: '/settings' },
 ];
 
+const COMPACT_LABELS = {
+  '/dashboard': 'Inicio',
+  '/budget': 'Budget',
+  '/transactions': 'Txns',
+  '/debts': 'Deudas',
+  '/savings': 'Ahorro',
+  '/investments': 'Inv.',
+  '/cashflow': 'Cash',
+  '/analysis': 'Análisis',
+  '/settings': 'Ajustes'
+};
+
 function NavItem({ icon, text, path, compact = false }) {
   return (
     <NavLink
       to={path}
       className={({ isActive }) => `
-        flex items-center justify-center gap-1.5 px-3 py-2.5 font-medium transition-all whitespace-nowrap rounded-lg
+        flex ${compact ? 'flex-col' : ''} items-center justify-center gap-0.5 px-3 py-2.5 font-medium transition-all whitespace-nowrap rounded-lg
         ${isActive
           ? 'bg-purple-100 text-purple-700'
           : 'text-gray-600 hover:bg-gray-100 hover:text-purple-600'
         }
-        ${compact ? 'px-3' : ''}
+        ${compact ? 'px-2' : ''}
       `}
       title={text}
     >
       <i className={`fas ${icon} text-lg`}></i>
+      {compact && <span className="text-[10px] mt-0.5">{COMPACT_LABELS[path] || text}</span>}
       {!compact && <span className="hidden lg:inline text-sm">{text}</span>}
     </NavLink>
   );

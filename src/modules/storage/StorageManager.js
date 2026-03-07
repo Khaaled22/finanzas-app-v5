@@ -111,16 +111,35 @@ const StorageManager = {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 90);
       const cutoffStr = cutoffDate.toISOString().slice(0, 10);
-      
+
       const cleanedHistory = {};
       Object.keys(ratesHistory).forEach(date => {
         if (date >= cutoffStr) {
           cleanedHistory[date] = ratesHistory[date];
         }
       });
-      
+
       localStorage.setItem('exchangeRatesHistory', JSON.stringify(cleanedHistory));
-      console.log('Limpieza de historial completada');
+
+      // Purge soft-deleted items older than 30 days
+      const arrayKeys = ['transactions_v5', 'debts_v5', 'investments_v5', 'savingsGoals_v5', 'categories_v5'];
+      const purgeCutoff = new Date();
+      purgeCutoff.setDate(purgeCutoff.getDate() - 30);
+
+      arrayKeys.forEach(key => {
+        const data = this.load(key, null);
+        if (!Array.isArray(data)) return;
+        const cleaned = data.filter(item => {
+          if (!item._deleted) return true;
+          const deletedAt = item._deletedAt ? new Date(item._deletedAt) : null;
+          return deletedAt && deletedAt > purgeCutoff;
+        });
+        if (cleaned.length < data.length) {
+          localStorage.setItem(key, JSON.stringify(cleaned));
+        }
+      });
+
+      if (import.meta.env.DEV) console.log('Limpieza de historial y soft-deletes completada');
     } catch (error) {
       console.error('Error en limpieza:', error);
     }

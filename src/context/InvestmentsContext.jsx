@@ -88,14 +88,18 @@ export function InvestmentsProvider({ children }) {
     });
   }, []);
 
-  // Save investments
+  // Save investments (skip initial mount to avoid overwriting before merge)
+  const initialMountInv = useRef(true);
   useEffect(() => {
+    if (initialMountInv.current) { initialMountInv.current = false; return; }
     StorageManager.save(SYNC_KEY_INV, investments);
     if (syncReadyInv.current) saveToSupabase(SYNC_KEY_INV, investments);
   }, [investments]);
 
   // Save savings goals
+  const initialMountGoals = useRef(true);
   useEffect(() => {
+    if (initialMountGoals.current) { initialMountGoals.current = false; return; }
     StorageManager.save(SYNC_KEY_GOALS, savingsGoals);
     if (syncReadyGoals.current) saveToSupabase(SYNC_KEY_GOALS, savingsGoals);
   }, [savingsGoals]);
@@ -238,9 +242,17 @@ export function InvestmentsProvider({ children }) {
     if (!platform) return { roi: 0, roiPercent: 0, hasData: false };
 
     const current = platform.currentBalance || 0;
-    const deposited = platform.totalDeposited;
+    let deposited = platform.totalDeposited;
 
-    // Can't calculate ROI without deposit info
+    // Fallback: use first balanceHistory entry as initial investment
+    if (!deposited || deposited <= 0) {
+      const history = platform.balanceHistory;
+      if (history && history.length > 0) {
+        const initialEntry = history.find(e => e.type === 'initial') || history[0];
+        deposited = initialEntry.balance || 0;
+      }
+    }
+
     if (!deposited || deposited <= 0) return { roi: 0, roiPercent: 0, hasData: false };
 
     const roi = current - deposited;

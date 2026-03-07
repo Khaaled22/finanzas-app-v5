@@ -18,6 +18,17 @@ import AchievementsPanel from '../../components/investments/AchievementsPanel';
 import MetricCard from '../../components/dashboard/MetricCard';
 import MiniKPI from '../../components/dashboard/MiniKPI';
 
+const GOAL_LABELS = {
+  fi_step1: 'Independencia Fin.',
+  emergency: 'Emergencia',
+  real_state: 'Bienes Raíces',
+  cash: 'Efectivo',
+  down_payment: 'Pie',
+  growth: 'Crecimiento',
+  retirement: 'Jubilación',
+  other: 'Otro'
+};
+
 export default function Dashboard() {
   const { 
     displayCurrency, 
@@ -385,6 +396,7 @@ export default function Dashboard() {
             <select
               value={selectedBudgetMonth}
               onChange={(e) => setSelectedBudgetMonth(e.target.value)}
+              aria-label="Seleccionar período"
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
             >
               {availableMonths.map(month => (
@@ -553,7 +565,7 @@ export default function Dashboard() {
                     <span className="text-xl">📈</span>
                     <div>
                       <h4 className="font-medium text-gray-800 text-sm">{inv.name}</h4>
-                      <p className="text-xs text-gray-500">{inv.goal}</p>
+                      <p className="text-xs text-gray-500">{GOAL_LABELS[inv.goal] || inv.goal}</p>
                     </div>
                   </div>
                   <span className="font-bold text-blue-700 text-sm">

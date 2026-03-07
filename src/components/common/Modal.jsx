@@ -42,18 +42,21 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-in"
       onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
     >
-      <div 
+      <div
         className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[95vh] flex flex-col transform transition-all`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Fixed */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-2xl flex-shrink-0">
           <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-white">{title}</h3>
+            <h3 id="modal-title" className="text-2xl font-bold text-white">{title}</h3>
             <button
               onClick={onClose}
               className="text-white hover:text-gray-200 text-3xl font-light leading-none transition-colors"

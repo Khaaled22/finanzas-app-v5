@@ -8,7 +8,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import Header from './components/layout/Header';
 import Navigation from './components/layout/Navigation';
-import Dashboard from './views/Dashboard/Dashboard';
+const Dashboard = lazy(() => import('./views/Dashboard/Dashboard'));
 import InstallPWA from './components/common/InstallPWA';
 import QuickAddButton from './components/common/QuickAddButton';
 
@@ -53,7 +53,7 @@ function AppContent() {
               Finanzas PRO
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Cloud Sync + Multi-device
+              Sync en la nube
             </p>
           </div>
         </footer>

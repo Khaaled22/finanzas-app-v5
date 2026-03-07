@@ -41,8 +41,10 @@ export function DebtsProvider({ children }) {
     });
   }, []);
 
-  // Save to localStorage + Supabase
+  // Save to localStorage + Supabase (skip initial mount to avoid overwriting before merge)
+  const initialMount = useRef(true);
   useEffect(() => {
+    if (initialMount.current) { initialMount.current = false; return; }
     StorageManager.save(SYNC_KEY, debts);
     if (syncReady.current) saveToSupabase(SYNC_KEY, debts);
   }, [debts]);

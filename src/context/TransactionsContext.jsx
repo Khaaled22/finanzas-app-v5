@@ -91,8 +91,10 @@ export function TransactionsProvider({ children, currentUser }) {
     });
   }, [generateRecurringInstances]);
 
-  // Save to localStorage + Supabase on every change (after initial sync)
+  // Save to localStorage + Supabase on every change (skip initial mount to avoid overwriting before merge)
+  const initialMount = useRef(true);
   useEffect(() => {
+    if (initialMount.current) { initialMount.current = false; return; }
     StorageManager.save(SYNC_KEY, transactions);
     if (syncReady.current) saveToSupabase(SYNC_KEY, transactions);
   }, [transactions]);

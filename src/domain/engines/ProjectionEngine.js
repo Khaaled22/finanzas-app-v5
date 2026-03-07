@@ -41,24 +41,24 @@ export const ProjectionEngine = {
       this.getFlowKind(cat) === 'INVESTMENT_CONTRIBUTION'
     );
     
-    // Gastos operativos base
-    const baseOperatingExpenses = operatingCategories.reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget || 0, cat.currency, displayCurrency), 0
+    // Gastos operativos base (con fallback de moneda a displayCurrency)
+    const baseOperatingExpenses = operatingCategories.reduce((sum, cat) =>
+      sum + convertCurrency(cat.budget || 0, cat.currency || displayCurrency, displayCurrency), 0
     );
-    
+
     // Pagos de deuda (de categorías + deudas registradas)
-    const baseDebtFromCategories = debtCategories.reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget || 0, cat.currency, displayCurrency), 0
+    const baseDebtFromCategories = debtCategories.reduce((sum, cat) =>
+      sum + convertCurrency(cat.budget || 0, cat.currency || displayCurrency, displayCurrency), 0
     );
-    const baseDebtFromDebts = debts.reduce((sum, d) => 
-      sum + convertCurrency(d.monthlyPayment || 0, d.currency, displayCurrency), 0
+    const baseDebtFromDebts = debts.reduce((sum, d) =>
+      sum + convertCurrency(d.monthlyPayment || 0, d.currency || displayCurrency, displayCurrency), 0
     );
     // Usar el mayor para evitar duplicados
     const baseDebtPayments = Math.max(baseDebtFromCategories, baseDebtFromDebts);
-    
+
     // Inversión presupuestada (fija)
-    const baseInvestmentBudget = investmentCategories.reduce((sum, cat) => 
-      sum + convertCurrency(cat.budget || 0, cat.currency, displayCurrency), 0
+    const baseInvestmentBudget = investmentCategories.reduce((sum, cat) =>
+      sum + convertCurrency(cat.budget || 0, cat.currency || displayCurrency, displayCurrency), 0
     );
     
     // Ingreso mensual

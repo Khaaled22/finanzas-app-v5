@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 // ✅ M31: Contexto de autenticación con Supabase
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { AuthService, isBackendEnabled } from '../modules/api/APIClient'
 
 const AuthContext = createContext(null)
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
 
     // Escuchar cambios de auth
     const { data: { subscription } } = AuthService.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event)
+      if (import.meta.env.DEV) console.log('Auth state changed:', event)
       setSession(session)
       setUser(session?.user || null)
       
@@ -67,10 +67,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, [backendEnabled])
 
-  const signUp = async (email, password, name) => {
+  const signUp = useCallback(async (email, password, name) => {
     setError(null)
     setLoading(true)
-    
+
     try {
       const { user, session } = await AuthService.signUp(email, password, name)
       setUser(user)
@@ -82,12 +82,12 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const signIn = async (email, password) => {
+  const signIn = useCallback(async (email, password) => {
     setError(null)
     setLoading(true)
-    
+
     try {
       const { user, session } = await AuthService.signIn(email, password)
       setUser(user)
@@ -99,13 +99,15 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     setError(null)
-    
+
     try {
       await AuthService.signOut()
+      // Limpiar datos financieros del localStorage (no usar clear() para preservar auth tokens)
+      ['transactions_v5','categories_v5','monthlyBudgets_v5','ynabConfig_v5','debts_v5','investments_v5','savingsGoals_v5','exchangeRates_v5','autoUpdateConfig_v5'].forEach(k => localStorage.removeItem(k))
       setUser(null)
       setSession(null)
       return { success: true }
@@ -113,11 +115,11 @@ export const AuthProvider = ({ children }) => {
       setError(err.message)
       return { success: false, error: err.message }
     }
-  }
+  }, [])
 
-  const resetPassword = async (email) => {
+  const resetPassword = useCallback(async (email) => {
     setError(null)
-    
+
     try {
       await AuthService.resetPassword(email)
       return { success: true }
@@ -125,9 +127,11 @@ export const AuthProvider = ({ children }) => {
       setError(err.message)
       return { success: false, error: err.message }
     }
-  }
+  }, [])
 
-  const value = {
+  const clearError = useCallback(() => setError(null), [])
+
+  const value = useMemo(() => ({
     user,
     session,
     loading,
@@ -138,8 +142,8 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     resetPassword,
-    clearError: () => setError(null)
-  }
+    clearError
+  }), [user, session, loading, error, backendEnabled, signUp, signIn, signOut, resetPassword, clearError])
 
   return (
     <AuthContext.Provider value={value}>
