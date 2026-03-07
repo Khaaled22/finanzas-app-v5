@@ -21,12 +21,15 @@ const GOAL_COLORS = {
 };
 
 export default function InvestmentsView() {
-  const { 
-    investments, 
+  const {
+    investments,
     updatePlatformBalance,
     calculatePlatformROI,
     displayCurrency,
-    convertCurrency 
+    convertCurrency,
+    addInvestmentBalanceEntry,
+    deleteInvestmentBalanceEntry,
+    setInvestments
   } = useApp();
   
   // Modales
@@ -98,6 +101,21 @@ export default function InvestmentsView() {
   const handleViewHistory = (platform) => {
     setSelectedPlatform(platform);
     setShowHistoryModal(true);
+  };
+
+  // Handler: reemplazar historial completo de una plataforma (para ediciones in-place)
+  const handleUpdateHistory = (platformId, newHistory) => {
+    setInvestments(prev => prev.map(inv => {
+      if (inv.id !== platformId) return inv;
+      const sorted = [...newHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const mostRecent = sorted[sorted.length - 1];
+      return {
+        ...inv,
+        balanceHistory: sorted,
+        currentBalance: mostRecent?.balance ?? inv.currentBalance,
+        updatedAt: new Date().toISOString()
+      };
+    }));
   };
 
   const handleQuickUpdate = (platform) => {
@@ -488,7 +506,10 @@ export default function InvestmentsView() {
           setShowHistoryModal(false);
           setSelectedPlatform(null);
         }}
-        platform={selectedPlatform}
+        platform={selectedPlatform ? investments.find(i => i.id === selectedPlatform.id) || selectedPlatform : null}
+        onUpdateHistory={handleUpdateHistory}
+        onAddEntry={addInvestmentBalanceEntry}
+        onDeleteEntry={deleteInvestmentBalanceEntry}
       />
 
       {/* ✅ M34: Modal de gráfico de evolución */}
@@ -521,7 +542,7 @@ export default function InvestmentsView() {
             </div>
             <div className="p-6">
               <PortfolioEvolutionChart
-                platforms={selectedPlatform ? [selectedPlatform] : activePlatforms}
+                platforms={selectedPlatform ? [investments.find(i => i.id === selectedPlatform.id) || selectedPlatform] : activePlatforms}
                 displayCurrency={displayCurrency}
                 convertCurrency={convertCurrency}
                 showTotal={!selectedPlatform}

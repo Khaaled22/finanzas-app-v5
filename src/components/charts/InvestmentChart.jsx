@@ -29,10 +29,12 @@ export default function InvestmentChart({ balanceHistory, currency, platformName
       return null;
     }
 
-    // Ordenar por fecha
-    const sortedHistory = [...balanceHistory].sort((a, b) => 
-      new Date(a.date) - new Date(b.date)
-    );
+    // Filtrar entradas sin fecha y ordenar
+    const sortedHistory = [...balanceHistory]
+      .filter(entry => entry.date)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (sortedHistory.length === 0) return null;
 
     const labels = sortedHistory.map(entry => 
       new Date(entry.date).toLocaleDateString('es-ES', {
@@ -93,7 +95,12 @@ export default function InvestmentChart({ balanceHistory, currency, platformName
       return {};
     }
 
-    const balances = balanceHistory.map(entry => entry.balance);
+    // Use sorted copy for tooltip callbacks (matches chartData order)
+    const sortedHistory = [...balanceHistory].sort((a, b) =>
+      new Date(a.date) - new Date(b.date)
+    );
+
+    const balances = sortedHistory.map(entry => entry.balance);
     const minBalance = Math.min(...balances);
     const maxBalance = Math.max(...balances);
     const range = maxBalance - minBalance;
@@ -135,24 +142,26 @@ export default function InvestmentChart({ balanceHistory, currency, platformName
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
               });
-              
-              // Mostrar nota si existe
-              const entry = balanceHistory[context.dataIndex];
+
+              // Use sorted history (matches chart data order)
+              const entry = sortedHistory[context.dataIndex];
               let label = `${context.dataset.label}: ${formatted} ${currency}`;
-              
+
               if (entry && entry.note && context.datasetIndex === 0) {
                 label += `\n📝 ${entry.note}`;
               }
-              
+
               return label;
             },
             afterLabel: function(context) {
               if (context.datasetIndex === 0 && context.dataIndex > 0) {
                 const current = context.parsed.y;
-                const previous = balanceHistory[context.dataIndex - 1].balance;
+                const prevEntry = sortedHistory[context.dataIndex - 1];
+                if (!prevEntry) return '';
+                const previous = prevEntry.balance;
                 const change = current - previous;
                 const percentChange = previous > 0 ? (change / previous * 100) : 0;
-                
+
                 if (Math.abs(percentChange) > 0.01) {
                   return `Cambio: ${change >= 0 ? '+' : ''}${change.toLocaleString('es-ES', {
                     minimumFractionDigits: 2,

@@ -54,7 +54,9 @@ export default function PortfolioEvolutionChart({
     const allDates = new Set();
     platforms.forEach(platform => {
       (platform.balanceHistory || []).forEach(entry => {
-        allDates.add(entry.date.split('T')[0]);
+        if (entry.date) {
+          allDates.add(String(entry.date).split('T')[0]);
+        }
       });
     });
 
@@ -79,7 +81,8 @@ export default function PortfolioEvolutionChart({
       const historyMap = {};
       
       history.forEach(entry => {
-        const dateKey = entry.date.split('T')[0];
+        if (!entry.date) return;
+        const dateKey = String(entry.date).split('T')[0];
         historyMap[dateKey] = entry.balance;
       });
 
