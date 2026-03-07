@@ -128,11 +128,11 @@ export default function NautaIndexCard({ nautaIndex }) {
             details={breakdown.insurance.details}
           />
 
-          {/* 5. APV/Pensión */}
+          {/* 5. Inversión a Largo Plazo */}
           <ComponentBreakdown
             icon="fa-clock"
             iconColor="text-purple-600"
-            title="APV / Ahorro Previsional"
+            title="Inversión a Largo Plazo"
             score={breakdown.retirement.score}
             max={breakdown.retirement.max}
             details={breakdown.retirement.details}
