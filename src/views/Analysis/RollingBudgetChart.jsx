@@ -7,6 +7,7 @@ import { formatNumber } from '../../utils/formatters';
 export default function RollingBudgetChart() {
   const {
     categories,
+    getCategoryBudgetForMonth,
     getTransactionsByMonth,
     convertCurrency,
     displayCurrency
@@ -28,8 +29,11 @@ export default function RollingBudgetChart() {
     );
 
     // For each category, compute actual spend per month
+    // Use the most recent month's budget from monthlyBudgets (not template)
+    const currentMonth = last3[last3.length - 1].ym;
     const catRows = expenseCats.map(cat => {
-      const budget = convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency);
+      const budgetOriginal = getCategoryBudgetForMonth(cat.id, currentMonth);
+      const budget = convertCurrency(budgetOriginal, cat.currency || 'EUR', displayCurrency);
 
       const monthlyActual = last3.map(({ ym }) => {
         const txs = getTransactionsByMonth(ym);
@@ -54,7 +58,7 @@ export default function RollingBudgetChart() {
       .slice(0, 8);
 
     return { months: last3, rows: sorted };
-  }, [categories, getTransactionsByMonth, convertCurrency, displayCurrency]);
+  }, [categories, getCategoryBudgetForMonth, getTransactionsByMonth, convertCurrency, displayCurrency]);
 
   if (rows.length === 0) {
     return null;

@@ -6,13 +6,24 @@ export default function InvestmentSummaryCard() {
 
   const summary = useMemo(() => {
     // Separar plataformas y activos
-    const platforms = investments.filter(inv => inv.platform && !inv.quantity);
+    const platforms = investments.filter(inv => !inv.quantity);
     const assets = investments.filter(inv => inv.quantity);
 
-    // Calcular valor de plataformas
-    const platformsValue = platforms.reduce((sum, inv) => {
-      return sum + convertCurrency(inv.currentBalance, inv.currency, displayCurrency);
-    }, 0);
+    // Calcular valor de plataformas + ROI from balanceHistory
+    let platformsValue = 0;
+    let platformsDeposited = 0;
+
+    platforms.forEach(inv => {
+      const current = convertCurrency(inv.currentBalance || 0, inv.currency, displayCurrency);
+      platformsValue += current;
+
+      // Calculate cost basis from first/initial balance history entry
+      const history = inv.balanceHistory;
+      if (history && history.length > 0) {
+        const initialEntry = history.find(e => e.type === 'initial') || history[0];
+        platformsDeposited += convertCurrency(initialEntry.balance || 0, inv.currency, displayCurrency);
+      }
+    });
 
     // Calcular valor y costo de activos
     let assetsValue = 0;
@@ -26,8 +37,9 @@ export default function InvestmentSummaryCard() {
     });
 
     const totalValue = platformsValue + assetsValue;
-    const totalGainLoss = assetsValue - assetsCost;
-    const totalROI = assetsCost > 0 ? (totalGainLoss / assetsCost) * 100 : 0;
+    const totalDeposited = platformsDeposited + assetsCost;
+    const totalGainLoss = totalValue - totalDeposited;
+    const totalROI = totalDeposited > 0 ? (totalGainLoss / totalDeposited) * 100 : 0;
 
     // Calcular cambio en últimas 24h (simulado con lastUpdated)
     const recentUpdates = investments.filter(inv => {

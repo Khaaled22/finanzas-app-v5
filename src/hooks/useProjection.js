@@ -6,14 +6,24 @@ import { useApp } from '../context/AppContext';
 import { ProjectionEngine } from '../domain/engines/ProjectionEngine';
 
 export function useProjection() {
-  const { 
-    categories, 
-    debts, 
+  const {
+    categoriesWithMonthlyBudget,
+    debts,
     investments,
-    ynabConfig, 
-    convertCurrency, 
-    displayCurrency 
+    ynabConfig,
+    convertCurrency,
+    displayCurrency
   } = useApp();
+
+  // Use monthly budgets (already converted to displayCurrency) for projections
+  // Override currency to displayCurrency so ProjectionEngine doesn't double-convert
+  const categories = useMemo(() =>
+    (categoriesWithMonthlyBudget || []).map(cat => ({
+      ...cat,
+      currency: displayCurrency
+    })),
+    [categoriesWithMonthlyBudget, displayCurrency]
+  );
 
   // Estado para escenario
   const [scenario, setScenario] = useState(() => {

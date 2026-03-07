@@ -10,14 +10,15 @@ import { AnalysisEngine } from '../domain/engines/AnalysisEngine'
  * ✅ M32: Ahora pasa investments + guarda historial de patrimonio
  */
 export function useAnalytics() {
-  const { 
-    categories, 
-    debts, 
-    savingsGoals, 
+  const {
+    categories,
+    categoriesWithMonthlyBudget,
+    debts,
+    savingsGoals,
     investments,
-    ynabConfig, 
+    ynabConfig,
     displayCurrency,
-    convertCurrency 
+    convertCurrency
   } = useApp()
   
   // M8: Índice de Tranquilidad Financiera (Nauta)
@@ -41,14 +42,12 @@ export function useAnalytics() {
     )
   }, [debts, ynabConfig, convertCurrency, displayCurrency])
   
-  // M9.2: Tasa de Ahorro
+  // M9.2: Tasa de Ahorro — uses monthly budgets (already in displayCurrency)
   const savingsRate = useMemo(() => {
-    // Only count operating expenses (exclude income and investment categories)
-    const monthlyExpenses = categories
+    const budgetCats = categoriesWithMonthlyBudget || categories;
+    const monthlyExpenses = budgetCats
       .filter(cat => cat.flowKind === 'OPERATING_EXPENSE' || cat.type === 'expense')
-      .reduce((sum, cat) =>
-        sum + convertCurrency(cat.budget, cat.currency, displayCurrency), 0
-      )
+      .reduce((sum, cat) => sum + (cat.budgetInDisplayCurrency || cat.budget || 0), 0)
 
     const monthlyIncome = ynabConfig?.monthlyIncome
       ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency, displayCurrency)
@@ -57,7 +56,7 @@ export function useAnalytics() {
     if (monthlyIncome === 0) return 0
 
     return ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100
-  }, [categories, ynabConfig, convertCurrency, displayCurrency])
+  }, [categories, categoriesWithMonthlyBudget, ynabConfig, convertCurrency, displayCurrency])
   
   // M9.3: Ratio Servicio de Deuda
   const debtServiceRatio = useMemo(() => {

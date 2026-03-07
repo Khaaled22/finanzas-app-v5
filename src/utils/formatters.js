@@ -47,8 +47,12 @@ export function formatPercentage(value) {
  */
 export function convertCurrency(amount, fromCurrency, toCurrency, rates) {
   if (fromCurrency === toCurrency) return amount;
-  const amountInEUR = amount / rates[fromCurrency];
-  return amountInEUR * rates[toCurrency];
+  if (!amount || !rates) return 0;
+  const fromRate = rates[fromCurrency];
+  const toRate = rates[toCurrency];
+  if (!fromRate || !toRate) return 0;
+  const amountInEUR = amount / fromRate;
+  return amountInEUR * toRate;
 }
 
 // =====================================================
