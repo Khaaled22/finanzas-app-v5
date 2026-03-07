@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_DEBTS } from '../config/initialData';
-import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+import { loadFromSupabase, saveToSupabase, mergeArrayById, filterActive, softDelete } from '../modules/supabase/syncUtils';
 
 const SYNC_KEY = 'debts_v5';
 
@@ -28,15 +28,16 @@ export function DebtsProvider({ children }) {
   });
   const syncReady = useRef(false);
 
-  // Load from Supabase on mount
+  // Load from Supabase on mount — merge cloud + local
   useEffect(() => {
-    loadFromSupabase(SYNC_KEY).then(data => {
+    loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
-      if (Array.isArray(data) && data.length > 0) {
-        const migrated = data.map(debt => ({ ...debt, balanceHistory: debt.balanceHistory || [] }));
-        setDebts(migrated);
-        StorageManager.save(SYNC_KEY, migrated);
-      }
+      setDebts(prev => {
+        const merged = mergeArrayById(prev, cloudData)
+          .map(debt => ({ ...debt, balanceHistory: debt.balanceHistory || [] }));
+        StorageManager.save(SYNC_KEY, merged);
+        return merged;
+      });
     });
   }, []);
 
@@ -93,7 +94,7 @@ export function DebtsProvider({ children }) {
   }, []);
 
   const deleteDebt = useCallback((debtId) => {
-    setDebts(prev => prev.filter(debt => debt.id !== debtId));
+    setDebts(prev => softDelete(prev, debtId));
     return true;
   }, []);
 
@@ -306,8 +307,10 @@ export function DebtsProvider({ children }) {
   // VALUE
   // =====================================================
 
+  const activeDebts = useMemo(() => filterActive(debts), [debts]);
+
   const value = useMemo(() => ({
-    debts,
+    debts: activeDebts,
     setDebts,
     // CRUD básico
     addDebt,
@@ -323,7 +326,7 @@ export function DebtsProvider({ children }) {
     getBalanceAtDate,
     getDebtReduction
   }), [
-    debts,
+    activeDebts,
     addDebt,
     updateDebt,
     deleteDebt,

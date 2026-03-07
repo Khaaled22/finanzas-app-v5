@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_TRANSACTIONS } from '../config/initialData';
-import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+import { loadFromSupabase, saveToSupabase, mergeArrayById, filterActive, softDelete } from '../modules/supabase/syncUtils';
 
 const SYNC_KEY = 'transactions_v5';
 
@@ -77,24 +77,17 @@ export function TransactionsProvider({ children, currentUser }) {
     return toAdd;
   }, []);
 
-  // Load from Supabase on mount (once) — overrides localStorage if cloud has data
+  // Load from Supabase on mount — merge cloud + local instead of overwrite
   useEffect(() => {
-    loadFromSupabase(SYNC_KEY).then(data => {
+    loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
-      const base = Array.isArray(data) && data.length > 0 ? data : null;
-      if (base) {
-        const generated = generateRecurringInstances(base);
-        const merged = generated.length > 0 ? [...base, ...generated] : base;
-        setTransactions(merged);
-        StorageManager.save(SYNC_KEY, merged);
-      } else {
-        // Still generate from localStorage data
-        setTransactions(prev => {
-          const generated = generateRecurringInstances(prev);
-          if (generated.length === 0) return prev;
-          return [...prev, ...generated];
-        });
-      }
+      setTransactions(prev => {
+        const merged = mergeArrayById(prev, cloudData);
+        const generated = generateRecurringInstances(filterActive(merged));
+        const final = generated.length > 0 ? [...merged, ...generated] : merged;
+        StorageManager.save(SYNC_KEY, final);
+        return final;
+      });
     });
   }, [generateRecurringInstances]);
 
@@ -166,9 +159,9 @@ export function TransactionsProvider({ children, currentUser }) {
     return true;
   }, []);
 
-  // ✅ Eliminar transacción
+  // ✅ Eliminar transacción (soft-delete for multi-device sync)
   const deleteTransaction = useCallback((transactionId) => {
-    setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
+    setTransactions(prev => softDelete(prev, transactionId));
     return true;
   }, []);
 
@@ -178,6 +171,9 @@ export function TransactionsProvider({ children, currentUser }) {
     return true;
   }, []);
 
+  // Active transactions (excludes soft-deleted for UI)
+  const activeTransactions = useMemo(() => filterActive(transactions), [transactions]);
+
   // ✅ M25: Índice pre-calculado por mes y categoría
   const transactionIndex = useMemo(() => {
     const index = {
@@ -186,7 +182,7 @@ export function TransactionsProvider({ children, currentUser }) {
       byMonthAndCategory: {}
     };
 
-    transactions.forEach(tx => {
+    activeTransactions.forEach(tx => {
       const month = tx.date?.slice(0, 7);
       const catId = tx.categoryId;
 
@@ -211,7 +207,7 @@ export function TransactionsProvider({ children, currentUser }) {
     });
 
     return index;
-  }, [transactions]);
+  }, [activeTransactions]);
 
   // ✅ M25: Obtener transacciones por mes (O(1) en vez de O(n))
   const getTransactionsByMonth = useCallback((month) => {
@@ -225,7 +221,7 @@ export function TransactionsProvider({ children, currentUser }) {
   }, [transactionIndex]);
 
   const value = useMemo(() => ({
-    transactions,
+    transactions: activeTransactions,
     setTransactions,
     addTransaction,
     addTransactionsBatch,
@@ -237,7 +233,7 @@ export function TransactionsProvider({ children, currentUser }) {
     getTransactionsByMonth,
     getTransactionsByCategoryAndMonth
   }), [
-    transactions,
+    activeTransactions,
     addTransaction,
     addTransactionsBatch,
     updateTransaction,

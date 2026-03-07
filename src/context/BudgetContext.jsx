@@ -8,7 +8,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_CATEGORIES, INITIAL_MONTHLY_BUDGETS } from '../config/initialData';
 import { getFlowKind as inferFlowKind } from '../domain/flowKind';
-import { loadFromSupabase, saveToSupabase } from '../modules/supabase/syncUtils';
+import { loadFromSupabase, saveToSupabase, mergeArrayById, filterActive, softDelete } from '../modules/supabase/syncUtils';
 
 const SYNC_KEY_CAT = 'categories_v5';
 const SYNC_KEY_BUDGETS = 'monthlyBudgets_v5';
@@ -88,36 +88,43 @@ export function BudgetProvider({
   const syncReadyBudgets = useRef(false);
   const syncReadyYnab = useRef(false);
 
-  // Load categories from Supabase on mount
+  // Load categories from Supabase on mount — merge cloud + local
   useEffect(() => {
-    loadFromSupabase(SYNC_KEY_CAT).then(data => {
+    loadFromSupabase(SYNC_KEY_CAT).then(cloudData => {
       syncReadyCat.current = true;
-      if (Array.isArray(data) && data.length > 0) {
-        const migrated = migrateCategoriesToFlowKind(data);
-        setCategories(migrated);
-        StorageManager.save(SYNC_KEY_CAT, migrated);
-      }
+      setCategories(prev => {
+        const merged = migrateCategoriesToFlowKind(mergeArrayById(prev, cloudData));
+        StorageManager.save(SYNC_KEY_CAT, merged);
+        return merged;
+      });
     });
   }, []);
 
-  // Load monthlyBudgets from Supabase on mount
+  // Load monthlyBudgets from Supabase on mount — merge by month key
   useEffect(() => {
-    loadFromSupabase(SYNC_KEY_BUDGETS).then(data => {
+    loadFromSupabase(SYNC_KEY_BUDGETS).then(cloudData => {
       syncReadyBudgets.current = true;
-      if (data && typeof data === 'object' && !Array.isArray(data) && Object.keys(data).length > 0) {
-        setMonthlyBudgets(data);
-        StorageManager.save(SYNC_KEY_BUDGETS, data);
+      if (cloudData && typeof cloudData === 'object' && !Array.isArray(cloudData)) {
+        setMonthlyBudgets(prev => {
+          const merged = { ...cloudData, ...prev };
+          StorageManager.save(SYNC_KEY_BUDGETS, merged);
+          return merged;
+        });
       }
     });
   }, []);
 
-  // Load ynabConfig from Supabase on mount
+  // Load ynabConfig from Supabase on mount — cloud wins (single shared config)
   useEffect(() => {
-    loadFromSupabase(SYNC_KEY_YNAB).then(data => {
+    loadFromSupabase(SYNC_KEY_YNAB).then(cloudData => {
       syncReadyYnab.current = true;
-      if (data && typeof data === 'object') {
-        setYnabConfig(data);
-        StorageManager.save(SYNC_KEY_YNAB, data);
+      if (cloudData && typeof cloudData === 'object') {
+        setYnabConfig(prev => {
+          // Take cloud version if it has data
+          const merged = cloudData.monthlyIncome !== undefined ? cloudData : prev;
+          StorageManager.save(SYNC_KEY_YNAB, merged);
+          return merged;
+        });
       }
     });
   }, []);
@@ -225,8 +232,11 @@ export function BudgetProvider({
   // CATEGORÍAS CON PRESUPUESTO MENSUAL
   // =====================================================
 
+  // Active categories (excludes soft-deleted for UI)
+  const activeCategories = useMemo(() => filterActive(categories), [categories]);
+
   const categoriesWithMonthlyBudget = useMemo(() => {
-    return categories.map(cat => {
+    return activeCategories.map(cat => {
       const budgetInOriginal = getCategoryBudgetForMonth(cat.id, selectedBudgetMonth);
       const spentInOriginal = getCategorySpentForMonth(cat.id, selectedBudgetMonth);
       
@@ -245,7 +255,7 @@ export function BudgetProvider({
         spentInDisplayCurrency: spentConverted
       };
     });
-  }, [categories, selectedBudgetMonth, monthlyBudgets, displayCurrency, transactions, getCategoryBudgetForMonth, getCategorySpentForMonth, convertCurrency]);
+  }, [activeCategories, selectedBudgetMonth, monthlyBudgets, displayCurrency, transactions, getCategoryBudgetForMonth, getCategorySpentForMonth, convertCurrency]);
 
   // =====================================================
   // ACTUALIZAR PRESUPUESTO
@@ -395,7 +405,7 @@ export function BudgetProvider({
       };
     }
 
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+    setCategories(prev => softDelete(prev, categoryId));
 
     setMonthlyBudgets(prev => {
       const newBudgets = { ...prev };
@@ -475,8 +485,8 @@ export function BudgetProvider({
   // =====================================================
 
   const value = useMemo(() => ({
-    // Estados
-    categories,
+    // Estados (filtered — no soft-deleted items)
+    categories: activeCategories,
     setCategories,
     monthlyBudgets,
     setMonthlyBudgets,
@@ -502,7 +512,7 @@ export function BudgetProvider({
     migrateAllCategoriesToFlowKind,
     inferFlowKind
   }), [
-    categories,
+    activeCategories,
     monthlyBudgets,
     selectedBudgetMonth,
     ynabConfig,
