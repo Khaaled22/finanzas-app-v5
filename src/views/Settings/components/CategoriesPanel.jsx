@@ -286,7 +286,7 @@ export default function CategoriesPanel() {
                               </span>
                               <span className="flex items-center">
                                 <i className="fas fa-wallet mr-1"></i>
-                                Presupuesto: {cat.budget.toFixed(2)}
+                                Presupuesto: {(cat.budget ?? 0).toFixed(2)}
                               </span>
                             </div>
                           </div>

@@ -7,3 +7,4 @@ dist
 .playwright-mcp
 coverage
 *.png
+test-results/
