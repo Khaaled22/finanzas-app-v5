@@ -13,14 +13,13 @@ export default function BalanceHistoryModal({ isOpen, onClose, platform, onUpdat
     note: ''
   });
 
-  if (!platform) return null;
-
-  // ✅ M33: Ordenar por fecha (más reciente primero)
+  // ✅ Hooks must run unconditionally (Rules of Hooks)
   const balanceHistory = useMemo(() => {
-    return [...(platform.balanceHistory || [])].sort((a, b) => 
+    if (!platform) return [];
+    return [...(platform.balanceHistory || [])].sort((a, b) =>
       new Date(b.date) - new Date(a.date)
     );
-  }, [platform.balanceHistory]);
+  }, [platform?.balanceHistory]);
 
   const handleAddEntry = () => {
     setEditingEntry(null);
@@ -116,6 +115,8 @@ export default function BalanceHistoryModal({ isOpen, onClose, platform, onUpdat
     
     return { totalChange, totalChangePercent, oldest, newest };
   }, [balanceHistory]);
+
+  if (!platform) return null;
 
   return (
     <Modal
