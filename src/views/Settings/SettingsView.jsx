@@ -117,20 +117,28 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
         }
         // Validaciones de seguridad
         const rawText = event.target.result;
-        if (rawText.includes('__proto__') || rawText.includes('constructor')) {
+        if (rawText.includes('__proto__') || rawText.includes('constructor') || rawText.includes('prototype')) {
           setImportStatus({ type: 'error', message: 'Archivo contiene contenido no permitido' });
           return;
         }
-        if (data.categories && !Array.isArray(data.categories)) {
-          setImportStatus({ type: 'error', message: 'Formato inválido: categories debe ser un array' });
+        // File size guard (10MB max)
+        if (rawText.length > 10 * 1024 * 1024) {
+          setImportStatus({ type: 'error', message: 'Archivo demasiado grande (máximo 10MB)' });
           return;
         }
-        if (data.transactions && !Array.isArray(data.transactions)) {
-          setImportStatus({ type: 'error', message: 'Formato inválido: transactions debe ser un array' });
-          return;
+        const arrayKeys = ['categories', 'transactions', 'investments', 'debts', 'savingsGoals'];
+        for (const key of arrayKeys) {
+          if (data[key] !== undefined && !Array.isArray(data[key])) {
+            setImportStatus({ type: 'error', message: `Formato inválido: ${key} debe ser un array` });
+            return;
+          }
         }
         if (data.transactions && data.transactions.length > 50000) {
           setImportStatus({ type: 'error', message: 'Archivo demasiado grande: máximo 50.000 transacciones' });
+          return;
+        }
+        if (data.monthlyBudgets && (typeof data.monthlyBudgets !== 'object' || Array.isArray(data.monthlyBudgets))) {
+          setImportStatus({ type: 'error', message: 'Formato inválido: monthlyBudgets debe ser un objeto' });
           return;
         }
         // Write each key to localStorage

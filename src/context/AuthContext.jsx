@@ -106,8 +106,15 @@ export const AuthProvider = ({ children }) => {
 
     try {
       await AuthService.signOut()
-      // Limpiar datos financieros del localStorage (no usar clear() para preservar auth tokens)
-      ['transactions_v5','categories_v5','monthlyBudgets_v5','ynabConfig_v5','debts_v5','investments_v5','savingsGoals_v5','exchangeRates_v5','autoUpdateConfig_v5'].forEach(k => localStorage.removeItem(k))
+      // Clear all financial data from localStorage on logout
+      const financialKeys = [
+        'transactions_v5', 'categories_v5', 'monthlyBudgets_v5', 'ynabConfig_v5',
+        'debts_v5', 'investments_v5', 'savingsGoals_v5', 'exchangeRates_v5',
+        'autoUpdateConfig_v5', 'exchangeRatesHistory', 'exchangeRatesHistory_v5',
+        'netWorthHistory', 'projection_scenario', 'projection_scheduledEvents',
+        'projection_investmentMode', 'projection_flexiblePercent', 'projection_annualGrowthRate'
+      ];
+      financialKeys.forEach(k => localStorage.removeItem(k))
       setUser(null)
       setSession(null)
       return { success: true }
