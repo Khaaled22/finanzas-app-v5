@@ -17,6 +17,11 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
   });
 
   const [errors, setErrors] = useState({});
+  const [isSplit, setIsSplit] = useState(false);
+  const [splits, setSplits] = useState([
+    { categoryId: '', amount: '' },
+    { categoryId: '', amount: '' }
+  ]);
 
   // Actualizar formData cuando cambia transaction
   useEffect(() => {
@@ -42,6 +47,8 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
       });
     }
     setErrors({});
+    setIsSplit(false);
+    setSplits([{ categoryId: '', amount: '' }, { categoryId: '', amount: '' }]);
   }, [transaction, categories, isOpen]);
 
   // Agrupar categorías por grupo (memoized)
@@ -75,22 +82,29 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
   const validate = () => {
     const newErrors = {};
 
-    // Validar descripción
     if (!formData.description.trim()) {
-      newErrors.description = 'La descripción es obligatoria';
+      newErrors.description = 'La descripcion es obligatoria';
     }
 
-    // Validar monto
     const amount = parseFloat(formData.amount);
     if (isNaN(amount) || amount <= 0) {
       newErrors.amount = 'El monto debe ser mayor a 0';
     }
 
-    // ✅ M36: Fecha futura permitida (para gastos programados)
-
-    // Validar categoría
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Debes seleccionar una categoría';
+    if (isSplit) {
+      const validSplits = splits.filter(s => s.categoryId && parseFloat(s.amount) > 0);
+      if (validSplits.length < 2) {
+        newErrors.splits = 'Necesitas al menos 2 partes con categoria y monto';
+      } else {
+        const total = validSplits.reduce((sum, s) => sum + parseFloat(s.amount), 0);
+        if (Math.abs(total - amount) > 0.01) {
+          newErrors.splits = `Las partes suman ${total.toFixed(2)} pero el total es ${amount.toFixed(2)}`;
+        }
+      }
+    } else {
+      if (!formData.categoryId) {
+        newErrors.categoryId = 'Debes seleccionar una categoria';
+      }
     }
 
     setErrors(newErrors);
@@ -99,20 +113,35 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     if (!validate()) return;
 
-    const transactionData = {
-      ...formData,
-      amount: parseFloat(formData.amount),
-      date: formData.date,
-      recurrence: formData.recurrence || null
-    };
-
-    if (transaction) {
-      updateTransaction(transaction.id, transactionData);
+    if (isSplit && !transaction) {
+      const splitGroupId = `split_${Date.now()}`;
+      const validSplits = splits.filter(s => s.categoryId && parseFloat(s.amount) > 0);
+      validSplits.forEach(split => {
+        addTransaction({
+          ...formData,
+          amount: parseFloat(split.amount),
+          categoryId: split.categoryId,
+          date: formData.date,
+          notes: `[Split] ${formData.description}`,
+          splitGroupId,
+          recurrence: null
+        });
+      });
     } else {
-      addTransaction(transactionData);
+      const transactionData = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        date: formData.date,
+        recurrence: formData.recurrence || null
+      };
+
+      if (transaction) {
+        updateTransaction(transaction.id, transactionData);
+      } else {
+        addTransaction(transactionData);
+      }
     }
 
     onClose();
@@ -254,47 +283,158 @@ export default function TransactionForm({ isOpen, onClose, transaction = null })
           </div>
         </div>
 
-        {/* Categoría AGRUPADA con auto-detección de moneda */}
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-            <i className="fas fa-folder mr-2 text-blue-600"></i>
-            Categoría *
-          </label>
-          <select
-            id="category"
-            value={formData.categoryId}
-            onChange={(e) => handleChange('categoryId', e.target.value)}
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
-              errors.categoryId 
-                ? 'border-red-300 focus:ring-red-500' 
-                : 'border-gray-300 focus:ring-blue-500'
-            }`}
-            required
-          >
-            <option value="">Selecciona una categoría</option>
-            {Object.entries(groupedCategories).map(([group, cats]) => (
-              <optgroup key={group} label={group}>
-                {cats.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </optgroup>
+        {/* Split toggle (solo para nuevas transacciones) */}
+        {!transaction && (
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div
+                onClick={() => { setIsSplit(!isSplit); }}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  isSplit ? 'bg-indigo-600' : 'bg-gray-300'
+                }`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  isSplit ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  <i className="fas fa-cut mr-2 text-indigo-600"></i>
+                  Dividir en categorias
+                </p>
+                {isSplit && (
+                  <p className="text-xs text-indigo-600 mt-0.5">
+                    Asigna partes del monto a diferentes categorias
+                  </p>
+                )}
+              </div>
+            </label>
+          </div>
+        )}
+
+        {/* Categoria normal O Split rows */}
+        {isSplit && !transaction ? (
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">
+              <i className="fas fa-cut mr-2 text-indigo-600"></i>
+              Partes ({splits.filter(s => s.categoryId && parseFloat(s.amount) > 0).length} de {formData.amount || '?'} {formData.currency})
+            </label>
+            {splits.map((split, i) => (
+              <div key={i} className="flex gap-2 items-start">
+                <select
+                  value={split.categoryId}
+                  onChange={(e) => {
+                    const updated = [...splits];
+                    updated[i] = { ...updated[i], categoryId: e.target.value };
+                    setSplits(updated);
+                  }}
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Categoria...</option>
+                  {Object.entries(groupedCategories).map(([group, cats]) => (
+                    <optgroup key={group} label={group}>
+                      {cats.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={split.amount}
+                  onChange={(e) => {
+                    const updated = [...splits];
+                    updated[i] = { ...updated[i], amount: e.target.value };
+                    setSplits(updated);
+                  }}
+                  placeholder="Monto"
+                  className="w-28 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {splits.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setSplits(splits.filter((_, j) => j !== i))}
+                    className="p-2.5 text-red-500 hover:text-red-700"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
             ))}
-          </select>
-          {errors.categoryId && (
-            <p className="mt-1 text-sm text-red-600">
-              <i className="fas fa-exclamation-circle mr-1"></i>
-              {errors.categoryId}
-            </p>
-          )}
-          {categories.length === 0 && (
-            <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              <i className="fas fa-info-circle mr-1"></i>
-              No hay categorías. <a href="/settings" className="font-semibold underline">Créalas en Ajustes</a> para poder guardar transacciones.
-            </p>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() => setSplits([...splits, { categoryId: '', amount: '' }])}
+              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              <i className="fas fa-plus mr-1"></i>
+              Agregar parte
+            </button>
+            {(() => {
+              const total = parseFloat(formData.amount) || 0;
+              const assigned = splits.reduce((s, sp) => s + (parseFloat(sp.amount) || 0), 0);
+              const remaining = total - assigned;
+              if (total > 0 && Math.abs(remaining) > 0.01) {
+                return (
+                  <p className={`text-xs font-medium ${remaining > 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {remaining > 0 ? `Faltan ${remaining.toFixed(2)} por asignar` : `Exceso de ${Math.abs(remaining).toFixed(2)}`}
+                  </p>
+                );
+              }
+              if (total > 0 && Math.abs(remaining) <= 0.01) {
+                return <p className="text-xs font-medium text-green-600">Monto completamente asignado</p>;
+              }
+              return null;
+            })()}
+            {errors.splits && (
+              <p className="text-sm text-red-600">
+                <i className="fas fa-exclamation-circle mr-1"></i>
+                {errors.splits}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <i className="fas fa-folder mr-2 text-blue-600"></i>
+              Categoria *
+            </label>
+            <select
+              id="category"
+              value={formData.categoryId}
+              onChange={(e) => handleChange('categoryId', e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                errors.categoryId
+                  ? 'border-red-300 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
+              required
+            >
+              <option value="">Selecciona una categoria</option>
+              {Object.entries(groupedCategories).map(([group, cats]) => (
+                <optgroup key={group} label={group}>
+                  {cats.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {errors.categoryId && (
+              <p className="mt-1 text-sm text-red-600">
+                <i className="fas fa-exclamation-circle mr-1"></i>
+                {errors.categoryId}
+              </p>
+            )}
+            {categories.length === 0 && (
+              <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <i className="fas fa-info-circle mr-1"></i>
+                No hay categorias. <a href="/settings" className="font-semibold underline">Crealas en Ajustes</a> para poder guardar transacciones.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Método de Pago */}
         <div>

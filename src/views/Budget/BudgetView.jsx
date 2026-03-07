@@ -1,6 +1,6 @@
 // src/views/Budget/BudgetView.jsx
 // ✅ M36 Fase 3: Diseño mejorado manteniendo estilo original + nuevas funcionalidades
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { formatNumber } from '../../utils/formatters';
 import YNABBanner from './YNABBanner';
@@ -14,6 +14,7 @@ export default function BudgetView() {
     selectedBudgetMonth,
     setSelectedBudgetMonth,
     copyBudgetFromPreviousMonth,
+    copyBudgetToNextMonths,
     clearMonthlyBudgets,
     isOperatingExpense,
     isDebtPayment,
@@ -22,6 +23,20 @@ export default function BudgetView() {
   } = useApp();
   
   const [showConfigureIncome, setShowConfigureIncome] = useState(false);
+  const [showCopyMenu, setShowCopyMenu] = useState(false);
+  const copyMenuRef = useRef(null);
+
+  // Close copy menu on outside click
+  useEffect(() => {
+    if (!showCopyMenu) return;
+    const handler = (e) => {
+      if (copyMenuRef.current && !copyMenuRef.current.contains(e.target)) {
+        setShowCopyMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCopyMenu]);
   const [filterGroup, setFilterGroup] = useState('all');
   const [filterFlowKind, setFilterFlowKind] = useState('all');
   const [viewMode, setViewMode] = useState('cards');
@@ -115,6 +130,24 @@ export default function BudgetView() {
     return { budgeted, spent, available, carryOver, percentUsed, operatingSpent, debtSpent, investmentSpent };
   }, [filteredCategories, categoriesWithMonthlyBudget, isOperatingExpense, isDebtPayment, isInvestmentContribution]);
 
+  // Budget alerts: categories at 80%+ or over budget
+  const budgetAlerts = useMemo(() => {
+    return categoriesWithMonthlyBudget
+      .filter(cat => {
+        if (isIncome(cat)) return false;
+        const effectiveBudget = (cat.budgetInDisplayCurrency || 0) + (cat.carryOver || 0);
+        if (effectiveBudget <= 0) return false;
+        const pct = ((cat.spentInDisplayCurrency || 0) / effectiveBudget) * 100;
+        return pct >= 80;
+      })
+      .map(cat => {
+        const effectiveBudget = (cat.budgetInDisplayCurrency || 0) + (cat.carryOver || 0);
+        const pct = ((cat.spentInDisplayCurrency || 0) / effectiveBudget) * 100;
+        return { ...cat, pct, over: pct >= 100 };
+      })
+      .sort((a, b) => b.pct - a.pct);
+  }, [categoriesWithMonthlyBudget, isIncome]);
+
   const getPercentage = (spent, budget) => {
     if (budget === 0) return 0;
     return Math.min((spent / budget) * 100, 100);
@@ -152,6 +185,16 @@ export default function BudgetView() {
         : 'desde plantilla base';
       alert(`✅ Se copiaron ${result.count} presupuestos ${sourceText}.`);
     }
+  };
+
+  const handleCopyToNextMonths = (count) => {
+    const result = copyBudgetToNextMonths(selectedBudgetMonth, count);
+    if (result.success) {
+      alert(`Se copio el presupuesto a los proximos ${count} meses.`);
+    } else {
+      alert(result.message);
+    }
+    setShowCopyMenu(false);
   };
 
   const handleClearMonth = () => {
@@ -208,7 +251,7 @@ export default function BudgetView() {
             </span>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <button
               onClick={handleCopyPreviousMonth}
               className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all text-sm shadow-md hover:shadow-lg"
@@ -216,6 +259,30 @@ export default function BudgetView() {
               <i className="fas fa-copy mr-2"></i>
               Copiar Anterior
             </button>
+            <div className="relative" ref={copyMenuRef}>
+              <button
+                onClick={() => setShowCopyMenu(!showCopyMenu)}
+                className="px-4 py-2.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-xl font-medium transition-all text-sm"
+                title="Copiar este mes a los proximos N meses"
+              >
+                <i className="fas fa-forward mr-2"></i>
+                Proyectar
+              </button>
+              {showCopyMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-1 min-w-[180px]">
+                  {[3, 6, 12].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => handleCopyToNextMonths(n)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 text-sm text-gray-700 transition-colors"
+                    >
+                      <i className="fas fa-calendar-plus mr-2 text-indigo-500"></i>
+                      Proximos {n} meses
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               onClick={handleClearMonth}
               className="px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl font-medium transition-all text-sm"
@@ -300,9 +367,37 @@ export default function BudgetView() {
         </div>
       </div>
 
+      {/* Budget Alerts */}
+      {budgetAlerts.length > 0 && !monthStatus.isPlan && (
+        <div className="bg-gradient-to-r from-amber-50 to-red-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <i className="fas fa-bell text-amber-600"></i>
+            <h4 className="font-semibold text-gray-800 text-sm">
+              {budgetAlerts.filter(a => a.over).length > 0
+                ? `${budgetAlerts.filter(a => a.over).length} categoria(s) excedida(s)`
+                : `${budgetAlerts.length} categoria(s) cerca del limite`}
+            </h4>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {budgetAlerts.map(cat => (
+              <span
+                key={cat.id}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                  cat.over ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                <span>{cat.icon || cat.name.charAt(0)}</span>
+                {cat.name}
+                <span className="font-bold">{cat.pct.toFixed(0)}%</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* YNAB Banner */}
-      <YNABBanner 
-        onConfigureIncome={() => setShowConfigureIncome(true)} 
+      <YNABBanner
+        onConfigureIncome={() => setShowConfigureIncome(true)}
         isPlanMonth={monthStatus.isPlan}
       />
 

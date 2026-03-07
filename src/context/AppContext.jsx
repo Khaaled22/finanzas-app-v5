@@ -243,6 +243,7 @@ function AppContextComposer({ children, currentUser, displayCurrency, setDisplay
     initializeCategoryForMonth: budgetCtx.initializeCategoryForMonth,
     updateMonthlyBudget: budgetCtx.updateMonthlyBudget,
     copyBudgetFromPreviousMonth: budgetCtx.copyBudgetFromPreviousMonth,
+    copyBudgetToNextMonths: budgetCtx.copyBudgetToNextMonths,
     clearMonthlyBudgets: budgetCtx.clearMonthlyBudgets,
     transferBetweenCategories: budgetCtx.transferBetweenCategories,
     updateCategory: budgetCtx.updateCategory,

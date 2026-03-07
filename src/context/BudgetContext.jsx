@@ -345,6 +345,31 @@ export function BudgetProvider({
     };
   }, [findMostRecentMonthWithBudgets, monthlyBudgets, categories]);
 
+  // Copy current month's budget to the next N months
+  const copyBudgetToNextMonths = useCallback((sourceMonth, count) => {
+    const [year, month] = sourceMonth.split('-').map(Number);
+    const sourceBudgets = monthlyBudgets[sourceMonth];
+    if (!sourceBudgets || Object.keys(sourceBudgets).length === 0) {
+      return { success: false, message: 'No hay presupuestos en el mes origen' };
+    }
+
+    setMonthlyBudgets(prev => {
+      const updated = { ...prev };
+      for (let i = 1; i <= count; i++) {
+        const d = new Date(year, month - 1 + i, 1);
+        const targetMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const copied = {};
+        Object.entries(sourceBudgets).forEach(([catId, data]) => {
+          copied[catId] = { budget: data.budget, spent: 0 };
+        });
+        updated[targetMonth] = copied;
+      }
+      return updated;
+    });
+
+    return { success: true, count };
+  }, [monthlyBudgets]);
+
   const clearMonthlyBudgets = useCallback((targetMonth = null) => {
     if (targetMonth) {
       setMonthlyBudgets(prev => {
@@ -522,6 +547,7 @@ export function BudgetProvider({
     initializeCategoryForMonth,
     updateMonthlyBudget,
     copyBudgetFromPreviousMonth,
+    copyBudgetToNextMonths,
     clearMonthlyBudgets,
     transferBetweenCategories,
     updateCategory,
@@ -542,6 +568,7 @@ export function BudgetProvider({
     initializeCategoryForMonth,
     updateMonthlyBudget,
     copyBudgetFromPreviousMonth,
+    copyBudgetToNextMonths,
     clearMonthlyBudgets,
     transferBetweenCategories,
     updateCategory,

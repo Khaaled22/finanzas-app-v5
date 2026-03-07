@@ -171,15 +171,17 @@ export default function Dashboard() {
 
   // YNAB "Sin Asignar" = income + carryOver - totalBudgeted
   const unassigned = useMemo(() => {
+    const overrides = ynabConfig?.monthlyIncomeOverrides || {};
+    const plannedIncome = overrides[selectedBudgetMonth] ?? (ynabConfig?.monthlyIncome || 0);
     const income = monthStatus.isPlan
-      ? (ynabConfig?.monthlyIncome || 0)
+      ? plannedIncome
       : (totals.incomeReal || 0);
 
     const totalAssigned = totals.budgeted || 0;
     const carryOver = totals.totalCarryOver || 0;
 
     return income + carryOver - totalAssigned;
-  }, [totals, ynabConfig, monthStatus.isPlan]);
+  }, [totals, ynabConfig, monthStatus.isPlan, selectedBudgetMonth]);
 
   // Datos para gráfico de barras
   const budgetChartData = useMemo(() => ({
@@ -454,7 +456,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MiniKPI 
           label="Ingresos del Mes" 
-          value={formatNumber(monthStatus.isPlan ? (ynabConfig?.monthlyIncome || 0) : (totals.incomeReal || 0))} 
+          value={formatNumber(monthStatus.isPlan ? (ynabConfig?.monthlyIncomeOverrides?.[selectedBudgetMonth] ?? ynabConfig?.monthlyIncome ?? 0) : (totals.incomeReal || 0))}
           suffix={displayCurrency}
           icon="fa-arrow-down"
           status="good"

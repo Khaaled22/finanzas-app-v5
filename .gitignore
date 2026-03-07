@@ -3,3 +3,7 @@ dist
 .env
 .vite
 .vercel
+.claude
+.playwright-mcp
+coverage
+*.png

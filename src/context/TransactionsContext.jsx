@@ -26,7 +26,7 @@ export function TransactionsProvider({ children, currentUser }) {
 
   // Generate missing auto-instances for recurring transactions
   const generateRecurringInstances = useCallback((allTransactions) => {
-    const templates = allTransactions.filter(tx => tx.recurringId && tx.id === tx.recurringId);
+    const templates = allTransactions.filter(tx => tx.recurrence === 'monthly' && tx.recurringId && tx.id === tx.recurringId);
     if (templates.length === 0) return [];
 
     const today = new Date();

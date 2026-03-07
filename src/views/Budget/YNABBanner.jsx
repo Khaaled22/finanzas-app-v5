@@ -65,16 +65,16 @@ export default function YNABBanner({ onConfigureIncome, isPlanMonth = false }) {
       );
   }, [transactions, categories, selectedBudgetMonth, displayCurrency, convertCurrency]);
 
-  // ✅ M36 Fase 3: Ingreso planificado (para meses futuros)
+  // Ingreso planificado (para meses futuros) — usa override si existe
   const plannedIncome = useMemo(() => {
-    // TODO: Implementar monthlyIncomeOverrides para permitir diferentes ingresos por mes
-    // Por ahora usa ynabConfig.monthlyIncome global
+    const overrides = ynabConfig.monthlyIncomeOverrides || {};
+    const baseIncome = overrides[selectedBudgetMonth] ?? (ynabConfig.monthlyIncome || 0);
     return convertCurrency(
-      ynabConfig.monthlyIncome || 0, 
-      ynabConfig.currency || displayCurrency, 
+      baseIncome,
+      ynabConfig.currency || displayCurrency,
       displayCurrency
     );
-  }, [ynabConfig, displayCurrency, convertCurrency]);
+  }, [ynabConfig, selectedBudgetMonth, displayCurrency, convertCurrency]);
 
   // ✅ M36 Fase 3: Ingreso a usar según si es mes PLAN o REAL
   const incomeToUse = isPlanMonth ? plannedIncome : realIncome;
