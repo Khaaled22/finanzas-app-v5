@@ -97,20 +97,22 @@ export default function BudgetView() {
     return groups;
   }, [filteredCategories]);
 
-  // Calcular totales
+  // Calcular totales (YNAB: available = budget + carryOver - spent)
   const totals = useMemo(() => {
     const budgeted = filteredCategories.reduce((sum, cat) => sum + (cat.budgetInDisplayCurrency || 0), 0);
     const spent = filteredCategories.reduce((sum, cat) => sum + (cat.spentInDisplayCurrency || 0), 0);
-    const available = budgeted - spent;
-    const percentUsed = budgeted > 0 ? (spent / budgeted) * 100 : 0;
-    
-    // Por flowKind (de todas las categorías, no filtradas)
+    const carryOver = filteredCategories.reduce((sum, cat) => sum + (cat.carryOver || 0), 0);
+    const available = budgeted + carryOver - spent;
+    const effectiveBudget = budgeted + carryOver;
+    const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
+
+    // Por flowKind (de todas las categorias, no filtradas)
     const allCats = categoriesWithMonthlyBudget;
     const operatingSpent = allCats.filter(isOperatingExpense).reduce((s, c) => s + (c.spentInDisplayCurrency || 0), 0);
     const debtSpent = allCats.filter(isDebtPayment).reduce((s, c) => s + (c.spentInDisplayCurrency || 0), 0);
     const investmentSpent = allCats.filter(isInvestmentContribution).reduce((s, c) => s + (c.spentInDisplayCurrency || 0), 0);
-    
-    return { budgeted, spent, available, percentUsed, operatingSpent, debtSpent, investmentSpent };
+
+    return { budgeted, spent, available, carryOver, percentUsed, operatingSpent, debtSpent, investmentSpent };
   }, [filteredCategories, categoriesWithMonthlyBudget, isOperatingExpense, isDebtPayment, isInvestmentContribution]);
 
   const getPercentage = (spent, budget) => {
@@ -232,7 +234,12 @@ export default function BudgetView() {
             <div>
               <p className="text-sm text-gray-500 font-medium mb-1">Total Presupuestado</p>
               <p className="text-2xl font-bold text-gray-800">{formatNumber(totals.budgeted)}</p>
-              <p className="text-xs text-gray-400 mt-1">{displayCurrency}</p>
+              {totals.carryOver !== 0 && (
+                <p className={`text-xs mt-1 ${totals.carryOver > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {totals.carryOver > 0 ? '+' : ''}{formatNumber(totals.carryOver)} carry-over
+                </p>
+              )}
+              {totals.carryOver === 0 && <p className="text-xs text-gray-400 mt-1">{displayCurrency}</p>}
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
               <i className="fas fa-wallet text-blue-600 text-xl"></i>
@@ -415,9 +422,10 @@ export default function BudgetView() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredCategories.map(cat => {
-                  const percentage = getPercentage(cat.spentInDisplayCurrency, cat.budgetInDisplayCurrency);
-                  const available = cat.budgetOriginal - cat.spentOriginal;
-                  const badge = getStatusBadge(cat.spentInDisplayCurrency, cat.budgetInDisplayCurrency);
+                  const effectiveBudget = (cat.budgetInDisplayCurrency || 0) + (cat.carryOver || 0);
+                  const percentage = getPercentage(cat.spentInDisplayCurrency, effectiveBudget);
+                  const available = cat.budgetOriginal + (cat.carryOverOriginal || 0) - cat.spentOriginal;
+                  const badge = getStatusBadge(cat.spentInDisplayCurrency, effectiveBudget);
                   const flowBadge = getFlowKindBadge(cat);
                   
                   return (
@@ -451,6 +459,11 @@ export default function BudgetView() {
                           />
                           <span className="text-xs text-gray-400 w-8">{cat.currency}</span>
                         </div>
+                        {cat.carryOverOriginal !== 0 && (
+                          <p className={`text-xs mt-0.5 text-right ${cat.carryOverOriginal > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {cat.carryOverOriginal > 0 ? '+' : ''}{formatNumber(cat.carryOverOriginal)} carry
+                          </p>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <span className="font-medium text-red-600">
@@ -511,9 +524,10 @@ export default function BudgetView() {
               <div className="p-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {cats.map(cat => {
-                    const percentage = getPercentage(cat.spentInDisplayCurrency, cat.budgetInDisplayCurrency);
-                    const available = cat.budgetOriginal - cat.spentOriginal;
-                    const badge = getStatusBadge(cat.spentInDisplayCurrency, cat.budgetInDisplayCurrency);
+                    const effectiveBudget = (cat.budgetInDisplayCurrency || 0) + (cat.carryOver || 0);
+                    const percentage = getPercentage(cat.spentInDisplayCurrency, effectiveBudget);
+                    const available = cat.budgetOriginal + (cat.carryOverOriginal || 0) - cat.spentOriginal;
+                    const badge = getStatusBadge(cat.spentInDisplayCurrency, effectiveBudget);
                     const flowBadge = getFlowKindBadge(cat);
                     
                     return (
@@ -554,6 +568,15 @@ export default function BudgetView() {
                               <span className="text-xs text-gray-400">{cat.currency}</span>
                             </div>
                           </div>
+
+                          {cat.carryOverOriginal !== 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-500">Carry-over:</span>
+                              <span className={`font-semibold text-sm ${cat.carryOverOriginal > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {cat.carryOverOriginal > 0 ? '+' : ''}{formatNumber(cat.carryOverOriginal)} <span className="text-xs text-gray-400">{cat.currency}</span>
+                              </span>
+                            </div>
+                          )}
 
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-500">Gastado:</span>

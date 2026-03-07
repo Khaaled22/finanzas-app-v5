@@ -169,15 +169,16 @@ export default function Dashboard() {
     );
   }, [debts, displayCurrency, convertCurrency]);
 
-  // ✅ M36: Calcular "Sin Asignar" YNAB style
+  // YNAB "Sin Asignar" = income + carryOver - totalBudgeted
   const unassigned = useMemo(() => {
-    const income = monthStatus.isPlan 
+    const income = monthStatus.isPlan
       ? (ynabConfig?.monthlyIncome || 0)
       : (totals.incomeReal || 0);
-    
+
     const totalAssigned = totals.budgeted || 0;
-    
-    return income - totalAssigned;
+    const carryOver = totals.totalCarryOver || 0;
+
+    return income + carryOver - totalAssigned;
   }, [totals, ynabConfig, monthStatus.isPlan]);
 
   // Datos para gráfico de barras

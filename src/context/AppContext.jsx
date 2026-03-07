@@ -92,6 +92,9 @@ function AppContextComposer({ children, currentUser, displayCurrency, setDisplay
     // Disponible operativo = presupuesto operativo - gastado operativo - pagado deuda
     const availableOperational = operationalBudgeted - operatingSpent - debtPaid;
     
+    // Total carry-over from previous month
+    const totalCarryOver = categories.reduce((sum, cat) => sum + (cat.carryOver || 0), 0);
+
     // Total presupuestado (todo)
     const budgeted = operatingBudgeted + debtBudgeted + investmentBudgeted;
     
@@ -128,6 +131,9 @@ function AppContextComposer({ children, currentUser, displayCurrency, setDisplay
       operationalBudgeted,
       availableOperational,
       
+      // YNAB carry-over
+      totalCarryOver,
+
       // Legacy (backward compatible)
       budgeted,
       spent, // Ahora solo operativo

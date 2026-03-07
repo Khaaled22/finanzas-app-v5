@@ -235,27 +235,47 @@ export function BudgetProvider({
   // Active categories (excludes soft-deleted for UI)
   const activeCategories = useMemo(() => filterActive(categories), [categories]);
 
+  // YNAB carry-over: compute how much rolled over from previous month
+  // carryOver = previous month's (budget + its own carryOver - spent)
+  const getCarryOver = useCallback((categoryId, month, depth = 0) => {
+    if (depth > 12) return 0; // safety: max 12 months lookback
+
+    const prev = getPreviousMonth(month);
+    const prevBudget = monthlyBudgets[prev]?.[categoryId]?.budget;
+
+    // No previous budget data = no carry-over
+    if (prevBudget === undefined) return 0;
+
+    const prevSpent = getCategorySpentForMonth(categoryId, prev);
+    const prevCarry = getCarryOver(categoryId, prev, depth + 1);
+
+    return prevBudget + prevCarry - prevSpent;
+  }, [monthlyBudgets, getCategorySpentForMonth, getPreviousMonth]);
+
   const categoriesWithMonthlyBudget = useMemo(() => {
     return activeCategories.map(cat => {
       const budgetInOriginal = getCategoryBudgetForMonth(cat.id, selectedBudgetMonth);
       const spentInOriginal = getCategorySpentForMonth(cat.id, selectedBudgetMonth);
-      
+      const carryOverOriginal = getCarryOver(cat.id, selectedBudgetMonth);
+
       const budgetConverted = convertCurrency(budgetInOriginal, cat.currency, displayCurrency);
       const spentConverted = convertCurrency(spentInOriginal, cat.currency, displayCurrency);
-      
+      const carryOverConverted = convertCurrency(carryOverOriginal, cat.currency, displayCurrency);
+
       return {
         ...cat,
-        // flowKind garantizado por migrateCategoriesToFlowKind al cargar
         flowKind: cat.flowKind,
         budget: budgetConverted,
         spent: spentConverted,
+        carryOver: carryOverConverted,
+        carryOverOriginal: carryOverOriginal,
         budgetOriginal: budgetInOriginal,
         spentOriginal: spentInOriginal,
         budgetInDisplayCurrency: budgetConverted,
         spentInDisplayCurrency: spentConverted
       };
     });
-  }, [activeCategories, selectedBudgetMonth, monthlyBudgets, displayCurrency, transactions, getCategoryBudgetForMonth, getCategorySpentForMonth, convertCurrency]);
+  }, [activeCategories, selectedBudgetMonth, monthlyBudgets, displayCurrency, transactions, getCategoryBudgetForMonth, getCategorySpentForMonth, getCarryOver, convertCurrency]);
 
   // =====================================================
   // ACTUALIZAR PRESUPUESTO
