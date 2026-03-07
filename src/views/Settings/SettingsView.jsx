@@ -76,8 +76,65 @@ export default function SettingsView() {
   );
 }
 
-// ✅ M32: Panel de Preferencias
+// Panel de Preferencias con Export/Import
 function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
+  const {
+    categories, transactions, debts, investments, savingsGoals, ynabConfig
+  } = useApp();
+  const [importStatus, setImportStatus] = React.useState(null);
+
+  const handleExport = () => {
+    const backup = {
+      _version: 'finanzas-pro-v5',
+      _exportedAt: new Date().toISOString(),
+      categories,
+      transactions,
+      debts,
+      investments,
+      savingsGoals,
+      ynabConfig
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finanzas-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        if (data._version !== 'finanzas-pro-v5') {
+          setImportStatus({ type: 'error', message: 'Archivo no compatible (version incorrecta)' });
+          return;
+        }
+        // Write each key to localStorage
+        const keys = {
+          categories_v5: data.categories,
+          transactions_v5: data.transactions,
+          debts_v5: data.debts,
+          investments_v5: data.investments,
+          savingsGoals_v5: data.savingsGoals,
+          ynabConfig_v5: data.ynabConfig
+        };
+        Object.entries(keys).forEach(([key, value]) => {
+          if (value !== undefined) localStorage.setItem(key, JSON.stringify(value));
+        });
+        setImportStatus({ type: 'success', message: 'Backup restaurado. Recarga la pagina para ver los cambios.' });
+      } catch {
+        setImportStatus({ type: 'error', message: 'Error al leer el archivo JSON' });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -87,37 +144,58 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
         </h3>
       </div>
 
-      {/* Moneda de visualización */}
+      {/* Moneda de visualizacion */}
       <div className="bg-gray-50 rounded-lg p-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           <i className="fas fa-coins mr-2 text-yellow-500"></i>
-          Moneda de Visualización
+          Moneda de Visualizacion
         </label>
         <select
           value={displayCurrency}
           onChange={(e) => setDisplayCurrency(e.target.value)}
           className="w-full md:w-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
         >
-          <option value="EUR">EUR € (Euro)</option>
+          <option value="EUR">EUR (Euro)</option>
           <option value="CLP">CLP $ (Peso Chileno)</option>
-          <option value="USD">USD $ (Dólar)</option>
+          <option value="USD">USD $ (Dolar)</option>
         </select>
         <p className="text-xs text-gray-500 mt-2">
-          Todos los valores se convertirán a esta moneda para mostrar totales
+          Todos los valores se convertiran a esta moneda para mostrar totales
         </p>
       </div>
 
-      {/* Placeholder para más preferencias */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start">
-          <i className="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
-          <div>
-            <p className="font-medium text-blue-800">Más opciones próximamente</p>
-            <p className="text-sm text-blue-600 mt-1">
-              Tema oscuro, notificaciones, formato de fecha, y más...
-            </p>
-          </div>
+      {/* Backup / Restore */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          <i className="fas fa-database mr-2 text-blue-500"></i>
+          Backup y Restauracion
+        </h4>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+          >
+            <i className="fas fa-download mr-2"></i>
+            Exportar Backup JSON
+          </button>
+          <label className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm cursor-pointer">
+            <i className="fas fa-upload mr-2"></i>
+            Importar Backup
+            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+          </label>
         </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Exporta todos tus datos (categorias, transacciones, deudas, inversiones, ahorros) a un archivo JSON.
+          Util como respaldo o para migrar entre dispositivos.
+        </p>
+        {importStatus && (
+          <div className={`mt-3 p-3 rounded-lg text-sm ${
+            importStatus.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          }`}>
+            <i className={`fas ${importStatus.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2`}></i>
+            {importStatus.message}
+          </div>
+        )}
       </div>
     </div>
   );

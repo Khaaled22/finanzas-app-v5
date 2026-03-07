@@ -201,7 +201,7 @@ export default function InvestmentsView() {
             >
               Todas
             </button>
-            {PLATFORM_GOALS.slice(0, 6).map(goal => (
+            {PLATFORM_GOALS.filter(g => g.id !== 'other').map(goal => (
               <button
                 key={goal.id}
                 onClick={() => setFilterGoal(goal.id)}

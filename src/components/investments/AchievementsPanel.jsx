@@ -25,6 +25,12 @@ export default function AchievementsPanel() {
     });
 
     const totalValue = platformsValue + assetsValue;
+    // Normalize to EUR for currency-independent achievement thresholds
+    const totalValueEUR = displayCurrency === 'EUR' ? totalValue
+      : investments.filter(inv => !inv.isArchived).reduce((sum, inv) => {
+          const val = inv.quantity ? inv.quantity * inv.currentPrice : (inv.currentBalance || 0);
+          return sum + convertCurrency(val, inv.currency, 'EUR');
+        }, 0);
     const totalROI = assetsCost > 0 ? ((assetsValue - assetsCost) / assetsCost) * 100 : 0;
 
     // Calcular tiempo invertido (meses desde primera inversión)
@@ -143,10 +149,10 @@ export default function AchievementsPanel() {
       {
         id: 'whale',
         title: 'Ballena Inversionista',
-        description: 'Alcanza 10,000 en inversiones',
+        description: `Alcanza 10,000 EUR en inversiones`,
         icon: '🐋',
-        unlocked: totalValue >= 10000,
-        progress: Math.min(totalValue, 10000),
+        unlocked: totalValueEUR >= 10000,
+        progress: Math.min(totalValueEUR, 10000),
         total: 10000,
         color: 'from-blue-600 to-blue-700',
         rarity: 'epic'
@@ -154,10 +160,10 @@ export default function AchievementsPanel() {
       {
         id: 'millionaire',
         title: 'Millonario',
-        description: 'Supera 1,000,000 en inversiones',
+        description: `Supera 1,000,000 EUR en inversiones`,
         icon: '💰',
-        unlocked: totalValue >= 1000000,
-        progress: Math.min(totalValue, 1000000),
+        unlocked: totalValueEUR >= 1000000,
+        progress: Math.min(totalValueEUR, 1000000),
         total: 1000000,
         color: 'from-yellow-600 to-yellow-700',
         rarity: 'legendary'
