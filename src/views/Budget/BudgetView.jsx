@@ -138,7 +138,7 @@ export default function BudgetView() {
         const effectiveBudget = (cat.budgetInDisplayCurrency || 0) + (cat.carryOver || 0);
         if (effectiveBudget <= 0) return false;
         const pct = ((cat.spentInDisplayCurrency || 0) / effectiveBudget) * 100;
-        return pct >= 80;
+        return pct >= 85;
       })
       .map(cat => {
         const effectiveBudget = (cat.budgetInDisplayCurrency || 0) + (cat.carryOver || 0);

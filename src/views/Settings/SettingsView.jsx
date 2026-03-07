@@ -79,7 +79,7 @@ export default function SettingsView() {
 // Panel de Preferencias con Export/Import
 function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
   const {
-    categories, transactions, debts, investments, savingsGoals, ynabConfig
+    categories, transactions, monthlyBudgets, debts, investments, savingsGoals, ynabConfig
   } = useApp();
   const [importStatus, setImportStatus] = React.useState(null);
 
@@ -89,6 +89,7 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
       _exportedAt: new Date().toISOString(),
       categories,
       transactions,
+      monthlyBudgets,
       debts,
       investments,
       savingsGoals,
@@ -107,7 +108,7 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target.result);
         if (data._version !== 'finanzas-pro-v5') {
@@ -118,15 +119,35 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
         const keys = {
           categories_v5: data.categories,
           transactions_v5: data.transactions,
+          monthlyBudgets_v5: data.monthlyBudgets,
+          ynabConfig_v5: data.ynabConfig,
           debts_v5: data.debts,
           investments_v5: data.investments,
-          savingsGoals_v5: data.savingsGoals,
-          ynabConfig_v5: data.ynabConfig
+          savingsGoals_v5: data.savingsGoals
         };
+        const written = [];
         Object.entries(keys).forEach(([key, value]) => {
-          if (value !== undefined) localStorage.setItem(key, JSON.stringify(value));
+          if (value !== undefined) {
+            localStorage.setItem(key, JSON.stringify(value));
+            written.push(key);
+          }
         });
-        setImportStatus({ type: 'success', message: 'Backup restaurado. Recarga la pagina para ver los cambios.' });
+
+        // Sync to Supabase if backend is enabled
+        try {
+          const { saveToSupabase } = await import('../../modules/supabase/syncUtils');
+          for (const [key, value] of Object.entries(keys)) {
+            if (value !== undefined) await saveToSupabase(key, value);
+          }
+        } catch {
+          // Supabase sync is optional
+        }
+
+        setImportStatus({
+          type: 'success',
+          message: `Importados: ${written.join(', ')}. Recargando...`
+        });
+        setTimeout(() => window.location.reload(), 1500);
       } catch {
         setImportStatus({ type: 'error', message: 'Error al leer el archivo JSON' });
       }

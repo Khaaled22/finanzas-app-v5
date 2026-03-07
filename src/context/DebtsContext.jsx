@@ -67,6 +67,7 @@ export function DebtsProvider({ children }) {
       monthlyPayment: parseFloat(debt.monthlyPayment) || 0,
       dueDate: debt.dueDate || null,
       notes: debt.notes || '',
+      isToxic: debt.isToxic || false,
       paymentHistory: [],
       // ✅ M36 Fase 4: Inicializar balanceHistory con el balance inicial
       balanceHistory: [{
