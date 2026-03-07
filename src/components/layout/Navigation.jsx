@@ -44,7 +44,7 @@ function NavItem({ icon, text, path, compact = false }) {
     >
       <i className={`fas ${icon} text-lg`}></i>
       {compact && <span className="text-[10px] mt-0.5">{COMPACT_LABELS[path] || text}</span>}
-      {!compact && <span className="hidden lg:inline text-sm">{text}</span>}
+      {!compact && <span className="hidden md:inline text-sm">{text}</span>}
     </NavLink>
   );
 }

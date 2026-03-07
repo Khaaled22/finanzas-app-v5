@@ -13,11 +13,11 @@ const InvestmentsContext = createContext();
 
 // ✅ M36 Fase 6: Tipos de objetivo actualizados con Cash/Banco prominente
 export const PLATFORM_GOALS = [
-  { id: 'cash', name: 'Cash/Banco', icon: '🏦', description: 'Cuentas bancarias y efectivo', color: 'emerald', isCash: true },
-  { id: 'fi_step1', name: 'FI Step 1', icon: '💰', description: 'Liquidez inmediata', color: 'blue' },
+  { id: 'cash', name: 'Banco / Efectivo', icon: '🏦', description: 'Cuentas bancarias y efectivo', color: 'emerald', isCash: true },
+  { id: 'fi_step1', name: 'Independencia Fin.', icon: '💰', description: 'Liquidez inmediata', color: 'blue' },
   { id: 'emergency', name: 'Fondo Emergencia', icon: '🛟', description: 'Reserva de emergencia', color: 'green' },
-  { id: 'down_payment', name: 'Pie/Down Payment', icon: '🏠', description: 'Ahorro para compra grande', color: 'purple' },
-  { id: 'real_state', name: 'Real Estate', icon: '🏢', description: 'Inversión inmobiliaria', color: 'orange' },
+  { id: 'down_payment', name: 'Pie / Entrada', icon: '🏠', description: 'Ahorro para compra grande', color: 'purple' },
+  { id: 'real_state', name: 'Bienes Raíces', icon: '🏢', description: 'Inversión inmobiliaria', color: 'orange' },
   { id: 'retirement', name: 'Jubilación', icon: '👴', description: 'Ahorro previsional (APV)', color: 'indigo' },
   { id: 'growth', name: 'Crecimiento', icon: '📈', description: 'Inversión a largo plazo', color: 'cyan' },
   { id: 'other', name: 'Otro', icon: '📦', description: 'Otra inversión', color: 'slate' }
