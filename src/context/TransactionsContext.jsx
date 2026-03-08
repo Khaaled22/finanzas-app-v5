@@ -77,17 +77,18 @@ export function TransactionsProvider({ children, currentUser }) {
     return toAdd;
   }, []);
 
-  // Load from Supabase on mount — skip merge if recent import (local is authoritative)
+  // Load from Supabase on mount — skip merge if pending import (local is authoritative)
   useEffect(() => {
-    const importedAt = parseInt(localStorage.getItem('_lastImportAt') || '0', 10);
-    const isRecentImport = Date.now() - importedAt < 30000; // 30s window
+    const pendingImport = localStorage.getItem('_pendingImportSync') === 'true';
 
     loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
-      if (isRecentImport) {
-        // After import: local is authoritative, push to Supabase
+      if (pendingImport) {
+        // After import: local is authoritative, push to Supabase and clear flag
         setTransactions(prev => {
-          saveToSupabase(SYNC_KEY, prev);
+          saveToSupabase(SYNC_KEY, prev).then(() => {
+            localStorage.removeItem('_pendingImportSync');
+          });
           return prev;
         });
         return;

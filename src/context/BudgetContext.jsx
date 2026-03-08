@@ -88,14 +88,14 @@ export function BudgetProvider({
   const syncReadyBudgets = useRef(false);
   const syncReadyYnab = useRef(false);
 
-  // Detect recent import — skip Supabase merge, local is authoritative
-  const isRecentImport = useRef(Date.now() - parseInt(localStorage.getItem('_lastImportAt') || '0', 10) < 30000);
+  // Detect pending import — skip Supabase merge, local is authoritative
+  const pendingImport = useRef(localStorage.getItem('_pendingImportSync') === 'true');
 
   // Load categories from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_CAT).then(cloudData => {
       syncReadyCat.current = true;
-      if (isRecentImport.current) {
+      if (pendingImport.current) {
         setCategories(prev => { saveToSupabase(SYNC_KEY_CAT, prev); return prev; });
         return;
       }
@@ -111,7 +111,7 @@ export function BudgetProvider({
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_BUDGETS).then(cloudData => {
       syncReadyBudgets.current = true;
-      if (isRecentImport.current) {
+      if (pendingImport.current) {
         setMonthlyBudgets(prev => { saveToSupabase(SYNC_KEY_BUDGETS, prev); return prev; });
         return;
       }
@@ -135,7 +135,7 @@ export function BudgetProvider({
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_YNAB).then(cloudData => {
       syncReadyYnab.current = true;
-      if (isRecentImport.current) {
+      if (pendingImport.current) {
         setYnabConfig(prev => { saveToSupabase(SYNC_KEY_YNAB, prev); return prev; });
         return;
       }

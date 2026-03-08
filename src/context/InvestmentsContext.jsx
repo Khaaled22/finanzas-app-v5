@@ -64,14 +64,13 @@ export function InvestmentsProvider({ children }) {
   const syncReadyInv = useRef(false);
   const syncReadyGoals = useRef(false);
 
-  // Detect recent import — skip Supabase merge, local is authoritative
-  const isRecentImport = useRef(Date.now() - parseInt(localStorage.getItem('_lastImportAt') || '0', 10) < 30000);
-
-  // Load investments from Supabase on mount
+  // Load investments from Supabase on mount — skip merge if pending import (local is authoritative)
   useEffect(() => {
+    const pendingImport = localStorage.getItem('_pendingImportSync') === 'true';
+
     loadFromSupabase(SYNC_KEY_INV).then(cloudData => {
       syncReadyInv.current = true;
-      if (isRecentImport.current) {
+      if (pendingImport) {
         setInvestments(prev => { saveToSupabase(SYNC_KEY_INV, prev); return prev; });
         return;
       }
@@ -85,9 +84,11 @@ export function InvestmentsProvider({ children }) {
 
   // Load savings goals from Supabase on mount
   useEffect(() => {
+    const pendingImport = localStorage.getItem('_pendingImportSync') === 'true';
+
     loadFromSupabase(SYNC_KEY_GOALS).then(cloudData => {
       syncReadyGoals.current = true;
-      if (isRecentImport.current) {
+      if (pendingImport) {
         setSavingsGoals(prev => { saveToSupabase(SYNC_KEY_GOALS, prev); return prev; });
         return;
       }

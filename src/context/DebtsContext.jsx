@@ -28,14 +28,13 @@ export function DebtsProvider({ children }) {
   });
   const syncReady = useRef(false);
 
-  // Detect recent import — skip Supabase merge, local is authoritative
-  const isRecentImport = useRef(Date.now() - parseInt(localStorage.getItem('_lastImportAt') || '0', 10) < 30000);
-
-  // Load from Supabase on mount
+  // Load from Supabase on mount — skip merge if pending import (local is authoritative)
   useEffect(() => {
+    const pendingImport = localStorage.getItem('_pendingImportSync') === 'true';
+
     loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
-      if (isRecentImport.current) {
+      if (pendingImport) {
         setDebts(prev => { saveToSupabase(SYNC_KEY, prev); return prev; });
         return;
       }

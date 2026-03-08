@@ -170,7 +170,7 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
         }
 
         // Flag so contexts skip Supabase merge on reload (local is authoritative)
-        localStorage.setItem('_lastImportAt', String(Date.now()));
+        localStorage.setItem('_pendingImportSync', 'true');
 
         setImportStatus({
           type: 'success',
