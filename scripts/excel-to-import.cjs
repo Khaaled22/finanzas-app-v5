@@ -361,7 +361,7 @@ rawGoals.forEach(function(row) {
   // currentAmount: use Saved EUR
   var currentAmount = typeof row['Saved EUR'] === 'number' ? row['Saved EUR'] : 0;
 
-  savingsGoals.push({
+  var goalObj = {
     id: goalId,
     name: goalName,
     targetAmount: typeof row['Target Amt'] === 'number' ? row['Target Amt'] : 0,
@@ -371,7 +371,12 @@ rawGoals.forEach(function(row) {
     targetDate: serialToDate(row['Target Date']) || '',
     linkedPlatforms: linkedPlatforms,
     createdAt: new Date().toISOString()
-  });
+  };
+  // Mark emergency fund goal
+  if (gk === 'emergency') {
+    goalObj.isEmergencyFund = true;
+  }
+  savingsGoals.push(goalObj);
 });
 
 // ---------------------------------------------------------------------------
@@ -399,6 +404,34 @@ rawBudgets.forEach(function(row) {
 });
 
 // ---------------------------------------------------------------------------
+// YNAB CONFIG — derive monthly income from income category budgets
+// ---------------------------------------------------------------------------
+var incomeCatIds = new Set(categories.filter(function(c) { return c.type === 'income'; }).map(function(c) { return c.id; }));
+// Use the most recent month that has income budgets
+var sortedMonths = Object.keys(monthlyBudgets).sort();
+var latestMonthWithIncome = null;
+var totalMonthlyIncome = 0;
+for (var mi = sortedMonths.length - 1; mi >= 0; mi--) {
+  var mKey = sortedMonths[mi];
+  var mIncome = 0;
+  incomeCatIds.forEach(function(catId) {
+    if (monthlyBudgets[mKey] && monthlyBudgets[mKey][catId]) {
+      mIncome += monthlyBudgets[mKey][catId].budget || 0;
+    }
+  });
+  if (mIncome > 0) {
+    totalMonthlyIncome = mIncome;
+    latestMonthWithIncome = mKey;
+    break;
+  }
+}
+var ynabConfig = {
+  monthlyIncome: Math.round(totalMonthlyIncome * 100) / 100,
+  currency: 'EUR'
+};
+console.log('ynabConfig: monthlyIncome=' + ynabConfig.monthlyIncome + ' EUR (from ' + (latestMonthWithIncome || 'none') + ')');
+
+// ---------------------------------------------------------------------------
 // OUTPUT
 // ---------------------------------------------------------------------------
 var output = {
@@ -408,7 +441,8 @@ var output = {
   investments: investments,
   debts: debts,
   savingsGoals: savingsGoals,
-  monthlyBudgets: monthlyBudgets
+  monthlyBudgets: monthlyBudgets,
+  ynabConfig: ynabConfig
 };
 
 fs.writeFileSync(outPath, JSON.stringify(output, null, 2), 'utf8');

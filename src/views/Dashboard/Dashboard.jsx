@@ -189,9 +189,8 @@ export default function Dashboard() {
       : (totals.incomeReal || 0);
 
     const totalAssigned = totals.budgeted || 0;
-    const carryOver = totals.totalCarryOver || 0;
 
-    return income + carryOver - totalAssigned;
+    return income - totalAssigned;
   }, [totals, ynabConfig, monthStatus.isPlan, selectedBudgetMonth]);
 
   // Datos para gráfico de barras

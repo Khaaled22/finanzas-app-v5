@@ -27,14 +27,19 @@ export const AnalysisEngine = {
     }
 
     // Calcular gasto mensual total (solo gastos operativos)
+    // Uses budgetInDisplayCurrency if available (from categoriesWithMonthlyBudget),
+    // otherwise falls back to converting cat.budget
     const monthlyExpenses = (categories || [])
       .filter(cat => cat.flowKind === 'OPERATING_EXPENSE' || cat.type === 'expense')
-      .reduce((sum, cat) =>
-        sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
-      )
-    
+      .reduce((sum, cat) => {
+        const val = cat.budgetInDisplayCurrency !== undefined
+          ? cat.budgetInDisplayCurrency
+          : convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency)
+        return sum + val
+      }, 0)
+
     // Convertir ingreso mensual
-    const monthlyIncome = ynabConfig?.monthlyIncome 
+    const monthlyIncome = ynabConfig?.monthlyIncome
       ? convertCurrency(ynabConfig.monthlyIncome, ynabConfig.currency || 'EUR', displayCurrency)
       : 0
 
@@ -114,9 +119,12 @@ export const AnalysisEngine = {
     // ============================================
     const monthlyIncomeFromCats = (categories || [])
       .filter(cat => cat.flowKind === 'INCOME' || cat.type === 'income')
-      .reduce((sum, cat) =>
-        sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
-      )
+      .reduce((sum, cat) => {
+        const val = cat.budgetInDisplayCurrency !== undefined
+          ? cat.budgetInDisplayCurrency
+          : convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency)
+        return sum + val
+      }, 0)
     const effectiveIncome = monthlyIncome > 0 ? monthlyIncome : monthlyIncomeFromCats
 
     if (effectiveIncome > 0) {
@@ -402,9 +410,12 @@ export const AnalysisEngine = {
     // Only count operating expenses for monthly burn rate
     const monthlyExpenses = (categories || [])
       .filter(cat => cat.flowKind === 'OPERATING_EXPENSE' || cat.type === 'expense')
-      .reduce((sum, cat) =>
-        sum + convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency), 0
-      )
+      .reduce((sum, cat) => {
+        const val = cat.budgetInDisplayCurrency !== undefined
+          ? cat.budgetInDisplayCurrency
+          : convertCurrency(cat.budget || 0, cat.currency || 'EUR', displayCurrency)
+        return sum + val
+      }, 0)
 
     if (monthlyExpenses === 0) return 0
 

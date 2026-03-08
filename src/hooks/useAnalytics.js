@@ -22,14 +22,15 @@ export function useAnalytics() {
   } = useApp()
   
   // M8: Índice de Tranquilidad Financiera (Nauta)
-  // ✅ M32: Ahora pasa investments para linkedPlatforms
+  // Uses categoriesWithMonthlyBudget so AnalysisEngine sees actual monthly budgets
   const nautaIndex = useMemo(() => {
+    const budgetCats = categoriesWithMonthlyBudget || categories;
     return AnalysisEngine.calculateNautaIndex(
-      { categories, debts, savingsGoals, investments, ynabConfig },
+      { categories: budgetCats, debts, savingsGoals, investments, ynabConfig },
       convertCurrency,
       displayCurrency
     )
-  }, [categories, debts, savingsGoals, investments, ynabConfig, convertCurrency, displayCurrency])
+  }, [categories, categoriesWithMonthlyBudget, debts, savingsGoals, investments, ynabConfig, convertCurrency, displayCurrency])
   
   // M9.1: Ratio Deuda/Ingreso anual
   const debtToIncomeRatio = useMemo(() => {
@@ -70,16 +71,16 @@ export function useAnalytics() {
   }, [debts, ynabConfig, convertCurrency, displayCurrency])
   
   // M9.4: Meses cubiertos por Fondo de Emergencia
-  // ✅ M32: Ahora pasa investments para linkedPlatforms
   const emergencyFundMonths = useMemo(() => {
+    const budgetCats = categoriesWithMonthlyBudget || categories;
     return AnalysisEngine.calculateEmergencyFundMonths(
       savingsGoals,
       investments,
-      categories,
+      budgetCats,
       convertCurrency,
       displayCurrency
     )
-  }, [savingsGoals, investments, categories, convertCurrency, displayCurrency])
+  }, [savingsGoals, investments, categories, categoriesWithMonthlyBudget, convertCurrency, displayCurrency])
   
   // Patrimonio Neto
   const netWorth = useMemo(() => {
