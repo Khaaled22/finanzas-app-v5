@@ -1,0 +1,4968 @@
+{
+  "2025-06": {
+    "cat_khaled_salary": {
+      "budget": 3792,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1141,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 555000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 432000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 432000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 590000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 67.98,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 240,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 450,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 400,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 9.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 6.2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 1.5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 9.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6.2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 1.5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 23,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2025-07": {
+    "cat_khaled_salary": {
+      "budget": 5095,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 911.52,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 1482,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 555000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 590000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 55,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 361,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 298,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 14,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 450,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.9,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 1.7,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 23,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2025-08": {
+    "cat_khaled_salary": {
+      "budget": 3850,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1400,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 280000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 320000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 284000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 3000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 298,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 350,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.9,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 1.7,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 23,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 414.16,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 422,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 200,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 500,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2025-09": {
+    "cat_khaled_salary": {
+      "budget": 3850,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1916,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 200000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 284000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 16000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 298,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 14,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 350,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.9,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 1.7,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 23,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2025-10": {
+    "cat_khaled_salary": {
+      "budget": 4795.84,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1919,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 284000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 16000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 298,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 240,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 400,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 1.5,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 40,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2025-11": {
+    "cat_khaled_salary": {
+      "budget": 3850.96,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1414,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 436196,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 435797,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 284000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 308.52,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 17000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 298,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 120,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 18,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 16,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 600,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 7,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 16,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 1500,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 450000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2025-12": {
+    "cat_khaled_salary": {
+      "budget": 3850.96,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1400,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 281263,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 286000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 17000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 298,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 160,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 600,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 30000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 200,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 1650,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 200,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 450000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2026-01": {
+    "cat_khaled_salary": {
+      "budget": 3864.19,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1652.15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 286900,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 700000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 287000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 20000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 301,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 210,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 90.93,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 600,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 63,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 1.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 10000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 1900,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 24990,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 450000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2026-02": {
+    "cat_khaled_salary": {
+      "budget": 3864.19,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1168.65,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 115,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 281263,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 880000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 287000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 55,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 20000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 360.49,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 301,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 69,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 400,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 13,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 63,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 1.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 80000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 24990,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 450000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2026-03": {
+    "cat_khaled_salary": {
+      "budget": 3850.96,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1286,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 4094.58,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 516263,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 287000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 650,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 20000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 301,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 180,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 210,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 300,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 63,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 5.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 1.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 10000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 35,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 260,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 200,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 150,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 320,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 500000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2026-04": {
+    "cat_khaled_salary": {
+      "budget": 3864.19,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1168.65,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 551263,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 955000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 287000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 300,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 210,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 20000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 301,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 35,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 200,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 400,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 63,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 5.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 1.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 50,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 60000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 140,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 24990,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 320,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 500000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2026-05": {
+    "cat_khaled_salary": {
+      "budget": 3850.96,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1414,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 281263,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 600,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 700000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 287000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 20000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 301,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 35,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 63,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 1.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 10000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 450000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  },
+  "2026-06": {
+    "cat_khaled_salary": {
+      "budget": 3850.96,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_salary": {
+      "budget": 1414,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_income_clp": {
+      "budget": 281263,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_income_eur": {
+      "budget": 600,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_mortgage_khaled": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_ina": {
+      "budget": 440000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_mortgage_3": {
+      "budget": 700000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_cae": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_pie_buydepa_15": {
+      "budget": 287000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_rent": {
+      "budget": 1282,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electricity": {
+      "budget": 30,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_water": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_internet_wi_fi": {
+      "budget": 70,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_khaled": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_phone_ina": {
+      "budget": 15,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_radio_tv_tax": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bank_fees": {
+      "budget": 20000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_other_admin_fees": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_health_insurance": {
+      "budget": 301,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_khaled": {
+      "budget": 60,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_doctor_visits_ina": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_medicines": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_supplements_vitamins": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_khaled": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gym_ina": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_hair_beauty": {
+      "budget": 35,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_groceries": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_restaurants": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_caf_s": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_bars_pubs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_fast_food": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_food_delivery": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_snacks": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_khaled_deutschland_ticket": {
+      "budget": 63,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_ina_deutschland_ticket": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_nextbike": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_car_bike_maintenance": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_khaled": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_leisure_ina": {
+      "budget": 100,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cinema_theatre": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_concerts_events": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_night_out": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_alcohol_cocktails": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_netflix": {
+      "budget": 4.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_disney_": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_spotify": {
+      "budget": 6750,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_google_one": {
+      "budget": 2,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_chatgpt_plus": {
+      "budget": 22,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_services": {
+      "budget": 1.99,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clothes_shoes": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_electronics": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_home_decor": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_gardening": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_cookware": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_shopping": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_birthdays": {
+      "budget": 10000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_weddings": {
+      "budget": 100000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_christmas": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_gifts_charity": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_flights": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_accommodation": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_local_transport": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_travel_meals": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_activities_tours": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_souvenirs": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_dad": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_mom": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_family_support_enanas": {
+      "budget": 25,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_eur_savings_account": {
+      "budget": 250,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_clp_savings_1": {
+      "budget": 450000,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_clp_savings_2": {
+      "budget": 0,
+      "currency": "CLP",
+      "spent": 0
+    },
+    "cat_crypto": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_other_investments": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    },
+    "cat_miscellaneous": {
+      "budget": 0,
+      "currency": "EUR",
+      "spent": 0
+    }
+  }
+}

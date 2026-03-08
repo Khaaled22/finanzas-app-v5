@@ -117,14 +117,25 @@ export function BudgetProvider({
       }
       if (cloudData && typeof cloudData === 'object' && !Array.isArray(cloudData)) {
         setMonthlyBudgets(prev => {
-          // Deep merge: for each month, merge entries with local winning
-          const merged = { ...cloudData };
-          Object.entries(prev).forEach(([month, entries]) => {
-            if (entries && typeof entries === 'object') {
-              merged[month] = { ...(merged[month] || {}), ...entries };
-            }
-          });
+          // Deep merge: local always wins per category per month.
+          // Cloud only fills in months/categories that don't exist locally.
+          const localData = prev && Object.keys(prev).length > 0 ? prev : null;
+          if (!localData) {
+            // No local data — use cloud entirely
+            StorageManager.save(SYNC_KEY_BUDGETS, cloudData);
+            return cloudData;
+          }
+          // Start with cloud as base, overlay ALL local entries on top
+          const merged = {};
+          const allMonths = new Set([...Object.keys(cloudData), ...Object.keys(localData)]);
+          for (const month of allMonths) {
+            const cloud = cloudData[month] || {};
+            const local = localData[month] || {};
+            // Local entries always override cloud for the same category
+            merged[month] = { ...cloud, ...local };
+          }
           StorageManager.save(SYNC_KEY_BUDGETS, merged);
+          saveToSupabase(SYNC_KEY_BUDGETS, merged);
           return merged;
         });
       }
