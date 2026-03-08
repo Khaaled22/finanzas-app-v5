@@ -88,10 +88,17 @@ export function BudgetProvider({
   const syncReadyBudgets = useRef(false);
   const syncReadyYnab = useRef(false);
 
-  // Load categories from Supabase on mount — merge cloud + local
+  // Detect recent import — skip Supabase merge, local is authoritative
+  const isRecentImport = useRef(Date.now() - parseInt(localStorage.getItem('_lastImportAt') || '0', 10) < 30000);
+
+  // Load categories from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_CAT).then(cloudData => {
       syncReadyCat.current = true;
+      if (isRecentImport.current) {
+        setCategories(prev => { saveToSupabase(SYNC_KEY_CAT, prev); return prev; });
+        return;
+      }
       setCategories(prev => {
         const merged = migrateCategoriesToFlowKind(mergeArrayById(prev, cloudData));
         StorageManager.save(SYNC_KEY_CAT, merged);
@@ -100,10 +107,14 @@ export function BudgetProvider({
     });
   }, []);
 
-  // Load monthlyBudgets from Supabase on mount — deep merge (local wins at entry level)
+  // Load monthlyBudgets from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_BUDGETS).then(cloudData => {
       syncReadyBudgets.current = true;
+      if (isRecentImport.current) {
+        setMonthlyBudgets(prev => { saveToSupabase(SYNC_KEY_BUDGETS, prev); return prev; });
+        return;
+      }
       if (cloudData && typeof cloudData === 'object' && !Array.isArray(cloudData)) {
         setMonthlyBudgets(prev => {
           // Deep merge: for each month, merge entries with local winning
@@ -120,13 +131,16 @@ export function BudgetProvider({
     });
   }, []);
 
-  // Load ynabConfig from Supabase on mount — cloud wins (single shared config)
+  // Load ynabConfig from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_YNAB).then(cloudData => {
       syncReadyYnab.current = true;
+      if (isRecentImport.current) {
+        setYnabConfig(prev => { saveToSupabase(SYNC_KEY_YNAB, prev); return prev; });
+        return;
+      }
       if (cloudData && typeof cloudData === 'object') {
         setYnabConfig(prev => {
-          // Take cloud version if it has data
           const merged = cloudData.monthlyIncome !== undefined ? cloudData : prev;
           StorageManager.save(SYNC_KEY_YNAB, merged);
           return merged;

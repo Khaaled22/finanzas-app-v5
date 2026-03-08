@@ -169,6 +169,9 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
           // Supabase sync is optional
         }
 
+        // Flag so contexts skip Supabase merge on reload (local is authoritative)
+        localStorage.setItem('_lastImportAt', String(Date.now()));
+
         setImportStatus({
           type: 'success',
           message: `Importados: ${written.join(', ')}. Recargando...`

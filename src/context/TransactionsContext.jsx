@@ -77,23 +77,25 @@ export function TransactionsProvider({ children, currentUser }) {
     return toAdd;
   }, []);
 
-  // Load from Supabase on mount — merge cloud + local with content dedup
+  // Load from Supabase on mount — skip merge if recent import (local is authoritative)
   useEffect(() => {
+    const importedAt = parseInt(localStorage.getItem('_lastImportAt') || '0', 10);
+    const isRecentImport = Date.now() - importedAt < 30000; // 30s window
+
     loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
-      setTransactions(prev => {
-        // First merge by ID (standard)
-        const merged = mergeArrayById(prev, cloudData);
-        // Then deduplicate by content (date+amount+categoryId) — keeps first occurrence (local)
-        const seen = new Set();
-        const deduped = merged.filter(tx => {
-          const key = `${tx.date}|${tx.amount}|${tx.categoryId}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
+      if (isRecentImport) {
+        // After import: local is authoritative, push to Supabase
+        setTransactions(prev => {
+          saveToSupabase(SYNC_KEY, prev);
+          return prev;
         });
-        const generated = generateRecurringInstances(filterActive(deduped));
-        const final = generated.length > 0 ? [...deduped, ...generated] : deduped;
+        return;
+      }
+      setTransactions(prev => {
+        const merged = mergeArrayById(prev, cloudData);
+        const generated = generateRecurringInstances(filterActive(merged));
+        const final = generated.length > 0 ? [...merged, ...generated] : merged;
         StorageManager.save(SYNC_KEY, final);
         return final;
       });

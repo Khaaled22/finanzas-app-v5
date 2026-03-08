@@ -64,10 +64,17 @@ export function InvestmentsProvider({ children }) {
   const syncReadyInv = useRef(false);
   const syncReadyGoals = useRef(false);
 
-  // Load investments from Supabase on mount — merge cloud + local
+  // Detect recent import — skip Supabase merge, local is authoritative
+  const isRecentImport = useRef(Date.now() - parseInt(localStorage.getItem('_lastImportAt') || '0', 10) < 30000);
+
+  // Load investments from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_INV).then(cloudData => {
       syncReadyInv.current = true;
+      if (isRecentImport.current) {
+        setInvestments(prev => { saveToSupabase(SYNC_KEY_INV, prev); return prev; });
+        return;
+      }
       setInvestments(prev => {
         const merged = mergeArrayById(prev, cloudData);
         StorageManager.save(SYNC_KEY_INV, merged);
@@ -76,10 +83,14 @@ export function InvestmentsProvider({ children }) {
     });
   }, []);
 
-  // Load savings goals from Supabase on mount — merge cloud + local
+  // Load savings goals from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_GOALS).then(cloudData => {
       syncReadyGoals.current = true;
+      if (isRecentImport.current) {
+        setSavingsGoals(prev => { saveToSupabase(SYNC_KEY_GOALS, prev); return prev; });
+        return;
+      }
       setSavingsGoals(prev => {
         const merged = mergeArrayById(prev, cloudData);
         StorageManager.save(SYNC_KEY_GOALS, merged);

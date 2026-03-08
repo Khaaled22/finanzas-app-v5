@@ -28,10 +28,17 @@ export function DebtsProvider({ children }) {
   });
   const syncReady = useRef(false);
 
-  // Load from Supabase on mount — merge cloud + local
+  // Detect recent import — skip Supabase merge, local is authoritative
+  const isRecentImport = useRef(Date.now() - parseInt(localStorage.getItem('_lastImportAt') || '0', 10) < 30000);
+
+  // Load from Supabase on mount
   useEffect(() => {
     loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
+      if (isRecentImport.current) {
+        setDebts(prev => { saveToSupabase(SYNC_KEY, prev); return prev; });
+        return;
+      }
       setDebts(prev => {
         const merged = mergeArrayById(prev, cloudData)
           .map(debt => ({ ...debt, balanceHistory: debt.balanceHistory || [] }));
