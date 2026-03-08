@@ -244,6 +244,92 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
           </div>
         )}
       </div>
+
+      {/* Zona de Peligro — Borrar Todos los Datos */}
+      <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mt-8">
+        <h4 className="text-sm font-bold text-red-700 mb-3">
+          <i className="fas fa-exclamation-triangle mr-2"></i>
+          Zona de Peligro
+        </h4>
+
+        <div className="text-xs text-red-600 mb-4 space-y-2">
+          <p className="font-semibold">Se eliminaran:</p>
+          <ul className="list-disc list-inside ml-2 space-y-1">
+            <li>Transacciones</li>
+            <li>Categorias</li>
+            <li>Presupuestos mensuales</li>
+            <li>Configuracion YNAB</li>
+            <li>Deudas</li>
+            <li>Inversiones</li>
+            <li>Metas de ahorro</li>
+          </ul>
+          <p className="font-semibold mt-2">Se conservaran:</p>
+          <ul className="list-disc list-inside ml-2 space-y-1">
+            <li>Tasas de cambio (local e historico)</li>
+            <li>Tema de la aplicacion</li>
+            <li>Sesion de Supabase (autenticacion)</li>
+          </ul>
+        </div>
+
+        <button
+          onClick={async () => {
+            // Primera confirmacion
+            const ok = window.confirm(
+              'Vas a borrar TODOS tus datos financieros (transacciones, categorias, presupuestos, deudas, inversiones, metas). Esta seguro?'
+            );
+            if (!ok) return;
+
+            // Segunda confirmacion — escribir BORRAR
+            const typed = window.prompt(
+              'ESTA ACCION ES IRREVERSIBLE. Escribe BORRAR para confirmar'
+            );
+            if (typed !== 'BORRAR') return;
+
+            // Keys to preserve
+            const preserveKeys = new Set([
+              'exchangeRates_v5',
+              'exchangeRatesHistory',
+              'exchangeRatesHistory_v5',
+              'theme'
+            ]);
+
+            // Clear localStorage (keep preserved keys and sb- prefixed keys)
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (preserveKeys.has(key)) continue;
+              if (key.startsWith('sb-')) continue;
+              keysToRemove.push(key);
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+
+            // Clear Supabase user_data for financial keys
+            try {
+              const { saveToSupabase } = await import('../../modules/supabase/syncUtils');
+              const emptyKeys = {
+                transactions_v5: [],
+                categories_v5: [],
+                monthlyBudgets_v5: {},
+                ynabConfig_v5: {},
+                debts_v5: [],
+                investments_v5: [],
+                savingsGoals_v5: []
+              };
+              for (const [key, value] of Object.entries(emptyKeys)) {
+                await saveToSupabase(key, value);
+              }
+            } catch {
+              // Supabase sync is optional
+            }
+
+            window.location.reload();
+          }}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-sm"
+        >
+          <i className="fas fa-trash-alt mr-2"></i>
+          Borrar Todos los Datos
+        </button>
+      </div>
     </div>
   );
 }
