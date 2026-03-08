@@ -100,13 +100,19 @@ export function BudgetProvider({
     });
   }, []);
 
-  // Load monthlyBudgets from Supabase on mount — merge by month key
+  // Load monthlyBudgets from Supabase on mount — deep merge (local wins at entry level)
   useEffect(() => {
     loadFromSupabase(SYNC_KEY_BUDGETS).then(cloudData => {
       syncReadyBudgets.current = true;
       if (cloudData && typeof cloudData === 'object' && !Array.isArray(cloudData)) {
         setMonthlyBudgets(prev => {
-          const merged = { ...cloudData, ...prev };
+          // Deep merge: for each month, merge entries with local winning
+          const merged = { ...cloudData };
+          Object.entries(prev).forEach(([month, entries]) => {
+            if (entries && typeof entries === 'object') {
+              merged[month] = { ...(merged[month] || {}), ...entries };
+            }
+          });
           StorageManager.save(SYNC_KEY_BUDGETS, merged);
           return merged;
         });
@@ -210,14 +216,20 @@ export function BudgetProvider({
 
   const getCategoryBudgetForMonth = useCallback((categoryId, month) => {
     const monthBudget = monthlyBudgets[month];
-    
+
     if (monthBudget && monthBudget[categoryId]) {
       return monthBudget[categoryId].budget;
     }
-    
-    initializeCategoryForMonth(categoryId, month);
-    return monthlyBudgets[month]?.[categoryId]?.budget || 0;
-  }, [monthlyBudgets, initializeCategoryForMonth]);
+
+    // Pure read — return fallback without writing state
+    // (avoids side-effect that pushes budget=0 to Supabase during renders)
+    const previousMonth = getPreviousMonth(month);
+    const previousBudget = monthlyBudgets[previousMonth]?.[categoryId]?.budget;
+    if (previousBudget !== undefined) return previousBudget;
+
+    const category = categories.find(c => c.id === categoryId);
+    return category?.budget || 0;
+  }, [monthlyBudgets, categories, getPreviousMonth]);
 
   const getCategorySpentForMonth = useCallback((categoryId, month) => {
     const category = categories.find(cat => cat.id === categoryId);
