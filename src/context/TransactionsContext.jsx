@@ -84,10 +84,10 @@ export function TransactionsProvider({ children, currentUser }) {
     loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
       if (pendingImport) {
-        // After import: local is authoritative, push to Supabase and clear flag
+        // After import: local is authoritative, push to Supabase and clear flag only on success
         setTransactions(prev => {
-          saveToSupabase(SYNC_KEY, prev).then(() => {
-            localStorage.removeItem('_pendingImportSync');
+          saveToSupabase(SYNC_KEY, prev).then(ok => {
+            if (ok) localStorage.removeItem('_pendingImportSync');
           });
           return prev;
         });

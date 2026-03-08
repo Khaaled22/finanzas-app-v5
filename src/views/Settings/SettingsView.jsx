@@ -160,21 +160,28 @@ function PreferencesPanel({ displayCurrency, setDisplayCurrency }) {
         });
 
         // Sync to Supabase if backend is enabled
+        let supabaseOk = true;
         try {
           const { saveToSupabase } = await import('../../modules/supabase/syncUtils');
           for (const [key, value] of Object.entries(keys)) {
-            if (value !== undefined) await saveToSupabase(key, value);
+            if (value !== undefined) {
+              const ok = await saveToSupabase(key, value);
+              if (!ok) supabaseOk = false;
+            }
           }
         } catch {
-          // Supabase sync is optional
+          supabaseOk = false;
         }
 
         // Flag so contexts skip Supabase merge on reload (local is authoritative)
+        // Set ALWAYS — even if Supabase sync succeeded, contexts must not re-merge
         localStorage.setItem('_pendingImportSync', 'true');
 
         setImportStatus({
           type: 'success',
-          message: `Importados: ${written.join(', ')}. Recargando...`
+          message: supabaseOk
+            ? `Importados: ${written.join(', ')}. Recargando...`
+            : `Importados localmente: ${written.join(', ')}. Sync pendiente. Recargando...`
         });
         setTimeout(() => window.location.reload(), 1500);
       } catch {

@@ -128,17 +128,14 @@ export default function Dashboard() {
       status = 'no_budget';
       statusMessage = 'Sin presupuesto asignado';
     } else if (isCurrentMonth) {
-      const expectedSpent = (totalBudget * percentDaysPassed) / 100;
-      const difference = totalSpent - expectedSpent;
-      const percentDifference = (difference / totalBudget) * 100;
-      
       if (percentSpent > 100) {
         status = 'over_budget';
         statusMessage = `¡Presupuesto excedido por ${formatNumber(totalSpent - totalBudget)}!`;
-      } else if (percentDifference > 10) {
+      } else if (projectedSpent > totalBudget * 1.05) {
+        // Projected to exceed budget by more than 5%
         status = 'warning';
         statusMessage = `Gastando más rápido de lo esperado`;
-      } else if (percentDifference < -10) {
+      } else if (projectedSpent < totalBudget * 0.85) {
         status = 'under_budget';
         statusMessage = 'Excelente control del gasto';
       } else {

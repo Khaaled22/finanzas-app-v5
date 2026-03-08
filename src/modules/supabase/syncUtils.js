@@ -42,24 +42,26 @@ export async function loadFromSupabase(key) {
 }
 
 /**
- * Save data for a key to Supabase (fire-and-forget).
- * Silently fails if backend disabled, not authenticated, or any error.
+ * Save data for a key to Supabase.
+ * Returns true on success, false on any failure.
+ * localStorage remains the source of truth locally.
  */
 export async function saveToSupabase(key, value) {
-  if (!isBackendEnabled()) return;
+  if (!isBackendEnabled()) return false;
   try {
     const supabase = await getSupabase();
-    if (!supabase) return;
+    if (!supabase) return false;
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) return false;
 
-    await supabase.from('user_data').upsert(
+    const { error } = await supabase.from('user_data').upsert(
       { user_id: user.id, key, data: value, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,key' }
     );
+    return !error;
   } catch {
-    // Silent fail — localStorage is the source of truth locally
+    return false;
   }
 }
 
