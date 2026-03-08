@@ -423,7 +423,7 @@ export default function Dashboard() {
           title="Disponible Operativo"
           value={formatNumber(totals.availableOperational || 0)}
           currency={displayCurrency}
-          subtitle={`${formatNumber(monthProjection.dailyBudget)}/día restante`}
+          subtitle={`${formatNumber(monthProjection.dailyBudget)} ${displayCurrency}/día (${monthProjection.remainingDays} días restantes)`}
           icon="fa-wallet"
           color={totals.availableOperational >= 0 ? 'green' : 'red'}
           highlight={true}

@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import StorageManager from '../modules/storage/StorageManager';
 import { INITIAL_TRANSACTIONS } from '../config/initialData';
-import { loadFromSupabase, saveToSupabase, mergeArrayById, filterActive, softDelete } from '../modules/supabase/syncUtils';
+import { loadFromSupabase, saveToSupabase, mergeArrayById, filterActive, softDelete, deduplicateByContent } from '../modules/supabase/syncUtils';
 
 const SYNC_KEY = 'transactions_v5';
 
@@ -20,7 +20,7 @@ export const useTransactions = () => {
 
 export function TransactionsProvider({ children, currentUser }) {
   const [transactions, setTransactions] = useState(() =>
-    StorageManager.load(SYNC_KEY, INITIAL_TRANSACTIONS)
+    deduplicateByContent(StorageManager.load(SYNC_KEY, INITIAL_TRANSACTIONS))
   );
   const syncReady = useRef(false);
 
@@ -94,7 +94,7 @@ export function TransactionsProvider({ children, currentUser }) {
         return;
       }
       setTransactions(prev => {
-        const merged = mergeArrayById(prev, cloudData);
+        const merged = deduplicateByContent(mergeArrayById(prev, cloudData));
         const generated = generateRecurringInstances(filterActive(merged));
         const final = generated.length > 0 ? [...merged, ...generated] : merged;
         StorageManager.save(SYNC_KEY, final);

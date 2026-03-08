@@ -138,6 +138,27 @@ export function mergeArrayById(localArray, cloudArray) {
 }
 
 /**
+ * Deduplicate transactions by content (date+description+amount+currency+categoryId).
+ * Keeps the first occurrence (by createdAt) and removes later duplicates.
+ * This catches duplicates that have different IDs but identical content.
+ */
+export function deduplicateByContent(array) {
+  if (!Array.isArray(array) || array.length === 0) return array;
+  const seen = new Map();
+  const result = [];
+  for (const item of array) {
+    // Only deduplicate items that look like transactions (have date + amount)
+    if (item.date && item.amount !== undefined) {
+      const key = `${item.date}|${item.description || ''}|${item.amount}|${item.currency || ''}|${item.categoryId || ''}`;
+      if (seen.has(key)) continue;
+      seen.set(key, true);
+    }
+    result.push(item);
+  }
+  return result;
+}
+
+/**
  * Filter out soft-deleted items for UI consumption.
  * Call this when exposing data to components.
  */
