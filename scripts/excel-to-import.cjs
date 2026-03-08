@@ -42,7 +42,8 @@ function serialToYearMonth(serial) {
 }
 
 // Emoji extraction: leading emoji -> { icon, text }
-var EMOJI_RE = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)\s*/u;
+// Handles ZWJ sequences like 👩‍⚕️ (woman+ZWJ+⚕+FE0F), 👨‍👧, 👩‍👦
+var EMOJI_RE = /^((?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F?)(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F?))*)\s*/u;
 function splitEmoji(str) {
   if (!str) return { icon: '', text: '' };
   str = String(str).trim();
@@ -250,13 +251,15 @@ rawInvLatest.forEach(function(row) {
 
   var goalName = acctGoal[acctName] || row.Goal || '';
 
+  var currentVal = typeof row.Value === 'number' ? row.Value : 0;
   investments.push({
     id: invId,
     name: acctName,
     goal: goalKey(goalName),
     subtype: inferSubtype(row.Glosario),
     currency: row.Currency || 'CLP',
-    currentBalance: typeof row.Value === 'number' ? row.Value : 0,
+    currentValue: currentVal,
+    currentBalance: currentVal,
     isLiquid: row.Liquid === 'Yes' || row.Liquid === true,
     balanceHistory: balanceHistory,
     createdAt: snaps.length > 0 ? (serialToISO(snaps[0].Snapshot_Date) || new Date().toISOString()) : new Date().toISOString()
@@ -383,11 +386,14 @@ rawBudgets.forEach(function(row) {
   if (!ym) return;
 
   var catId = findCategoryId(row.Subcategory);
-  var budgetAmt = typeof row.Budget === 'number' ? row.Budget : 0;
+  // Use Budget_EUR (pre-converted) for consistent EUR totals
+  var budgetAmt = typeof row.Budget_EUR === 'number' ? row.Budget_EUR : (typeof row.Budget === 'number' ? row.Budget : 0);
+  var currency = row.Currency || 'EUR';
 
   if (!monthlyBudgets[ym]) monthlyBudgets[ym] = {};
   monthlyBudgets[ym][catId] = {
     budget: budgetAmt,
+    currency: currency,
     spent: 0
   };
 });
