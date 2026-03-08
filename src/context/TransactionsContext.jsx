@@ -77,14 +77,23 @@ export function TransactionsProvider({ children, currentUser }) {
     return toAdd;
   }, []);
 
-  // Load from Supabase on mount — merge cloud + local instead of overwrite
+  // Load from Supabase on mount — merge cloud + local with content dedup
   useEffect(() => {
     loadFromSupabase(SYNC_KEY).then(cloudData => {
       syncReady.current = true;
       setTransactions(prev => {
+        // First merge by ID (standard)
         const merged = mergeArrayById(prev, cloudData);
-        const generated = generateRecurringInstances(filterActive(merged));
-        const final = generated.length > 0 ? [...merged, ...generated] : merged;
+        // Then deduplicate by content (date+amount+categoryId) — keeps first occurrence (local)
+        const seen = new Set();
+        const deduped = merged.filter(tx => {
+          const key = `${tx.date}|${tx.amount}|${tx.categoryId}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        const generated = generateRecurringInstances(filterActive(deduped));
+        const final = generated.length > 0 ? [...deduped, ...generated] : deduped;
         StorageManager.save(SYNC_KEY, final);
         return final;
       });
